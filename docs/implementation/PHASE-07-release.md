@@ -18,7 +18,7 @@ Prepare the first public release with complete documentation, examples, CI, pack
 - [x] Add license.
 - [x] Add public examples.
 - [ ] Complete fixture applications.
-- [ ] Run Graphify over Descuff.
+- [x] Run Graphify over Descuff.
 - [x] Configure coding-agent instructions to use Graphify for repository exploration.
 - [x] Verify CI is green.
 - [x] Run package publishing dry run.
@@ -57,7 +57,9 @@ Prepare the first public release with complete documentation, examples, CI, pack
   - `npx descuff validate /Users/hatimshaherawala/descuff/fixtures/ecommerce`
 - Release checklist passed for current release scope: docs, license, changelog, public ecommerce example, CI, package dry run, clean install CLI smoke, and explicit critical/high defect marker audit.
 - Critical/high triage found no known critical or high-severity defects. Remaining open items are release-scope caveats: placeholder non-ecommerce fixtures and missing local `graphify` executable.
-- Live Graphify refresh remains blocked locally unless the `graphify` executable is installed. Repository coding-agent instructions and smoke checks verify the optional Graphify workflow guidance.
+- Graphify was installed with `uv tool install --upgrade graphifyy`. The executable is available at `/Users/hatimshaherawala/.local/bin/graphify`, but that directory is not on this shell's default PATH.
+- Code-only Graphify refresh passed with `/Users/hatimshaherawala/.local/bin/graphify . --update --no-viz --code-only`, producing `graphify-out/graph.json` with 1001 nodes, 1324 edges, and 74 communities.
+- Graphify cluster/report refresh passed with `/Users/hatimshaherawala/.local/bin/graphify cluster-only /Users/hatimshaherawala/descuff --no-viz`, producing `graphify-out/GRAPH_REPORT.md` with generic community labels because no LLM backend key was configured.
 
 ## Completion Rule
 
