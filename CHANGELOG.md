@@ -13,6 +13,7 @@ All notable changes to Descuff will be documented in this file.
 - Agent workflow planning artifacts and non-LLM `descuff fix` instructions.
 - Validation package covering static generated changes, build/test command integration, runtime observations, mutating scenario guardrails, security checks, UI regression checks, readiness reports, and repair guidance.
 - Ecommerce Next.js fixture E2E proving the scan-to-validation path.
+- Booking, content, SaaS, and intentionally broken Next.js source fixtures for broader analyzer and validation coverage.
 - CLI commands for `scan`, `report`, `plan`, `fix`, `apply-safe`, and `validate`.
 
 ### Known Release Limitations

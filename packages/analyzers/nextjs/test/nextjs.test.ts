@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createProjectContext } from "@descuff/core";
-import { validateStructuralAnalysis } from "@descuff/ir";
+import { structuralAnalysisToApplicationModel, validateStructuralAnalysis } from "@descuff/ir";
 import { NativeNextAnalyzer } from "../src/index.js";
 
 describe("@descuff/analyzer-nextjs", () => {
@@ -81,4 +81,50 @@ describe("@descuff/analyzer-nextjs", () => {
     expect(analysis.routes.every((route) => route.evidence.length > 0)).toBe(true);
     expect(analysis.apiOperations.every((operation) => operation.evidence.length > 0)).toBe(true);
   });
+
+  it.each([
+    {
+      fixture: "fixtures/booking",
+      applicationType: "booking",
+      routes: ["/", "/confirmation"],
+      apiOperations: ["GET /api/availability", "POST /api/availability"],
+      standards: []
+    },
+    {
+      fixture: "fixtures/content",
+      applicationType: "content",
+      routes: ["/", "/archive", "/articles/{slug}"],
+      apiOperations: ["GET /api/search"],
+      standards: ["llms-txt", "schema-org"]
+    },
+    {
+      fixture: "fixtures/saas",
+      applicationType: "saas",
+      routes: ["/", "/billing", "/settings"],
+      apiOperations: ["GET /api/workspace", "POST /api/team/invitations"],
+      standards: []
+    },
+    {
+      fixture: "fixtures/broken-site",
+      applicationType: "unknown",
+      routes: ["/"],
+      apiOperations: ["POST /api/orders"],
+      standards: ["llms-txt"]
+    }
+  ])(
+    "discovers realistic source patterns in $fixture",
+    async ({ fixture, applicationType, routes, apiOperations, standards }) => {
+      const analysis = await new NativeNextAnalyzer().analyze(createProjectContext(fixture));
+      const model = structuralAnalysisToApplicationModel(analysis);
+
+      expect(analysis.framework).toMatchObject({ kind: "nextjs", detected: true });
+      expect(analysis.routes.map((route) => route.path).sort()).toEqual(routes);
+      expect(
+        analysis.apiOperations.map((operation) => `${operation.method} ${operation.path}`).sort()
+      ).toEqual(apiOperations);
+      expect(analysis.existingStandards.map((standard) => standard.kind).sort()).toEqual(standards);
+      expect(model.applicationType.type).toBe(applicationType);
+      expect(validateStructuralAnalysis(analysis).valid).toBe(true);
+    }
+  );
 });

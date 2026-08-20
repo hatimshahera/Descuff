@@ -244,3 +244,4 @@ Validation note:
 - Package dry run produced clean package tarballs, and a clean temp install verified `npx descuff scan`, `npx descuff report`, `npx descuff plan`, and `npx descuff validate` against `fixtures/ecommerce`.
 - Critical/high defect marker audit found no known critical or high-severity defects. Open Phase 7 caveats remain tracked in `docs/implementation/PHASE-07-release.md`.
 - Code-only Graphify refresh and cluster/report generation passed locally after installing `graphifyy`; generated `graphify-out/` artifacts remain ignored.
+- Fixture breadth now includes realistic ecommerce, booking, content, SaaS, and intentionally broken Next.js source fixtures with analyzer coverage.

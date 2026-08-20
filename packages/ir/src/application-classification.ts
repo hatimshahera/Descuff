@@ -21,7 +21,7 @@ export function assessApplicationType(analysis: StructuralAnalysis): Application
     return { type: "booking", confidence: "medium", evidence };
   }
 
-  if (/article|post|blog|content/.test(vocabulary)) {
+  if (/article|blog|content|newsletter/.test(vocabulary)) {
     return { type: "content", confidence: "medium", evidence };
   }
 

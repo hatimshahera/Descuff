@@ -1,0 +1,3 @@
+# Descuff Content Fixture
+
+Public editorial content and article search APIs.

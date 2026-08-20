@@ -3,8 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "descuffFixtureDependencies": {
+    "next": "15.0.0"
+  },
   "scripts": {
-    "build": "node -e \"console.log('booking fixture placeholder build')\"",
-    "test": "node -e \"console.log('booking fixture placeholder test')\""
+    "build": "node -e \"console.log('booking fixture build checked')\"",
+    "test": "node -e \"console.log('booking fixture tests checked')\""
   }
 }
