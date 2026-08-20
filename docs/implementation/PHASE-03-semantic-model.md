@@ -11,20 +11,20 @@ Create the stable Descuff intermediate representation and semantic reasoning bou
 
 ## Tasks
 
-- [ ] Define versioned IR schemas.
-- [ ] Implement evidence index.
-- [ ] Implement project metadata model.
-- [ ] Implement route model.
-- [ ] Implement API operation model.
-- [ ] Implement entity model.
-- [ ] Implement capability model.
-- [ ] Implement authentication model.
-- [ ] Implement integration model.
-- [ ] Implement existing standards model.
-- [ ] Implement capability risk classification.
-- [ ] Implement application type assessment.
-- [ ] Validate semantic reasoning output at schema boundaries.
-- [ ] Add deterministic readiness scoring categories and lost-point reasons.
+- [x] Define versioned IR schemas.
+- [x] Implement evidence index.
+- [x] Implement project metadata model.
+- [x] Implement route model.
+- [x] Implement API operation model.
+- [x] Implement entity model.
+- [x] Implement capability model.
+- [x] Implement authentication model.
+- [x] Implement integration model.
+- [x] Implement existing standards model.
+- [x] Implement capability risk classification.
+- [x] Implement application type assessment.
+- [x] Validate semantic reasoning output at schema boundaries.
+- [x] Add deterministic readiness scoring categories and lost-point reasons.
 
 ## Acceptance Criteria
 

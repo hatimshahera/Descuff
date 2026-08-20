@@ -88,14 +88,14 @@ Required testing:
 
 ## Phase 3 - Semantic Model
 
-- [ ] versioned IR schemas
-- [ ] evidence index
-- [ ] entity model
-- [ ] capability model
-- [ ] capability risk classification
-- [ ] application type assessment
-- [ ] IR validation at boundaries
-- [ ] deterministic readiness scoring foundation
+- [x] versioned IR schemas
+- [x] evidence index
+- [x] entity model
+- [x] capability model
+- [x] capability risk classification
+- [x] application type assessment
+- [x] IR validation at boundaries
+- [x] deterministic readiness scoring foundation
 
 Acceptance criteria:
 

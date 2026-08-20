@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "0.1.0",
+  "applicationType": "ecommerce",
+  "entities": ["Product"],
+  "capabilities": [
+    {
+      "id": "capability:get:api_search",
+      "risk": "PUBLIC_READ"
+    },
+    {
+      "id": "capability:post:api_search",
+      "risk": "LOW_RISK_WRITE"
+    },
+    {
+      "id": "capability:unknown:api_legacy",
+      "risk": "PUBLIC_READ"
+    }
+  ],
+  "standards": ["llms-txt", "openapi", "schema-org"]
+}
