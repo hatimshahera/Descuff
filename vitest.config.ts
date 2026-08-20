@@ -10,7 +10,6 @@ export default defineConfig({
       "@descuff/analyzer-graphify": fromRoot("./packages/analyzers/graphify/src/index.ts"),
       "@descuff/analyzer-nextjs": fromRoot("./packages/analyzers/nextjs/src/index.ts"),
       "@descuff/analyzer-runtime": fromRoot("./packages/analyzers/runtime/src/index.ts"),
-      "@descuff/cli": fromRoot("./packages/cli/src/index.ts"),
       "@descuff/config": fromRoot("./packages/config/src/index.ts"),
       "@descuff/core": fromRoot("./packages/core/src/index.ts"),
       "@descuff/ir": fromRoot("./packages/ir/src/index.ts"),
@@ -20,7 +19,8 @@ export default defineConfig({
       "@descuff/standard-openapi": fromRoot("./packages/standards/openapi/src/index.ts"),
       "@descuff/standard-schema-org": fromRoot("./packages/standards/schema-org/src/index.ts"),
       "@descuff/standard-webmcp": fromRoot("./packages/standards/webmcp/src/index.ts"),
-      "@descuff/validator": fromRoot("./packages/validator/src/index.ts")
+      "@descuff/validator": fromRoot("./packages/validator/src/index.ts"),
+      descuff: fromRoot("./packages/cli/src/index.ts")
     }
   },
   test: {

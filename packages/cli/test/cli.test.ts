@@ -4,7 +4,7 @@ import { runCli } from "../src/cli.js";
 
 const fixtureRoot = "fixtures/ecommerce";
 
-describe("@descuff/cli", () => {
+describe("descuff CLI", () => {
   it("prints help", async () => {
     const result = await runCli(["node", "descuff", "--help"]);
 

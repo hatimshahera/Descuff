@@ -24,7 +24,7 @@ pnpm build
 node packages/cli/dist/index.js scan fixtures/ecommerce
 ```
 
-After the first npm package is published, the intended public command shape is:
+After npm publication, the public command shape is:
 
 ```bash
 npx descuff scan .
@@ -33,7 +33,7 @@ npx descuff plan .
 npx descuff validate .
 ```
 
-The package publishing dry run is tracked in `docs/implementation/PHASE-07-release.md`.
+The package publishing dry run and clean packed install verification are tracked in `docs/implementation/PHASE-07-release.md`.
 
 ## Commands
 

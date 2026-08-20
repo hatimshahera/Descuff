@@ -15,7 +15,7 @@ node packages/cli/dist/index.js validate fixtures/ecommerce
 
 The validated flow proves that Descuff can classify the fixture as ecommerce, detect routes and API operations, select applicable standards, generate an agent plan, and produce a passing validation readiness report.
 
-After npm publication, the intended public command shape is:
+After npm publication, the public command shape is:
 
 ```bash
 npx descuff scan .

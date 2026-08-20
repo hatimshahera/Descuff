@@ -19,4 +19,4 @@ All notable changes to Descuff will be documented in this file.
 
 - `apply-safe` does not write application source in this release.
 - Graphify is optional developer infrastructure; live Graphify refresh is blocked when the `graphify` command is unavailable.
-- Package publishing is still in dry-run validation and is not yet a completed public npm release.
+- Package artifacts pass local dry-run and clean packed install verification, but no npm registry publication has been performed.

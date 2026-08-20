@@ -220,8 +220,8 @@ Validation note:
 - [x] license
 - [x] public examples
 - [x] CI green on all required checks
-- [ ] package publishing dry run
-- [ ] no known critical or high-severity defects
+- [x] package publishing dry run
+- [x] no known critical or high-severity defects
 
 Acceptance criteria:
 
@@ -241,4 +241,5 @@ Validation note:
 
 - `pnpm run ci` passed on 2026-08-20 with formatting, linting, typechecking, 121 tests, build, and CLI smoke for all six commands.
 - Documentation command verification passed against `fixtures/ecommerce`.
-- Package dry run currently produces an `@descuff/cli` tarball, so `npx descuff` package readiness remains incomplete.
+- Package dry run produced clean package tarballs, and a clean temp install verified `npx descuff scan`, `npx descuff report`, `npx descuff plan`, and `npx descuff validate` against `fixtures/ecommerce`.
+- Critical/high defect marker audit found no known critical or high-severity defects. Open Phase 7 caveats remain tracked in `docs/implementation/PHASE-07-release.md`.

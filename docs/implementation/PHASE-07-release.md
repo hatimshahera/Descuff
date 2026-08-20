@@ -21,9 +21,9 @@ Prepare the first public release with complete documentation, examples, CI, pack
 - [ ] Run Graphify over Descuff.
 - [x] Configure coding-agent instructions to use Graphify for repository exploration.
 - [x] Verify CI is green.
-- [ ] Run package publishing dry run.
-- [ ] Run full release checklist.
-- [ ] Triage all known critical and high-severity defects.
+- [x] Run package publishing dry run.
+- [x] Run full release checklist.
+- [x] Triage all known critical and high-severity defects.
 
 ## Acceptance Criteria
 
@@ -49,7 +49,14 @@ Prepare the first public release with complete documentation, examples, CI, pack
   - `node packages/cli/dist/index.js scan fixtures/ecommerce`
   - `node packages/cli/dist/index.js report fixtures/ecommerce`
   - `node packages/cli/dist/index.js validate fixtures/ecommerce`
-- `pnpm --filter @descuff/cli pack --dry-run` succeeds, but the current package identity is still `@descuff/cli`, so it does not yet satisfy the `npx descuff scan` release acceptance criterion.
+- `pnpm -r --filter './packages/**' pack --pack-destination /private/tmp/descuff-release-pack-20260820-1824` produced package tarballs with built `dist` artifacts only.
+- Clean install verification passed in `/private/tmp/descuff-clean-install-20260820-1824` by installing the packed tarballs and running:
+  - `npx descuff scan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
+  - `npx descuff report /Users/hatimshaherawala/descuff/fixtures/ecommerce`
+  - `npx descuff plan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
+  - `npx descuff validate /Users/hatimshaherawala/descuff/fixtures/ecommerce`
+- Release checklist passed for current release scope: docs, license, changelog, public ecommerce example, CI, package dry run, clean install CLI smoke, and explicit critical/high defect marker audit.
+- Critical/high triage found no known critical or high-severity defects. Remaining open items are release-scope caveats: placeholder non-ecommerce fixtures and missing local `graphify` executable.
 - Live Graphify refresh remains blocked locally unless the `graphify` executable is installed. Repository coding-agent instructions and smoke checks verify the optional Graphify workflow guidance.
 
 ## Completion Rule
