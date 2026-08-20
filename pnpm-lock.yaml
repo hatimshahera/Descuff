@@ -126,6 +126,13 @@ importers:
       "@descuff/standard-core":
         specifier: workspace:*
         version: link:../core
+    devDependencies:
+      "@descuff/analyzer-nextjs":
+        specifier: workspace:*
+        version: link:../../analyzers/nextjs
+      "@descuff/core":
+        specifier: workspace:*
+        version: link:../../core
 
   packages/standards/openapi:
     dependencies:

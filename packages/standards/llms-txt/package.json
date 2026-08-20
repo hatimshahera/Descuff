@@ -17,5 +17,9 @@
   "dependencies": {
     "@descuff/ir": "workspace:*",
     "@descuff/standard-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@descuff/analyzer-nextjs": "workspace:*",
+    "@descuff/core": "workspace:*"
   }
 }

@@ -120,7 +120,7 @@ Required testing:
 - [ ] `OpenApiAdapter`
 - [ ] `ApiCatalogAdapter`
 - [ ] `WebMcpAdapter`
-- [ ] vertical E2E path with `llms.txt`
+- [x] vertical E2E path with `llms.txt`
 - [ ] vertical E2E path with Schema.org or OpenAPI
 - [x] idempotent generated changes
 - [x] dry-run diffs

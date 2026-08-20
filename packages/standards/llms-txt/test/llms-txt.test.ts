@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   applicationModelSchemaVersion,
+  structuralAnalysisToApplicationModel,
   type ApplicationModel,
   type EvidenceRef
 } from "@descuff/ir";
+import { createProjectContext } from "@descuff/core";
+import { NativeNextAnalyzer } from "@descuff/analyzer-nextjs";
 import {
   checkGeneratedChangeIdempotency,
   planGeneratedChangeApplications
@@ -160,6 +163,26 @@ describe("@descuff/standard-llms-txt", () => {
           path: "public/llms.txt"
         }
       ]
+    });
+  });
+
+  it("proves scan to semantic model to generated validation on the ecommerce fixture", async () => {
+    const analysis = await new NativeNextAnalyzer().analyze(
+      createProjectContext("fixtures/ecommerce")
+    );
+    const appModel = structuralAnalysisToApplicationModel(analysis);
+    const adapter = new LlmsTxtAdapter();
+    const assessment = await adapter.assess(appModel);
+    const generatedChanges = await adapter.generate(appModel);
+    const validation = await adapter.validate({ model: appModel, generatedChanges });
+
+    expect(assessment.applicability).toBe("implemented");
+    expect(generatedChanges).toHaveLength(1);
+    expect(generatedChanges[0]?.path).toBe("public/llms.txt");
+    expect(validation).toEqual({
+      standardId: "llms-txt",
+      valid: true,
+      issues: []
     });
   });
 });
