@@ -19,9 +19,9 @@ Create the implementation planning and coding-agent workflow that lets the devel
 - [x] Define `descuff fix` as a non-LLM plan refresh and workflow-instruction command.
 - [x] Require scan, focused source reading, implementation, tests, validation, and repair loop.
 - [x] Preserve human UI rule in agent instructions.
-- [ ] Add Graphify development guidance.
-- [ ] Add `pnpm graph:refresh`.
-- [ ] Configure repository agent instructions to query Graphify before broad traversal after Graphify is generated.
+- [x] Add Graphify development guidance.
+- [x] Add `pnpm graph:refresh`.
+- [x] Configure repository agent instructions to query Graphify before broad traversal after Graphify is generated.
 
 ## Acceptance Criteria
 
@@ -39,6 +39,11 @@ Create the implementation planning and coding-agent workflow that lets the devel
 - Fixture plan snapshot tests.
 - Agent workflow dry-run tests.
 - Graphify command smoke test when available.
+
+## Validation Notes
+
+- `pnpm smoke` asserts the `graph:refresh` script and repository Graphify agent instructions.
+- Live Graphify command smoke is blocked in the local environment because the `graphify` binary is unavailable.
 
 ## Completion Rule
 

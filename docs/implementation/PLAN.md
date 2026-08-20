@@ -152,8 +152,8 @@ Required testing:
 - [x] `descuff fix` coding-agent instructions
 - [x] `descuff fix` non-LLM command semantics
 - [x] minimal source-reading guidance
-- [ ] Graphify developer workflow instructions
-- [ ] `pnpm graph:refresh`
+- [x] Graphify developer workflow instructions
+- [x] `pnpm graph:refresh`
 
 Acceptance criteria:
 
@@ -169,6 +169,10 @@ Required testing:
 - Renderer snapshot tests.
 - Agent workflow fixture dry runs.
 - Graphify command smoke test when Graphify is available.
+
+Validation note:
+
+- `pnpm smoke` asserts `graph:refresh` and repository Graphify guidance; live Graphify command smoke is blocked locally because `graphify` is unavailable.
 
 ## Phase 6 - Validation
 

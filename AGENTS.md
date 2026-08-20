@@ -28,6 +28,13 @@ Before writing production code:
 - Keep Graphify optional and behind `GraphifyAdapter`.
 - Record newly discovered architectural decisions as ADRs.
 
+## Graphify Developer Workflow
+
+- Treat Graphify as optional developer infrastructure, not as a Descuff runtime or product dependency.
+- Refresh the local repository graph with `pnpm graph:refresh` after Graphify output exists and before broad source traversal.
+- Query `graphify-out/graph.json` for repository-navigation questions before scanning unrelated directories.
+- If Graphify is unavailable or `graphify-out/graph.json` is missing, continue with focused source reading from documented evidence and leave Graphify-specific tasks incomplete until a smoke test can run.
+
 ## Safety And Validation
 
 - Preserve human-facing UI and behavior unless the user explicitly approves a change.
