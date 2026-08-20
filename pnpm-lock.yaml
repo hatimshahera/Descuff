@@ -88,9 +88,39 @@ importers:
       "@descuff/agent-workflow":
         specifier: workspace:*
         version: link:../agent-workflow
+      "@descuff/analyzer-nextjs":
+        specifier: workspace:*
+        version: link:../analyzers/nextjs
       "@descuff/core":
         specifier: workspace:*
         version: link:../core
+      "@descuff/ir":
+        specifier: workspace:*
+        version: link:../ir
+      "@descuff/reporter":
+        specifier: workspace:*
+        version: link:../reporter
+      "@descuff/standard-api-catalog":
+        specifier: workspace:*
+        version: link:../standards/api-catalog
+      "@descuff/standard-core":
+        specifier: workspace:*
+        version: link:../standards/core
+      "@descuff/standard-llms-txt":
+        specifier: workspace:*
+        version: link:../standards/llms-txt
+      "@descuff/standard-openapi":
+        specifier: workspace:*
+        version: link:../standards/openapi
+      "@descuff/standard-schema-org":
+        specifier: workspace:*
+        version: link:../standards/schema-org
+      "@descuff/standard-webmcp":
+        specifier: workspace:*
+        version: link:../standards/webmcp
+      "@descuff/validator":
+        specifier: workspace:*
+        version: link:../validator
 
   packages/config:
     dependencies:

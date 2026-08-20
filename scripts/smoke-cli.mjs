@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const cliPath = "packages/cli/dist/index.js";
 const commands = ["scan", "report", "plan", "fix", "apply-safe", "validate"];
+const fixtureRoot = "fixtures/ecommerce";
 
 if (!existsSync(cliPath)) {
   console.error(`Missing built CLI at ${cliPath}. Run pnpm build first.`);
@@ -11,7 +12,8 @@ if (!existsSync(cliPath)) {
 }
 
 for (const command of commands) {
-  const result = spawnSync(process.execPath, [cliPath, command], {
+  const args = command === "fix" ? [cliPath, command] : [cliPath, command, fixtureRoot];
+  const result = spawnSync(process.execPath, args, {
     encoding: "utf8"
   });
 
@@ -22,7 +24,17 @@ for (const command of commands) {
   }
 
   const expectedOutput =
-    command === "fix" ? "does not invoke an LLM" : `${command}: placeholder command shell`;
+    command === "fix"
+      ? "does not invoke an LLM"
+      : command === "scan"
+        ? "descuff scan completed"
+        : command === "report"
+          ? "Descuff Report"
+          : command === "plan"
+            ? "descuff plan wrote"
+            : command === "validate"
+              ? "descuff validate passed"
+              : "no automatic file writes are enabled";
 
   if (!result.stdout.includes(expectedOutput)) {
     console.error(`descuff ${command} produced unexpected output`);

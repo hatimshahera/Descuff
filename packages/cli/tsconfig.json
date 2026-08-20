@@ -7,5 +7,18 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["test/**/*.ts"],
-  "references": [{ "path": "../core" }, { "path": "../agent-workflow" }]
+  "references": [
+    { "path": "../core" },
+    { "path": "../ir" },
+    { "path": "../reporter" },
+    { "path": "../agent-workflow" },
+    { "path": "../analyzers/nextjs" },
+    { "path": "../standards/core" },
+    { "path": "../standards/llms-txt" },
+    { "path": "../standards/schema-org" },
+    { "path": "../standards/openapi" },
+    { "path": "../standards/api-catalog" },
+    { "path": "../standards/webmcp" },
+    { "path": "../validator" }
+  ]
 }

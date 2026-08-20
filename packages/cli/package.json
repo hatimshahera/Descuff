@@ -19,6 +19,16 @@
   },
   "dependencies": {
     "@descuff/agent-workflow": "workspace:*",
-    "@descuff/core": "workspace:*"
+    "@descuff/analyzer-nextjs": "workspace:*",
+    "@descuff/core": "workspace:*",
+    "@descuff/ir": "workspace:*",
+    "@descuff/reporter": "workspace:*",
+    "@descuff/standard-api-catalog": "workspace:*",
+    "@descuff/standard-core": "workspace:*",
+    "@descuff/standard-llms-txt": "workspace:*",
+    "@descuff/standard-openapi": "workspace:*",
+    "@descuff/standard-schema-org": "workspace:*",
+    "@descuff/standard-webmcp": "workspace:*",
+    "@descuff/validator": "workspace:*"
   }
 }
