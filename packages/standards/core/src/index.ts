@@ -1,4 +1,4 @@
-import type { ApplicationModel, CapabilityRisk, EvidenceRef } from "@descuff/ir";
+import type { ApplicationModel, Capability, CapabilityRisk, EvidenceRef } from "@descuff/ir";
 
 export type StandardApplicability =
   "implemented" | "required" | "recommended" | "not-applicable" | "blocked";
@@ -26,6 +26,17 @@ export const standardAdapterLifecycle: StandardLifecyclePhase[] = [
 export interface StandardRiskNote {
   risk: CapabilityRisk;
   capabilityId: string;
+  message: string;
+  evidence: EvidenceRef[];
+}
+
+export type ApprovalGateKind = "sensitive-capability" | "high-consequence-capability";
+
+export interface ApprovalGate {
+  id: string;
+  kind: ApprovalGateKind;
+  capabilityId: string;
+  risk: "SENSITIVE_WRITE" | "HIGH_CONSEQUENCE";
   message: string;
   evidence: EvidenceRef[];
 }
@@ -234,6 +245,31 @@ export function checkGeneratedChangeIdempotency(
     idempotent: issues.length === 0,
     issues
   };
+}
+
+export function createSensitiveCapabilityApprovalGates(capabilities: Capability[]): ApprovalGate[] {
+  return capabilities
+    .filter(
+      (capability): capability is Capability & { risk: "SENSITIVE_WRITE" | "HIGH_CONSEQUENCE" } =>
+        capability.risk === "SENSITIVE_WRITE" || capability.risk === "HIGH_CONSEQUENCE"
+    )
+    .map((capability) => ({
+      id: `approval:${capability.id}`,
+      kind:
+        capability.risk === "HIGH_CONSEQUENCE"
+          ? "high-consequence-capability"
+          : "sensitive-capability",
+      capabilityId: capability.id,
+      risk: capability.risk,
+      message: `${capability.risk} capability requires explicit developer approval before exposure.`,
+      evidence: capability.evidence
+    }));
+}
+
+export function generatedChangeSafetyForApprovalGates(
+  gates: ApprovalGate[]
+): GeneratedChangeSafety {
+  return gates.length > 0 ? "approval-required" : "automatic";
 }
 
 function stableGeneratedChange(change: GeneratedChange): Omit<GeneratedChange, "evidence"> & {

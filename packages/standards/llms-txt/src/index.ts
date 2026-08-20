@@ -1,7 +1,11 @@
 import type { ApplicationModel, Capability, EvidenceRef, Route } from "@descuff/ir";
+import {
+  createSensitiveCapabilityApprovalGates,
+  generatedChangeSafetyForApprovalGates
+} from "@descuff/standard-core";
 import type {
+  ApprovalGate,
   GeneratedChange,
-  GeneratedChangeSafety,
   StandardAdapter,
   StandardAssessment,
   StandardValidationContext,
@@ -20,7 +24,7 @@ export class LlmsTxtAdapter implements StandardAdapter {
     const existing = findExistingLlmsTxt(model);
     const publicRoutes = model.routes.filter((route) => route.path !== "/api");
     const eligibleCapabilities = safeCapabilities(model.capabilities);
-    const gatedCapabilities = gatedCapabilitiesForExposure(model.capabilities);
+    const approvalGates = createSensitiveCapabilityApprovalGates(model.capabilities);
     const evidence = uniqueEvidence([
       ...existing.flatMap((standard) => standard.evidence),
       ...publicRoutes.flatMap((route) => route.evidence),
@@ -41,13 +45,8 @@ export class LlmsTxtAdapter implements StandardAdapter {
           ? "Existing llms.txt evidence was detected."
           : "A deterministic llms.txt can summarize public routes and safe read capabilities."
       ],
-      riskNotes: gatedCapabilities.map((capability) => ({
-        risk: capability.risk,
-        capabilityId: capability.id,
-        message: "Capability requires explicit approval before agent-facing exposure.",
-        evidence: capability.evidence
-      })),
-      generatedChangeEligibility: generatedChangeEligibility(gatedCapabilities),
+      riskNotes: approvalGates.map(approvalGateToRiskNote),
+      generatedChangeEligibility: generatedChangeSafetyForApprovalGates(approvalGates),
       validationRequirements: [
         {
           id: "llms-txt-structure",
@@ -73,7 +72,9 @@ export class LlmsTxtAdapter implements StandardAdapter {
         path: generatedPath,
         content: renderLlmsTxt(model),
         deterministic: true,
-        safety: generatedChangeEligibility(gatedCapabilitiesForExposure(model.capabilities)),
+        safety: generatedChangeSafetyForApprovalGates(
+          createSensitiveCapabilityApprovalGates(model.capabilities)
+        ),
         conflictPolicy: "approval-required",
         evidence
       }
@@ -176,18 +177,17 @@ function safeCapabilities(capabilities: Capability[]): Capability[] {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-function gatedCapabilitiesForExposure(capabilities: Capability[]): Capability[] {
-  return capabilities.filter(
-    (capability) => capability.risk === "SENSITIVE_WRITE" || capability.risk === "HIGH_CONSEQUENCE"
-  );
-}
-
-function generatedChangeEligibility(gatedCapabilities: Capability[]): GeneratedChangeSafety {
-  return gatedCapabilities.length > 0 ? "approval-required" : "automatic";
-}
-
 function findExistingLlmsTxt(model: ApplicationModel) {
   return model.standards.filter((standard) => standard.kind === "llms-txt");
+}
+
+function approvalGateToRiskNote(gate: ApprovalGate) {
+  return {
+    risk: gate.risk,
+    capabilityId: gate.capabilityId,
+    message: gate.message,
+    evidence: gate.evidence
+  };
 }
 
 function isKnownPublicRoute(path: string, routes: Route[]): boolean {

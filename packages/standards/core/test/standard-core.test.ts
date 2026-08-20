@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   checkGeneratedChangeIdempotency,
   createDryRunDiffs,
+  createSensitiveCapabilityApprovalGates,
+  generatedChangeSafetyForApprovalGates,
   planGeneratedChangeApplications,
   standardAdapterLifecycle,
   type GeneratedChange
@@ -101,6 +103,36 @@ describe("@descuff/standard-core", () => {
       ]
     });
   });
+
+  it("creates approval gates for sensitive and high-consequence capabilities", () => {
+    const gates = createSensitiveCapabilityApprovalGates([
+      capability("capability:get:products", "PUBLIC_READ"),
+      capability("capability:delete:account", "SENSITIVE_WRITE"),
+      capability("capability:post:checkout", "HIGH_CONSEQUENCE")
+    ]);
+
+    expect(gates).toEqual([
+      {
+        id: "approval:capability:delete:account",
+        kind: "sensitive-capability",
+        capabilityId: "capability:delete:account",
+        risk: "SENSITIVE_WRITE",
+        message: "SENSITIVE_WRITE capability requires explicit developer approval before exposure.",
+        evidence: []
+      },
+      {
+        id: "approval:capability:post:checkout",
+        kind: "high-consequence-capability",
+        capabilityId: "capability:post:checkout",
+        risk: "HIGH_CONSEQUENCE",
+        message:
+          "HIGH_CONSEQUENCE capability requires explicit developer approval before exposure.",
+        evidence: []
+      }
+    ]);
+    expect(generatedChangeSafetyForApprovalGates(gates)).toBe("approval-required");
+    expect(generatedChangeSafetyForApprovalGates([])).toBe("automatic");
+  });
 });
 
 function changes(options: {
@@ -119,4 +151,20 @@ function changes(options: {
       evidence: []
     }
   ];
+}
+
+function capability(id: string, risk: "PUBLIC_READ" | "SENSITIVE_WRITE" | "HIGH_CONSEQUENCE") {
+  return {
+    id,
+    name: id,
+    operationType: risk === "PUBLIC_READ" ? ("read" as const) : ("write" as const),
+    risk,
+    visibility: "public" as const,
+    inputs: [],
+    outputs: [],
+    linkedRoutes: [],
+    linkedApis: [],
+    evidence: [],
+    confidence: "high" as const
+  };
 }

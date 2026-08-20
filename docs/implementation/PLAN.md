@@ -125,7 +125,7 @@ Required testing:
 - [x] idempotent generated changes
 - [x] dry-run diffs
 - [x] conflict policy for existing files
-- [ ] sensitive capability approval gates
+- [x] sensitive capability approval gates
 
 Acceptance criteria:
 

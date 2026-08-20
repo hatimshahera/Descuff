@@ -101,10 +101,23 @@ describe("@descuff/standard-llms-txt", () => {
   });
 
   it("requires approval when sensitive or high-consequence capabilities exist", async () => {
+    const assessment = await new LlmsTxtAdapter().assess(
+      model({ extraCapabilityRisk: "HIGH_CONSEQUENCE" })
+    );
     const generated = await new LlmsTxtAdapter().generate(
       model({ extraCapabilityRisk: "HIGH_CONSEQUENCE" })
     );
 
+    expect(assessment.riskNotes).toEqual([
+      {
+        risk: "HIGH_CONSEQUENCE",
+        capabilityId: "capability:post:api_checkout",
+        message:
+          "HIGH_CONSEQUENCE capability requires explicit developer approval before exposure.",
+        evidence: [evidence]
+      }
+    ]);
+    expect(assessment.generatedChangeEligibility).toBe("approval-required");
     expect(generated[0]?.safety).toBe("approval-required");
   });
 
