@@ -177,7 +177,7 @@ Validation note:
 
 ## Phase 6 - Validation
 
-- [ ] static validation
+- [x] static validation
 - [ ] build validation
 - [ ] existing test runner integration
 - [ ] test baseline recording and comparison
@@ -186,7 +186,7 @@ Validation note:
 - [ ] explicit validation scenarios for mutating flows
 - [ ] security validation
 - [ ] regression validation
-- [ ] typed failure catalog
+- [x] typed failure catalog
 - [ ] readiness report integration
 
 Acceptance criteria:

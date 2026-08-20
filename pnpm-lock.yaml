@@ -203,6 +203,9 @@ importers:
       "@descuff/ir":
         specifier: workspace:*
         version: link:../ir
+      "@descuff/standard-core":
+        specifier: workspace:*
+        version: link:../standards/core
 
 packages:
   "@eslint-community/eslint-utils@4.10.1":

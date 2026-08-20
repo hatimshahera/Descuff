@@ -13,7 +13,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 
 ## Tasks
 
-- [ ] Implement static validation.
+- [x] Implement static validation.
 - [ ] Implement build validation.
 - [ ] Integrate existing repository test commands.
 - [ ] Record test baseline during scan.
@@ -24,7 +24,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - [ ] Implement standard-specific validation runners.
 - [ ] Implement security validation.
 - [ ] Implement human UI regression validation.
-- [ ] Implement typed failure catalog.
+- [x] Implement typed failure catalog.
 - [ ] Integrate readiness scoring and validation results.
 - [ ] Add repair-oriented suggested actions.
 
@@ -48,6 +48,10 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - Security fixture tests.
 - UI regression tests.
 - Full scan-to-validate fixture E2E tests.
+
+## Validation Notes
+
+- Static validator unit tests cover standard-adapter validation issues, generated-change metadata, typed actionable failures, warning separation, and intentionally invalid generated changes.
 
 ## Completion Rule
 
