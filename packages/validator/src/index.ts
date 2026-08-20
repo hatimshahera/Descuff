@@ -1,4 +1,4 @@
-import type { EvidenceRef } from "@descuff/ir";
+import { classifyCapabilityRisk, type EvidenceRef, type HttpMethod } from "@descuff/ir";
 import type { GeneratedChange, StandardValidationResult } from "@descuff/standard-core";
 
 export type ValidationLevel =
@@ -56,6 +56,31 @@ export interface ExistingTestBaseline {
   schemaVersion: string;
   recordedAt: string;
   entries: ExistingTestBaselineEntry[];
+}
+
+export interface RuntimeValidationScenario {
+  id: string;
+  method: HttpMethod;
+  path: string;
+  setup: string;
+  expectedSideEffects: string[];
+  verification: string;
+  cleanup: string;
+  safeTestEnvironment?: boolean;
+  evidence: EvidenceRef[];
+}
+
+export interface RuntimeValidationConfig {
+  baseUrl: string;
+  readinessUrl?: string;
+  startCommand?: string;
+  routes: string[];
+  apiOperations: Array<{
+    method: HttpMethod;
+    path: string;
+  }>;
+  envVarNames: string[];
+  scenarios: RuntimeValidationScenario[];
 }
 
 export function createEmptyValidationSummary(): ValidationSummary {
@@ -372,4 +397,112 @@ export function validateStaticGeneratedChanges(changes: GeneratedChange[]): Vali
   }
 
   return createValidationSummary(issues);
+}
+
+export function validateRuntimeConfig(config: RuntimeValidationConfig): ValidationSummary {
+  const issues: ValidationFailure[] = [];
+
+  if (!/^https?:\/\//.test(config.baseUrl)) {
+    issues.push({
+      code: "RUNTIME_CONFIG_BASE_URL_INVALID",
+      level: "runtime",
+      severity: "error",
+      message: "Runtime validation baseUrl must be an HTTP or HTTPS URL.",
+      source: "runtime-config",
+      evidence: [],
+      suggestedAction: "Configure a reachable HTTP(S) base URL for runtime validation."
+    });
+  }
+
+  for (const envVarName of config.envVarNames) {
+    if (envVarName.includes("=")) {
+      issues.push({
+        code: "RUNTIME_CONFIG_SECRET_VALUE_EMBEDDED",
+        level: "runtime",
+        severity: "error",
+        message: "Runtime config must reference environment variable names, not secret values.",
+        source: "runtime-config",
+        evidence: [],
+        suggestedAction: "Store only the environment variable name in runtime validation config."
+      });
+    }
+  }
+
+  for (const operation of config.apiOperations) {
+    issues.push(...validateRuntimeOperationAuthorization(operation, config.scenarios));
+  }
+
+  return createValidationSummary(issues);
+}
+
+function validateRuntimeOperationAuthorization(
+  operation: { method: HttpMethod; path: string },
+  scenarios: RuntimeValidationScenario[]
+): ValidationFailure[] {
+  const risk = classifyCapabilityRisk(operation.method, operation.path);
+
+  if (isReadOnlyMethod(operation.method)) {
+    return [];
+  }
+
+  const scenario = scenarios.find(
+    (candidate) => candidate.method === operation.method && candidate.path === operation.path
+  );
+
+  if (scenario === undefined) {
+    return [
+      {
+        code: "RUNTIME_MUTATION_SCENARIO_MISSING",
+        level: "runtime",
+        severity: "error",
+        message: `${operation.method} ${operation.path} requires an explicit validation scenario before invocation.`,
+        source: "runtime-config",
+        evidence: [],
+        suggestedAction:
+          "Define setup, expected side effects, verification, and cleanup before validating this mutating operation."
+      }
+    ];
+  }
+
+  const missingFields = [
+    scenario.setup,
+    scenario.verification,
+    scenario.cleanup,
+    ...scenario.expectedSideEffects
+  ].some((value) => value.trim().length === 0);
+
+  if (missingFields || scenario.expectedSideEffects.length === 0) {
+    return [
+      {
+        code: "RUNTIME_MUTATION_SCENARIO_INCOMPLETE",
+        level: "runtime",
+        severity: "error",
+        message: `Validation scenario ${scenario.id} must define setup, expected side effects, verification, and cleanup.`,
+        source: scenario.id,
+        evidence: scenario.evidence,
+        suggestedAction: "Complete the mutating validation scenario before runtime invocation."
+      }
+    ];
+  }
+
+  if (risk === "HIGH_CONSEQUENCE" && scenario.safeTestEnvironment !== true) {
+    return [
+      {
+        code: "RUNTIME_HIGH_CONSEQUENCE_ENVIRONMENT_MISSING",
+        level: "runtime",
+        severity: "error",
+        message: `${operation.method} ${operation.path} is high consequence and requires a safe test environment or mock.`,
+        source: scenario.id,
+        evidence: scenario.evidence,
+        suggestedAction:
+          "Provide a user-supplied safe test environment or mock before validating this operation."
+      }
+    ];
+  }
+
+  return [];
+}
+
+function isReadOnlyMethod(method: HttpMethod): boolean {
+  return method === "GET" || method === "HEAD" || method === "OPTIONS";
 }

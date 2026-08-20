@@ -7,6 +7,7 @@ import {
   recordExistingTestBaseline,
   runValidationCommands,
   validateCommandResults,
+  validateRuntimeConfig,
   validateStaticGeneratedChanges,
   validateStaticStandardResults
 } from "../src/index.js";
@@ -543,6 +544,165 @@ describe("@descuff/validator", () => {
           source: "script:typecheck"
         }
       ],
+      warnings: []
+    });
+  });
+
+  it("accepts read-only runtime validation config without mutating scenarios", () => {
+    expect(
+      validateRuntimeConfig({
+        baseUrl: "http://localhost:3000",
+        readinessUrl: "/",
+        routes: ["/"],
+        apiOperations: [{ method: "GET", path: "/api/products" }],
+        envVarNames: ["DATABASE_URL"],
+        scenarios: []
+      })
+    ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
+  it("rejects runtime config that embeds secret values", () => {
+    expect(
+      validateRuntimeConfig({
+        baseUrl: "http://localhost:3000",
+        routes: [],
+        apiOperations: [],
+        envVarNames: ["API_KEY=secret"],
+        scenarios: []
+      })
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "RUNTIME_CONFIG_SECRET_VALUE_EMBEDDED",
+          level: "runtime",
+          severity: "error",
+          source: "runtime-config"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("requires explicit validation scenarios for mutating runtime operations", () => {
+    expect(
+      validateRuntimeConfig({
+        baseUrl: "http://localhost:3000",
+        routes: [],
+        apiOperations: [{ method: "POST", path: "/api/products" }],
+        envVarNames: [],
+        scenarios: []
+      })
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "RUNTIME_MUTATION_SCENARIO_MISSING",
+          level: "runtime",
+          severity: "error",
+          message: "POST /api/products requires an explicit validation scenario before invocation."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("rejects incomplete mutating validation scenarios", () => {
+    expect(
+      validateRuntimeConfig({
+        baseUrl: "http://localhost:3000",
+        routes: [],
+        apiOperations: [{ method: "POST", path: "/api/products" }],
+        envVarNames: [],
+        scenarios: [
+          {
+            id: "scenario:create-product",
+            method: "POST",
+            path: "/api/products",
+            setup: "",
+            expectedSideEffects: [],
+            verification: "Fetch product list.",
+            cleanup: "Delete fixture product.",
+            evidence: [evidence]
+          }
+        ]
+      })
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "RUNTIME_MUTATION_SCENARIO_INCOMPLETE",
+          level: "runtime",
+          severity: "error",
+          source: "scenario:create-product"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("requires a safe test environment for high-consequence runtime operations", () => {
+    expect(
+      validateRuntimeConfig({
+        baseUrl: "http://localhost:3000",
+        routes: [],
+        apiOperations: [{ method: "POST", path: "/api/checkout" }],
+        envVarNames: [],
+        scenarios: [
+          {
+            id: "scenario:checkout",
+            method: "POST",
+            path: "/api/checkout",
+            setup: "Create test cart.",
+            expectedSideEffects: ["Creates test order."],
+            verification: "Fetch order status.",
+            cleanup: "Delete test order.",
+            evidence: [evidence]
+          }
+        ]
+      })
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "RUNTIME_HIGH_CONSEQUENCE_ENVIRONMENT_MISSING",
+          level: "runtime",
+          severity: "error",
+          source: "scenario:checkout"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("accepts complete mutating scenarios in an explicit safe test environment", () => {
+    expect(
+      validateRuntimeConfig({
+        baseUrl: "http://localhost:3000",
+        routes: [],
+        apiOperations: [{ method: "POST", path: "/api/checkout" }],
+        envVarNames: [],
+        scenarios: [
+          {
+            id: "scenario:checkout",
+            method: "POST",
+            path: "/api/checkout",
+            setup: "Create test cart.",
+            expectedSideEffects: ["Creates test order."],
+            verification: "Fetch order status.",
+            cleanup: "Delete test order.",
+            safeTestEnvironment: true,
+            evidence: [evidence]
+          }
+        ]
+      })
+    ).toEqual({
+      passed: true,
+      failures: [],
       warnings: []
     });
   });

@@ -182,8 +182,8 @@ Validation note:
 - [x] existing test runner integration
 - [x] test baseline recording and comparison
 - [ ] runtime validation
-- [ ] runtime configuration schema
-- [ ] explicit validation scenarios for mutating flows
+- [x] runtime configuration schema
+- [x] explicit validation scenarios for mutating flows
 - [ ] security validation
 - [ ] regression validation
 - [x] typed failure catalog
