@@ -67,8 +67,8 @@ Required testing:
 - [x] form extraction
 - [x] authentication middleware detection
 - [x] existing standards detection
-- [ ] Graphify adapter
-- [ ] runtime evidence correlation
+- [x] Graphify adapter
+- [x] runtime evidence correlation
 
 Acceptance criteria:
 

@@ -15,6 +15,7 @@
     "test": "vitest run test"
   },
   "dependencies": {
+    "@playwright/test": "^1.57.0",
     "@descuff/core": "workspace:*",
     "@descuff/ir": "workspace:*"
   }

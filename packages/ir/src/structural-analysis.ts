@@ -63,6 +63,31 @@ export interface ExistingStandard {
   evidence: EvidenceRef[];
 }
 
+export interface RuntimeRouteObservation {
+  id: string;
+  path: string;
+  status: number;
+  contentType?: string;
+  evidence: EvidenceRef[];
+}
+
+export interface RuntimeApiObservation {
+  id: string;
+  path: string;
+  method: HttpMethod;
+  status: number;
+  contentType?: string;
+  evidence: EvidenceRef[];
+}
+
+export interface EvidenceCorrelation {
+  id: string;
+  staticEvidence: EvidenceRef[];
+  runtimeEvidence: EvidenceRef[];
+  subject: string;
+  confidence: "high" | "medium" | "low";
+}
+
 export interface StructuralWarning {
   code: string;
   message: string;
@@ -79,6 +104,9 @@ export interface StructuralAnalysis {
   forms: StructuralForm[];
   authenticationBoundaries: AuthenticationBoundary[];
   existingStandards: ExistingStandard[];
+  runtimeRoutes: RuntimeRouteObservation[];
+  runtimeApiOperations: RuntimeApiObservation[];
+  correlations: EvidenceCorrelation[];
   evidence: EvidenceIndex;
   warnings: StructuralWarning[];
 }
@@ -98,6 +126,9 @@ export function createEmptyStructuralAnalysis(projectRoot: string): StructuralAn
     forms: [],
     authenticationBoundaries: [],
     existingStandards: [],
+    runtimeRoutes: [],
+    runtimeApiOperations: [],
+    correlations: [],
     evidence: {
       schemaVersion: "0.1.0",
       items: []

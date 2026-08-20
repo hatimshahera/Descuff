@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createProjectContext } from "@descuff/core";
+import { validateStructuralAnalysis } from "@descuff/ir";
 import { NativeNextAnalyzer } from "../src/index.js";
 
 describe("@descuff/analyzer-nextjs", () => {
@@ -24,6 +25,7 @@ describe("@descuff/analyzer-nextjs", () => {
     expect(
       analysis.apiOperations.map((operation) => `${operation.method} ${operation.path}`).sort()
     ).toEqual(["GET /api/search", "POST /api/search", "UNKNOWN /api/legacy"]);
+    expect(validateStructuralAnalysis(analysis).valid).toBe(true);
   });
 
   it("extracts symbols, server actions, forms, auth boundaries, and standards with evidence", async () => {

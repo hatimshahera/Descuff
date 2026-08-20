@@ -24,9 +24,9 @@ Build deterministic and runtime analyzers that extract evidence from Next.js app
 - [x] Detect forms and submission targets.
 - [x] Detect middleware and likely authentication boundaries.
 - [x] Detect existing standards files and routes.
-- [ ] Implement Playwright runtime route observation.
-- [ ] Correlate runtime network evidence with source evidence.
-- [ ] Implement `GraphifyAnalyzer` through a clean adapter.
+- [x] Implement Playwright runtime route observation.
+- [x] Correlate runtime network evidence with source evidence.
+- [x] Implement `GraphifyAnalyzer` through a clean adapter.
 
 ## Acceptance Criteria
 

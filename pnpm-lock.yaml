@@ -76,6 +76,9 @@ importers:
       "@descuff/ir":
         specifier: workspace:*
         version: link:../../ir
+      "@playwright/test":
+        specifier: ^1.57.0
+        version: 1.62.1
 
   packages/cli:
     dependencies:
