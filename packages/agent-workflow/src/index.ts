@@ -54,6 +54,34 @@ export interface AgentPlanValidationResult {
   issues: AgentPlanValidationIssue[];
 }
 
+export interface AgentWorkflowValidationFailure {
+  code: string;
+  message: string;
+  itemId?: string;
+}
+
+export interface AgentWorkflowValidationSummary {
+  passed: boolean;
+  failures: AgentWorkflowValidationFailure[];
+}
+
+export interface AgentWorkflowDryRunInput {
+  plan: AgentPlan;
+  completedItemIds: string[];
+  validation: AgentWorkflowValidationSummary;
+}
+
+export interface AgentWorkflowDryRunIssue {
+  code: string;
+  message: string;
+  itemId?: string;
+}
+
+export interface AgentWorkflowDryRunResult {
+  complete: boolean;
+  issues: AgentWorkflowDryRunIssue[];
+}
+
 export function getFixCommandSummary(): string {
   return "descuff fix refreshes plans and agent workflow instructions; it does not invoke an LLM and does not edit source directly.";
 }
@@ -121,6 +149,62 @@ export function buildAgentPlan(input: AgentPlanInput): AgentPlan {
     summary: `Plan contains ${items.length} item${items.length === 1 ? "" : "s"}.`,
     items,
     workflowInstructions: defaultWorkflowInstructions()
+  };
+}
+
+export function evaluateAgentWorkflowDryRun(
+  input: AgentWorkflowDryRunInput
+): AgentWorkflowDryRunResult {
+  const completed = new Set(input.completedItemIds);
+  const issues: AgentWorkflowDryRunIssue[] = [];
+
+  for (const item of input.plan.items) {
+    if (item.status === "pending" && !completed.has(item.id)) {
+      issues.push({
+        code: "AGENT_WORKFLOW_PENDING_ITEM_NOT_EXECUTED",
+        message: "Pending plan item must be completed before workflow completion.",
+        itemId: item.id
+      });
+    }
+
+    if (item.status === "blocked" && completed.has(item.id)) {
+      issues.push({
+        code: "AGENT_WORKFLOW_BLOCKED_ITEM_EXECUTED",
+        message: "Blocked plan item must not be treated as implemented.",
+        itemId: item.id
+      });
+    }
+  }
+
+  for (const failure of input.validation.failures) {
+    if (failure.code.length === 0 || failure.message.length === 0) {
+      const issue: AgentWorkflowDryRunIssue = {
+        code: "AGENT_WORKFLOW_VALIDATION_FAILURE_UNTYPED",
+        message: "Validation failures must include a typed code and actionable message."
+      };
+      if (failure.itemId !== undefined) {
+        issue.itemId = failure.itemId;
+      }
+      issues.push(issue);
+    }
+  }
+
+  if (!input.validation.passed) {
+    for (const failure of input.validation.failures) {
+      const issue: AgentWorkflowDryRunIssue = {
+        code: "AGENT_WORKFLOW_VALIDATION_FAILED",
+        message: `${failure.code}: ${failure.message}`
+      };
+      if (failure.itemId !== undefined) {
+        issue.itemId = failure.itemId;
+      }
+      issues.push(issue);
+    }
+  }
+
+  return {
+    complete: issues.length === 0,
+    issues
   };
 }
 

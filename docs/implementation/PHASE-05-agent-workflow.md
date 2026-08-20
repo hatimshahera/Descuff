@@ -42,6 +42,8 @@ Create the implementation planning and coding-agent workflow that lets the devel
 
 ## Validation Notes
 
+- Agent workflow dry-run tests prove a fixture plan can complete only after pending items are executed and validation passes.
+- Agent workflow dry-run tests include an intentionally broken fixture implementation blocked by a typed validation failure.
 - `pnpm smoke` asserts the `graph:refresh` script and repository Graphify agent instructions.
 - Live Graphify command smoke is blocked in the local environment because the `graphify` binary is unavailable.
 

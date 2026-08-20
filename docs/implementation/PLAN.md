@@ -172,6 +172,7 @@ Required testing:
 
 Validation note:
 
+- Agent workflow dry-run tests prove fixture execution and typed validation failure blocking.
 - `pnpm smoke` asserts `graph:refresh` and repository Graphify guidance; live Graphify command smoke is blocked locally because `graphify` is unavailable.
 
 ## Phase 6 - Validation

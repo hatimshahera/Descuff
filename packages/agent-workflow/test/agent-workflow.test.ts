@@ -3,6 +3,7 @@ import type { EvidenceRef } from "@descuff/ir";
 import {
   agentPlanSchemaVersion,
   buildAgentPlan,
+  evaluateAgentWorkflowDryRun,
   getFixCommandSummary,
   renderFixCommandInstructions,
   renderAgentPlanMarkdown,
@@ -146,40 +147,7 @@ describe("@descuff/agent-workflow", () => {
   });
 
   it("renders a human-readable plan with workflow guardrails", () => {
-    const plan = buildAgentPlan({
-      projectRoot: "fixtures/ecommerce",
-      generatedAt: "2026-08-20T00:00:00.000Z",
-      assessments: [
-        {
-          standardId: "llms-txt",
-          applicability: "recommended",
-          evidence: [evidence],
-          rationale: [],
-          riskNotes: [],
-          generatedChangeEligibility: "approval-required",
-          validationRequirements: [
-            {
-              id: "llms-txt-structure",
-              description: "Validate llms.txt structure.",
-              evidence: [evidence]
-            }
-          ]
-        }
-      ],
-      generatedChanges: [
-        {
-          standardId: "llms-txt",
-          id: "llms-txt:public-summary",
-          kind: "create-file",
-          path: "public/llms.txt",
-          content: "# Ecommerce\n",
-          deterministic: true,
-          safety: "approval-required",
-          conflictPolicy: "approval-required",
-          evidence: [evidence]
-        }
-      ]
-    });
+    const plan = createFixtureAgentPlan();
 
     expect(renderAgentPlanMarkdown(plan)).toContain("Safety: approval-required");
     expect(renderAgentPlanMarkdown(plan)).toContain(
@@ -189,4 +157,130 @@ describe("@descuff/agent-workflow", () => {
       "without changing human-facing UI unless explicitly approved"
     );
   });
+
+  it("matches the fixture plan Markdown snapshot", () => {
+    expect(renderAgentPlanMarkdown(createFixtureAgentPlan())).toMatchInlineSnapshot(`
+      "# Descuff Implementation Plan
+
+      Schema version: 0.1.0
+      Project root: fixtures/ecommerce
+      Generated at: 2026-08-20T00:00:00.000Z
+
+      Plan contains 1 item.
+
+      ## Workflow
+
+      - Run descuff scan or use the latest scan artifacts before implementation.
+      - Read only the focused source files linked by evidence before editing.
+      - Implement pending items without changing human-facing UI unless explicitly approved.
+      - Run existing tests and descuff validate after implementation.
+      - Repair failures and repeat validation until the plan acceptance criteria pass.
+
+      ## Items
+
+      ### llms-txt: public/llms.txt
+
+      - Status: pending
+      - Safety: approval-required
+      - Target: public/llms.txt
+      - Description: create-file generated for public/llms.txt.
+
+      Acceptance criteria:
+      - Generated change is reviewed against linked evidence.
+      - Existing user files are preserved according to conflict policy.
+      - Relevant validation requirements pass after implementation.
+
+      Evidence:
+      - source:llms: Public route evidence (app/page.tsx)
+
+      Validation requirements:
+      - llms-txt-structure: Validate llms.txt structure.
+      "
+    `);
+  });
+
+  it("accepts a fixture agent dry run only after execution and validation pass", () => {
+    const plan = createFixtureAgentPlan();
+
+    expect(
+      evaluateAgentWorkflowDryRun({
+        plan,
+        completedItemIds: ["plan:llms-txt:public-summary"],
+        validation: {
+          passed: true,
+          failures: []
+        }
+      })
+    ).toEqual({
+      complete: true,
+      issues: []
+    });
+  });
+
+  it("keeps an intentionally broken fixture implementation incomplete", () => {
+    const plan = createFixtureAgentPlan();
+
+    expect(
+      evaluateAgentWorkflowDryRun({
+        plan,
+        completedItemIds: ["plan:llms-txt:public-summary"],
+        validation: {
+          passed: false,
+          failures: [
+            {
+              code: "LLMS_TXT_ROUTE_MISSING",
+              message: "Referenced route /products was not reachable.",
+              itemId: "plan:llms-txt:public-summary"
+            }
+          ]
+        }
+      })
+    ).toEqual({
+      complete: false,
+      issues: [
+        {
+          code: "AGENT_WORKFLOW_VALIDATION_FAILED",
+          message: "LLMS_TXT_ROUTE_MISSING: Referenced route /products was not reachable.",
+          itemId: "plan:llms-txt:public-summary"
+        }
+      ]
+    });
+  });
 });
+
+function createFixtureAgentPlan() {
+  return buildAgentPlan({
+    projectRoot: "fixtures/ecommerce",
+    generatedAt: "2026-08-20T00:00:00.000Z",
+    assessments: [
+      {
+        standardId: "llms-txt",
+        applicability: "recommended",
+        evidence: [evidence],
+        rationale: [],
+        riskNotes: [],
+        generatedChangeEligibility: "approval-required",
+        validationRequirements: [
+          {
+            id: "llms-txt-structure",
+            description: "Validate llms.txt structure.",
+            evidence: [evidence]
+          }
+        ]
+      }
+    ],
+    generatedChanges: [
+      {
+        standardId: "llms-txt",
+        id: "llms-txt:public-summary",
+        kind: "create-file",
+        path: "public/llms.txt",
+        content: "# Ecommerce\n",
+        deterministic: true,
+        safety: "approval-required",
+        conflictPolicy: "approval-required",
+        evidence: [evidence]
+      }
+    ]
+  });
+}
