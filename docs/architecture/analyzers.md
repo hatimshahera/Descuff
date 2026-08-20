@@ -49,7 +49,7 @@ Responsibilities:
 - check currently exposed JSON-LD, `llms.txt`, WebMCP, OpenAPI, and API Catalog endpoints
 - correlate runtime observations with static source evidence
 
-Runtime analysis must avoid destructive actions by default. Mutating flows require explicit fixture-safe scenarios or developer approval.
+Runtime analysis must avoid destructive actions by default. Mutating flows require an explicit validation scenario defining setup, expected side effects, verification, and cleanup. High-consequence actions additionally require a user-supplied safe test environment or mock.
 
 ## Graphify Analyzer
 
