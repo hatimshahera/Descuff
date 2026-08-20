@@ -118,7 +118,7 @@ Required testing:
 - [x] `LlmsTxtAdapter`
 - [x] `SchemaOrgAdapter`
 - [x] `OpenApiAdapter`
-- [ ] `ApiCatalogAdapter`
+- [x] `ApiCatalogAdapter`
 - [ ] `WebMcpAdapter`
 - [x] vertical E2E path with `llms.txt`
 - [x] vertical E2E path with Schema.org or OpenAPI

@@ -21,7 +21,7 @@ Implement isolated adapters for first-release standards.
 - [x] Implement `LlmsTxtAdapter`.
 - [x] Implement `SchemaOrgAdapter`.
 - [x] Implement `OpenApiAdapter`.
-- [ ] Implement `ApiCatalogAdapter`.
+- [x] Implement `ApiCatalogAdapter`.
 - [ ] Implement `WebMcpAdapter`.
 - [x] Prove vertical E2E path with `llms.txt`.
 - [x] Prove vertical E2E path with Schema.org or OpenAPI.
