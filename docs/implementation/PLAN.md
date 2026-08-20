@@ -206,6 +206,10 @@ Required testing:
 - Security regression fixture tests.
 - End-to-end fixture validation.
 
+Validation note:
+
+- Validator unit tests cover static, build, existing-test baseline, runtime observation, mutating scenario, security, UI regression, readiness, and repair-guide behavior.
+
 ## Phase 7 - Release
 
 - [ ] complete README

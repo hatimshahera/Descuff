@@ -12,6 +12,7 @@ import {
   createValidationReadinessReport,
   mergeValidationSummaries,
   recordExistingTestBaseline,
+  renderValidationRepairGuide,
   runValidationCommands,
   runStandardValidation,
   validateCommandResults,
@@ -116,6 +117,54 @@ describe("@descuff/validator", () => {
         }
       ]
     });
+  });
+
+  it("renders an empty repair guide when validation passes cleanly", () => {
+    expect(renderValidationRepairGuide(createEmptyValidationSummary())).toBe(
+      "# Descuff Validation Repair Guide\n\nNo validation repairs are required.\n"
+    );
+  });
+
+  it("renders repair-oriented suggested actions for failures and warnings", () => {
+    expect(
+      renderValidationRepairGuide(
+        createValidationSummary([
+          {
+            code: "OPENAPI_OPERATION_MISSING",
+            level: "static",
+            severity: "error",
+            message: "OpenAPI document is missing GET /api/products.",
+            source: "openapi",
+            evidence: [evidence],
+            suggestedAction: "Regenerate OpenAPI output."
+          },
+          {
+            code: "UI_REGRESSION_LANDMARK_COUNT_CHANGED",
+            level: "regression",
+            severity: "warning",
+            message: "Route / landmark count changed.",
+            source: "/",
+            evidence: [],
+            suggestedAction: "Review the accessibility landmark change."
+          }
+        ])
+      )
+    ).toContain("- Suggested action: Regenerate OpenAPI output.");
+    expect(
+      renderValidationRepairGuide(
+        createValidationSummary([
+          {
+            code: "OPENAPI_OPERATION_MISSING",
+            level: "static",
+            severity: "error",
+            message: "OpenAPI document is missing GET /api/products.",
+            source: "openapi",
+            evidence: [evidence],
+            suggestedAction: "Regenerate OpenAPI output."
+          }
+        ])
+      )
+    ).toContain("- Evidence: source:route");
   });
 
   it("integrates readiness scoring with validation blockers", () => {

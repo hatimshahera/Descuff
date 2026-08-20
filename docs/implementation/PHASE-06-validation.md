@@ -26,7 +26,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - [x] Implement human UI regression validation.
 - [x] Implement typed failure catalog.
 - [x] Integrate readiness scoring and validation results.
-- [ ] Add repair-oriented suggested actions.
+- [x] Add repair-oriented suggested actions.
 
 ## Acceptance Criteria
 
@@ -60,6 +60,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - Security validation tests block authenticated/admin capabilities without auth boundaries, public authenticated-read exposure, and public sensitive or high-consequence capabilities.
 - UI regression tests compare route invariants, block missing routes and unexpected title/heading changes, and warn on accessibility landmark changes.
 - Readiness report tests merge validation summaries with IR readiness scoring and block readiness when validation failures remain.
+- Repair guide tests render blocking failures and warnings with suggested actions and evidence IDs for coding-agent repair loops.
 
 ## Completion Rule
 
