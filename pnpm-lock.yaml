@@ -49,6 +49,9 @@ importers:
       "@descuff/ir":
         specifier: workspace:*
         version: link:../ir
+      "@descuff/standard-core":
+        specifier: workspace:*
+        version: link:../standards/core
 
   packages/analyzers/graphify:
     dependencies:

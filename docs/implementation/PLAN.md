@@ -147,8 +147,8 @@ Required testing:
 
 ## Phase 5 - Agent Workflow
 
-- [ ] `.descuff/plan.json` schema
-- [ ] `.descuff/plan.md` renderer
+- [x] `.descuff/plan.json` schema
+- [x] `.descuff/plan.md` renderer
 - [ ] `descuff fix` coding-agent instructions
 - [ ] `descuff fix` non-LLM command semantics
 - [ ] minimal source-reading guidance

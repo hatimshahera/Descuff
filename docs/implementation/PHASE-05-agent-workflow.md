@@ -12,9 +12,9 @@ Create the implementation planning and coding-agent workflow that lets the devel
 
 ## Tasks
 
-- [ ] Define `.descuff/plan.json` schema.
-- [ ] Render `.descuff/plan.md`.
-- [ ] Distinguish automatic, approval-required, and blocked changes.
+- [x] Define `.descuff/plan.json` schema.
+- [x] Render `.descuff/plan.md`.
+- [x] Distinguish automatic, approval-required, and blocked changes.
 - [ ] Add coding-agent instructions for `descuff fix`.
 - [ ] Define `descuff fix` as a non-LLM plan refresh and workflow-instruction command.
 - [ ] Require scan, focused source reading, implementation, tests, validation, and repair loop.
