@@ -113,9 +113,9 @@ Required testing:
 
 ## Phase 4 - Standards
 
-- [ ] shared `StandardAdapter` contract
-- [ ] adapter lifecycle contract for assess/generate/plan/apply-safe/validate
-- [ ] `LlmsTxtAdapter`
+- [x] shared `StandardAdapter` contract
+- [x] adapter lifecycle contract for assess/generate/plan/apply-safe/validate
+- [x] `LlmsTxtAdapter`
 - [ ] `SchemaOrgAdapter`
 - [ ] `OpenApiAdapter`
 - [ ] `ApiCatalogAdapter`
@@ -123,7 +123,7 @@ Required testing:
 - [ ] vertical E2E path with `llms.txt`
 - [ ] vertical E2E path with Schema.org or OpenAPI
 - [ ] idempotent generated changes
-- [ ] dry-run diffs
+- [x] dry-run diffs
 - [ ] conflict policy for existing files
 - [ ] sensitive capability approval gates
 

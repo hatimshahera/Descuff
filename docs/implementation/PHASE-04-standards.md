@@ -11,14 +11,14 @@ Implement isolated adapters for first-release standards.
 
 ## Tasks
 
-- [ ] Define `StandardAdapter`.
-- [ ] Define `StandardAssessment`.
-- [ ] Define `GeneratedChange`.
-- [ ] Define explicit assess/generate/plan/apply-safe/validate lifecycle.
-- [ ] Implement dry-run diff support.
+- [x] Define `StandardAdapter`.
+- [x] Define `StandardAssessment`.
+- [x] Define `GeneratedChange`.
+- [x] Define explicit assess/generate/plan/apply-safe/validate lifecycle.
+- [x] Implement dry-run diff support.
 - [ ] Implement idempotency checks.
 - [ ] Implement conflict policy for existing files.
-- [ ] Implement `LlmsTxtAdapter`.
+- [x] Implement `LlmsTxtAdapter`.
 - [ ] Implement `SchemaOrgAdapter`.
 - [ ] Implement `OpenApiAdapter`.
 - [ ] Implement `ApiCatalogAdapter`.

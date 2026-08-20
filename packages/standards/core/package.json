@@ -1,5 +1,5 @@
 {
-  "name": "@descuff/standard-llms-txt",
+  "name": "@descuff/standard-core",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,7 +15,6 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/ir": "workspace:*",
-    "@descuff/standard-core": "workspace:*"
+    "@descuff/ir": "workspace:*"
   }
 }

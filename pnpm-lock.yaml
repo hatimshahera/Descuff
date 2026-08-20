@@ -112,11 +112,20 @@ importers:
         specifier: workspace:*
         version: link:../../ir
 
+  packages/standards/core:
+    dependencies:
+      "@descuff/ir":
+        specifier: workspace:*
+        version: link:../../ir
+
   packages/standards/llms-txt:
     dependencies:
       "@descuff/ir":
         specifier: workspace:*
         version: link:../../ir
+      "@descuff/standard-core":
+        specifier: workspace:*
+        version: link:../core
 
   packages/standards/openapi:
     dependencies:
