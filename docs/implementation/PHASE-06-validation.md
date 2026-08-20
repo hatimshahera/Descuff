@@ -61,7 +61,8 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - UI regression tests compare route invariants, block missing routes and unexpected title/heading changes, and warn on accessibility landmark changes.
 - Readiness report tests merge validation summaries with IR readiness scoring and block readiness when validation failures remain.
 - Repair guide tests render blocking failures and warnings with suggested actions and evidence IDs for coding-agent repair loops.
+- Ecommerce website fixture E2E scans the fixture source, generates standards, validates static/runtime/security/readiness, passes the correct flow, and fails intentionally broken standard/runtime cases with typed actionable errors.
 
 ## Completion Rule
 
-Do not mark validation complete until it catches intentionally broken fixture implementations and passes correct fixture implementations.
+Complete: ecommerce website fixture E2E catches intentionally broken standard/runtime implementations and passes the correct generated implementation flow.

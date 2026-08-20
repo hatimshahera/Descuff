@@ -209,6 +209,7 @@ Required testing:
 Validation note:
 
 - Validator unit tests cover static, build, existing-test baseline, runtime observation, mutating scenario, security, UI regression, readiness, and repair-guide behavior.
+- Ecommerce website fixture E2E passes the correct generated validation flow and fails intentionally broken standard/runtime cases with typed actionable errors.
 
 ## Phase 7 - Release
 
