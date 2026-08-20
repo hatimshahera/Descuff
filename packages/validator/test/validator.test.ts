@@ -12,7 +12,8 @@ import {
   validateRuntimeConfig,
   validateSecurityModel,
   validateStaticGeneratedChanges,
-  validateStaticStandardResults
+  validateStaticStandardResults,
+  validateUiRegression
 } from "../src/index.js";
 
 const evidence: EvidenceRef = {
@@ -923,6 +924,154 @@ describe("@descuff/validator", () => {
           evidence: [evidence]
         }
       })
+    ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
+  it("detects missing routes during UI regression validation", () => {
+    expect(
+      validateUiRegression(
+        {
+          schemaVersion: "0.1.0",
+          recordedAt: "2026-08-20T00:00:00.000Z",
+          routes: [
+            {
+              route: "/",
+              title: "Store",
+              headings: ["Products"],
+              evidence: [evidence]
+            }
+          ]
+        },
+        []
+      )
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "UI_REGRESSION_ROUTE_MISSING",
+          level: "regression",
+          severity: "error",
+          source: "/"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("detects title and heading UI regressions", () => {
+    expect(
+      validateUiRegression(
+        {
+          schemaVersion: "0.1.0",
+          recordedAt: "2026-08-20T00:00:00.000Z",
+          routes: [
+            {
+              route: "/",
+              title: "Store",
+              headings: ["Products"],
+              evidence: [evidence]
+            }
+          ]
+        },
+        [
+          {
+            route: "/",
+            title: "Catalog",
+            headings: ["Featured"],
+            evidence: [evidence]
+          }
+        ]
+      )
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "UI_REGRESSION_TITLE_CHANGED",
+          level: "regression",
+          severity: "error",
+          source: "/"
+        },
+        {
+          code: "UI_REGRESSION_HEADING_MISSING",
+          level: "regression",
+          severity: "error",
+          source: "/"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("reports accessibility landmark changes as UI regression warnings", () => {
+    expect(
+      validateUiRegression(
+        {
+          schemaVersion: "0.1.0",
+          recordedAt: "2026-08-20T00:00:00.000Z",
+          routes: [
+            {
+              route: "/",
+              title: "Store",
+              headings: ["Products"],
+              landmarkCount: 4,
+              evidence: [evidence]
+            }
+          ]
+        },
+        [
+          {
+            route: "/",
+            title: "Store",
+            headings: ["Products"],
+            landmarkCount: 3,
+            evidence: [evidence]
+          }
+        ]
+      )
+    ).toMatchObject({
+      passed: true,
+      failures: [],
+      warnings: [
+        {
+          code: "UI_REGRESSION_LANDMARK_COUNT_CHANGED",
+          level: "regression",
+          severity: "warning",
+          source: "/"
+        }
+      ]
+    });
+  });
+
+  it("passes UI regression validation when route invariants are unchanged", () => {
+    expect(
+      validateUiRegression(
+        {
+          schemaVersion: "0.1.0",
+          recordedAt: "2026-08-20T00:00:00.000Z",
+          routes: [
+            {
+              route: "/",
+              title: "Store",
+              headings: ["Products"],
+              landmarkCount: 4,
+              evidence: [evidence]
+            }
+          ]
+        },
+        [
+          {
+            route: "/",
+            title: "Store",
+            headings: ["Products"],
+            landmarkCount: 4,
+            evidence: [evidence]
+          }
+        ]
+      )
     ).toEqual({
       passed: true,
       failures: [],

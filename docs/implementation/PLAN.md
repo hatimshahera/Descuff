@@ -186,7 +186,7 @@ Validation note:
 - [x] explicit validation scenarios for mutating flows
 - [x] standard-specific validation runners
 - [x] security validation
-- [ ] regression validation
+- [x] regression validation
 - [x] typed failure catalog
 - [ ] readiness report integration
 

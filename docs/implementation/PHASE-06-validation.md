@@ -23,7 +23,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - [x] Implement explicit validation scenarios for mutating flows.
 - [x] Implement standard-specific validation runners.
 - [x] Implement security validation.
-- [ ] Implement human UI regression validation.
+- [x] Implement human UI regression validation.
 - [x] Implement typed failure catalog.
 - [ ] Integrate readiness scoring and validation results.
 - [ ] Add repair-oriented suggested actions.
@@ -57,6 +57,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - Runtime config tests enforce HTTP(S) base URLs, environment-variable names without embedded values, explicit mutating scenarios, complete side-effect verification/cleanup, and safe test environments for high-consequence operations.
 - Standard-specific validation runner tests execute adapter `validate` methods, aggregate typed failures, and convert runner exceptions into actionable validation failures.
 - Security validation tests block authenticated/admin capabilities without auth boundaries, public authenticated-read exposure, and public sensitive or high-consequence capabilities.
+- UI regression tests compare route invariants, block missing routes and unexpected title/heading changes, and warn on accessibility landmark changes.
 
 ## Completion Rule
 
