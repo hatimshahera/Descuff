@@ -1,4 +1,5 @@
 import { descuffCommands, isDescuffCommand, type CommandResult } from "@descuff/core";
+import { renderFixCommandInstructions } from "@descuff/agent-workflow";
 
 const helpText = `Descuff
 
@@ -21,6 +22,14 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
       exitCode: 1,
       stdout: "",
       stderr: `Unknown command: ${command}\n\n${helpText}`
+    };
+  }
+
+  if (command === "fix") {
+    return {
+      exitCode: 0,
+      stdout: renderFixCommandInstructions(),
+      stderr: ""
     };
   }
 

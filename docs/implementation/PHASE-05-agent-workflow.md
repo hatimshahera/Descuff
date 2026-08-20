@@ -15,10 +15,10 @@ Create the implementation planning and coding-agent workflow that lets the devel
 - [x] Define `.descuff/plan.json` schema.
 - [x] Render `.descuff/plan.md`.
 - [x] Distinguish automatic, approval-required, and blocked changes.
-- [ ] Add coding-agent instructions for `descuff fix`.
-- [ ] Define `descuff fix` as a non-LLM plan refresh and workflow-instruction command.
-- [ ] Require scan, focused source reading, implementation, tests, validation, and repair loop.
-- [ ] Preserve human UI rule in agent instructions.
+- [x] Add coding-agent instructions for `descuff fix`.
+- [x] Define `descuff fix` as a non-LLM plan refresh and workflow-instruction command.
+- [x] Require scan, focused source reading, implementation, tests, validation, and repair loop.
+- [x] Preserve human UI rule in agent instructions.
 - [ ] Add Graphify development guidance.
 - [ ] Add `pnpm graph:refresh`.
 - [ ] Configure repository agent instructions to query Graphify before broad traversal after Graphify is generated.

@@ -149,9 +149,9 @@ Required testing:
 
 - [x] `.descuff/plan.json` schema
 - [x] `.descuff/plan.md` renderer
-- [ ] `descuff fix` coding-agent instructions
-- [ ] `descuff fix` non-LLM command semantics
-- [ ] minimal source-reading guidance
+- [x] `descuff fix` coding-agent instructions
+- [x] `descuff fix` non-LLM command semantics
+- [x] minimal source-reading guidance
 - [ ] Graphify developer workflow instructions
 - [ ] `pnpm graph:refresh`
 

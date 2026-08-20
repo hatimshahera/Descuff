@@ -4,6 +4,7 @@ import {
   agentPlanSchemaVersion,
   buildAgentPlan,
   getFixCommandSummary,
+  renderFixCommandInstructions,
   renderAgentPlanMarkdown,
   validateAgentPlan
 } from "../src/index.js";
@@ -18,7 +19,24 @@ const evidence: EvidenceRef = {
 
 describe("@descuff/agent-workflow", () => {
   it("documents non-LLM fix command semantics", () => {
+    expect(getFixCommandSummary()).toContain("does not invoke an LLM");
     expect(getFixCommandSummary()).toContain("does not edit source directly");
+  });
+
+  it("renders coding-agent fix instructions with validation and UI guardrails", () => {
+    const instructions = renderFixCommandInstructions();
+
+    expect(instructions).toContain("developer-owned coding agent");
+    expect(instructions).toContain("Run descuff scan or use the latest scan artifacts");
+    expect(instructions).toContain("Read only the focused source files linked by evidence");
+    expect(instructions).toContain("Run existing tests and descuff validate after implementation");
+    expect(instructions).toContain("Repair failures and repeat validation");
+    expect(instructions).toContain(
+      "Do not change human-facing UI or behavior unless explicitly approved"
+    );
+    expect(instructions).toContain(
+      "Do not require a Descuff-owned OpenAI, Anthropic, or other LLM API key"
+    );
   });
 
   it("builds a valid machine-readable plan from assessments and generated changes", () => {

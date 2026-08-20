@@ -85,6 +85,9 @@ importers:
 
   packages/cli:
     dependencies:
+      "@descuff/agent-workflow":
+        specifier: workspace:*
+        version: link:../agent-workflow
       "@descuff/core":
         specifier: workspace:*
         version: link:../core

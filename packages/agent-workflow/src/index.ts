@@ -55,7 +55,38 @@ export interface AgentPlanValidationResult {
 }
 
 export function getFixCommandSummary(): string {
-  return "descuff fix refreshes plans and agent workflow instructions; it does not edit source directly.";
+  return "descuff fix refreshes plans and agent workflow instructions; it does not invoke an LLM and does not edit source directly.";
+}
+
+export function renderFixCommandInstructions(): string {
+  const lines = [
+    "# descuff fix workflow",
+    "",
+    getFixCommandSummary(),
+    "",
+    "The developer-owned coding agent performs implementation by following `.descuff/plan.json` and `.descuff/plan.md`.",
+    "",
+    "Required loop:",
+    ""
+  ];
+
+  for (const instruction of defaultWorkflowInstructions()) {
+    lines.push(`- ${instruction}`);
+  }
+
+  lines.push(
+    "",
+    "Hard rules:",
+    "",
+    "- Do not trust implementation completion until validation passes.",
+    "- Do not broaden source traversal when focused evidence is available.",
+    "- Do not change human-facing UI or behavior unless explicitly approved.",
+    "- Do not invoke mutating runtime actions without a validation scenario.",
+    "- Do not require a Descuff-owned OpenAI, Anthropic, or other LLM API key.",
+    ""
+  );
+
+  return lines.join("\n");
 }
 
 export function buildAgentPlan(input: AgentPlanInput): AgentPlan {
