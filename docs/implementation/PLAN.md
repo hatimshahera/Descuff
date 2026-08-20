@@ -117,11 +117,11 @@ Required testing:
 - [x] adapter lifecycle contract for assess/generate/plan/apply-safe/validate
 - [x] `LlmsTxtAdapter`
 - [ ] `SchemaOrgAdapter`
-- [ ] `OpenApiAdapter`
+- [x] `OpenApiAdapter`
 - [ ] `ApiCatalogAdapter`
 - [ ] `WebMcpAdapter`
 - [x] vertical E2E path with `llms.txt`
-- [ ] vertical E2E path with Schema.org or OpenAPI
+- [x] vertical E2E path with Schema.org or OpenAPI
 - [x] idempotent generated changes
 - [x] dry-run diffs
 - [x] conflict policy for existing files

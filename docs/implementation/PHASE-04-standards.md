@@ -20,11 +20,11 @@ Implement isolated adapters for first-release standards.
 - [x] Implement conflict policy for existing files.
 - [x] Implement `LlmsTxtAdapter`.
 - [ ] Implement `SchemaOrgAdapter`.
-- [ ] Implement `OpenApiAdapter`.
+- [x] Implement `OpenApiAdapter`.
 - [ ] Implement `ApiCatalogAdapter`.
 - [ ] Implement `WebMcpAdapter`.
 - [x] Prove vertical E2E path with `llms.txt`.
-- [ ] Prove vertical E2E path with Schema.org or OpenAPI.
+- [x] Prove vertical E2E path with Schema.org or OpenAPI.
 - [x] Implement sensitive and high-consequence capability approval gates.
 - [ ] Integrate safe deterministic generation with `apply-safe`.
 
