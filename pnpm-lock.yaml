@@ -181,6 +181,16 @@ importers:
       "@descuff/ir":
         specifier: workspace:*
         version: link:../../ir
+      "@descuff/standard-core":
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      "@descuff/analyzer-nextjs":
+        specifier: workspace:*
+        version: link:../../analyzers/nextjs
+      "@descuff/core":
+        specifier: workspace:*
+        version: link:../../core
 
   packages/validator:
     dependencies:

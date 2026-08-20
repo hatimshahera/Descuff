@@ -22,7 +22,7 @@ Implement isolated adapters for first-release standards.
 - [x] Implement `SchemaOrgAdapter`.
 - [x] Implement `OpenApiAdapter`.
 - [x] Implement `ApiCatalogAdapter`.
-- [ ] Implement `WebMcpAdapter`.
+- [x] Implement `WebMcpAdapter`.
 - [x] Prove vertical E2E path with `llms.txt`.
 - [x] Prove vertical E2E path with Schema.org or OpenAPI.
 - [x] Implement sensitive and high-consequence capability approval gates.
