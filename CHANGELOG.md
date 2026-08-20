@@ -2,7 +2,7 @@
 
 All notable changes to Descuff will be documented in this file.
 
-## 0.0.0 - Unreleased
+## 0.0.1 - 2026-08-20
 
 ### Added
 
@@ -19,5 +19,5 @@ All notable changes to Descuff will be documented in this file.
 ### Known Release Limitations
 
 - `apply-safe` does not write application source in this release.
-- Graphify is optional developer infrastructure; live Graphify refresh is blocked when the `graphify` command is unavailable.
-- Package artifacts pass local dry-run and clean packed install verification, but no npm registry publication has been performed.
+- Graphify is optional developer infrastructure and may require adding `~/.local/bin` to `PATH`.
+- `0.0.0` was superseded by `0.0.1` because the initial registry publish used workspace dependency metadata. `latest` points to `0.0.1`.

@@ -4,7 +4,7 @@ We turn every website into an interface AI agents can actually use.
 
 Descuff is an open-source developer tool for analyzing existing web applications, planning agent-facing standards adoption, and validating the result. The first release targets Next.js applications.
 
-Current status: Phase 7 release preparation. The validated path is a conventional Next.js app fixture that exercises scan, report, plan, agent workflow guidance, generated standards, and validation.
+Current status: first public npm release published as `descuff@0.0.1`. The validated path is a conventional Next.js app fixture that exercises scan, report, plan, agent workflow guidance, generated standards, and validation.
 
 ## What Descuff Does
 

@@ -49,14 +49,20 @@ Prepare the first public release with complete documentation, examples, CI, pack
   - `node packages/cli/dist/index.js scan fixtures/ecommerce`
   - `node packages/cli/dist/index.js report fixtures/ecommerce`
   - `node packages/cli/dist/index.js validate fixtures/ecommerce`
-- `pnpm -r --filter './packages/**' pack --pack-destination /private/tmp/descuff-release-pack-20260820-1830` produced package tarballs with built `dist` artifacts only.
-- Clean install verification passed in `/private/tmp/descuff-clean-install-20260820-1830` by installing the packed tarballs and running:
+- `pnpm -r --filter './packages/**' pack --pack-destination /private/tmp/descuff-release-pack-20260820-1850` produced `0.0.1` package tarballs with built `dist` artifacts only and real `0.0.1` dependency metadata.
+- npm registry publication completed for the public CLI `descuff@0.0.1` and required runtime dependencies under `@descuff/*@0.0.1`.
+- Public npm verification passed with:
+  - `npm view descuff version bin dependencies`
+  - `npx descuff --help`
+  - `npx descuff scan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
+  - `npx descuff validate /Users/hatimshaherawala/descuff/fixtures/ecommerce`
+- Earlier clean install verification passed in `/private/tmp/descuff-clean-install-20260820-1830` by installing packed tarballs and running:
   - `npx descuff scan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff report /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff plan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff validate /Users/hatimshaherawala/descuff/fixtures/ecommerce`
 - Release checklist passed for current release scope: docs, license, changelog, public ecommerce example, CI, package dry run, clean install CLI smoke, and explicit critical/high defect marker audit.
-- Critical/high triage found no known critical or high-severity defects. Non-blocking release caveats: no npm registry publication has been performed, Graphify is not on this shell's default PATH, and Graphify community labels are generic without an LLM backend key.
+- Critical/high triage found no known critical or high-severity defects. Non-blocking release caveats: `descuff@0.0.0` exists but is superseded by `0.0.1`, Graphify is not on this shell's default PATH, and Graphify community labels are generic without an LLM backend key.
 - Graphify was installed with `uv tool install --upgrade graphifyy`. The executable is available at `/Users/hatimshaherawala/.local/bin/graphify`, but that directory is not on this shell's default PATH.
 - Code-only Graphify refresh passed with `/Users/hatimshaherawala/.local/bin/graphify . --update --no-viz --code-only`, producing `graphify-out/graph.json` with 1001 nodes, 1324 edges, and 74 communities.
 - Graphify cluster/report refresh passed with `/Users/hatimshaherawala/.local/bin/graphify cluster-only /Users/hatimshaherawala/descuff --no-viz`, producing `graphify-out/GRAPH_REPORT.md` with generic community labels because no LLM backend key was configured.

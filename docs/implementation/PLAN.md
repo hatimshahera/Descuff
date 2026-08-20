@@ -245,3 +245,4 @@ Validation note:
 - Critical/high defect marker audit found no known critical or high-severity defects. Open Phase 7 caveats remain tracked in `docs/implementation/PHASE-07-release.md`.
 - Code-only Graphify refresh and cluster/report generation passed locally after installing `graphifyy`; generated `graphify-out/` artifacts remain ignored.
 - Fixture breadth now includes realistic ecommerce, booking, content, SaaS, and intentionally broken Next.js source fixtures with analyzer coverage.
+- npm publication completed for `descuff@0.0.1` and required `@descuff/*@0.0.1` runtime dependencies. Public `npx descuff --help`, `scan`, and `validate` verification passed against the ecommerce fixture.
