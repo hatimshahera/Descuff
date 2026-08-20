@@ -1,0 +1,32 @@
+{
+  "name": "descuff",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.30.0",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.packages.json",
+    "clean": "pnpm -r exec rm -rf dist tsconfig.tsbuildinfo",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc -b tsconfig.packages.json --pretty false",
+    "ci": "pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm smoke",
+    "smoke": "node scripts/smoke-cli.mjs",
+    "graph:refresh": "graphify . --update --no-viz"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.47.0",
+    "vitest": "^4.0.15"
+  }
+}

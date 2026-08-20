@@ -1,0 +1,20 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/ir" },
+    { "path": "./packages/core" },
+    { "path": "./packages/config" },
+    { "path": "./packages/analyzers/nextjs" },
+    { "path": "./packages/analyzers/runtime" },
+    { "path": "./packages/analyzers/graphify" },
+    { "path": "./packages/standards/llms-txt" },
+    { "path": "./packages/standards/schema-org" },
+    { "path": "./packages/standards/openapi" },
+    { "path": "./packages/standards/api-catalog" },
+    { "path": "./packages/standards/webmcp" },
+    { "path": "./packages/validator" },
+    { "path": "./packages/reporter" },
+    { "path": "./packages/agent-workflow" },
+    { "path": "./packages/cli" }
+  ]
+}

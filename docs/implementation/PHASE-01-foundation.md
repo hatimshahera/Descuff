@@ -11,20 +11,20 @@ Create the repository structure, tooling, package boundaries, and test infrastru
 
 ## Tasks
 
-- [ ] Initialize pnpm workspace.
-- [ ] Add strict shared TypeScript configuration.
-- [ ] Create monorepo package directories.
-- [ ] Add CLI package and command entry shell.
-- [ ] Add core package with orchestration contracts.
-- [ ] Add minimal versioned evidence contracts.
-- [ ] Add `StructuralAnalysis` contract.
-- [ ] Add IR package shell.
-- [ ] Add config package shell.
-- [ ] Add analyzer, standard, validator, reporter, and skill package shells.
-- [ ] Configure Vitest.
-- [ ] Configure Playwright.
-- [ ] Add CI workflow for format, lint, typecheck, tests, build, and CLI smoke test.
-- [ ] Add initial fixture applications.
+- [x] Initialize pnpm workspace.
+- [x] Add strict shared TypeScript configuration.
+- [x] Create monorepo package directories.
+- [x] Add CLI package and command entry shell.
+- [x] Add core package with orchestration contracts.
+- [x] Add minimal versioned evidence contracts.
+- [x] Add `StructuralAnalysis` contract.
+- [x] Add IR package shell.
+- [x] Add config package shell.
+- [x] Add analyzer, standard, validator, reporter, and agent-workflow package shells.
+- [x] Configure Vitest.
+- [x] Configure Playwright.
+- [x] Add CI workflow for format, lint, typecheck, tests, build, and CLI smoke test.
+- [x] Add initial fixture applications.
 - [x] Add planning and architecture documentation.
 
 ## Acceptance Criteria

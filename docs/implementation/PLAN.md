@@ -29,17 +29,17 @@ Cross-cutting dependencies:
 
 ## Phase 1 - Foundation
 
-- [ ] pnpm workspace scaffold
-- [ ] TypeScript strict configuration
-- [ ] package boundaries created
-- [ ] CLI command shell
-- [ ] minimal versioned evidence contracts
-- [ ] `StructuralAnalysis` contract
-- [ ] config loading shell
-- [ ] Vitest setup
-- [ ] Playwright setup
-- [ ] CI workflow
-- [ ] initial fixtures
+- [x] pnpm workspace scaffold
+- [x] TypeScript strict configuration
+- [x] package boundaries created
+- [x] CLI command shell
+- [x] minimal versioned evidence contracts
+- [x] `StructuralAnalysis` contract
+- [x] config loading shell
+- [x] Vitest setup
+- [x] Playwright setup
+- [x] CI workflow
+- [x] initial fixtures
 - [x] planning and architecture docs
 
 Acceptance criteria:

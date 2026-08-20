@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+  - packages/*
+  - packages/analyzers/*
+  - packages/standards/*
+  - fixtures/*

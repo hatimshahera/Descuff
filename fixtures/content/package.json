@@ -1,0 +1,10 @@
+{
+  "name": "@descuff/fixture-content",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node -e \"console.log('content fixture placeholder build')\"",
+    "test": "node -e \"console.log('content fixture placeholder test')\""
+  }
+}

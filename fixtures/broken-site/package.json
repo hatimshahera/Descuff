@@ -1,0 +1,10 @@
+{
+  "name": "@descuff/fixture-broken-site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node -e \"console.log('broken-site fixture placeholder build')\"",
+    "test": "node -e \"console.log('broken-site fixture placeholder test')\""
+  }
+}
