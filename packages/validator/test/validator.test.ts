@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { EvidenceRef } from "@descuff/ir";
 import {
   createEmptyValidationSummary,
+  createRepositoryValidationCommands,
   createValidationSummary,
+  runValidationCommands,
+  validateCommandResults,
   validateStaticGeneratedChanges,
   validateStaticStandardResults
 } from "../src/index.js";
@@ -193,6 +196,169 @@ describe("@descuff/validator", () => {
           path: "",
           evidence: [],
           suggestedAction: "Mark the change approval-required or make generation deterministic."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("discovers build and existing test commands from package scripts", () => {
+    expect(
+      createRepositoryValidationCommands(
+        "/repo",
+        {
+          scripts: {
+            build: "next build",
+            lint: "eslint .",
+            test: "vitest run",
+            typecheck: "tsc -b",
+            dev: "next dev"
+          }
+        },
+        [evidence]
+      )
+    ).toEqual([
+      {
+        id: "script:typecheck",
+        level: "build",
+        command: "pnpm",
+        args: ["run", "typecheck"],
+        cwd: "/repo",
+        evidence: [evidence]
+      },
+      {
+        id: "script:lint",
+        level: "build",
+        command: "pnpm",
+        args: ["run", "lint"],
+        cwd: "/repo",
+        evidence: [evidence]
+      },
+      {
+        id: "script:build",
+        level: "build",
+        command: "pnpm",
+        args: ["run", "build"],
+        cwd: "/repo",
+        evidence: [evidence]
+      },
+      {
+        id: "script:test",
+        level: "existing-tests",
+        command: "pnpm",
+        args: ["run", "test"],
+        cwd: "/repo",
+        evidence: [evidence]
+      }
+    ]);
+  });
+
+  it("runs validation commands through an injected command runner", async () => {
+    const commands = createRepositoryValidationCommands("/repo", {
+      scripts: {
+        build: "next build",
+        test: "vitest run"
+      }
+    });
+
+    await expect(
+      runValidationCommands(commands, async (command) => ({
+        commandId: command.id,
+        exitCode: 0,
+        stdout: `${command.id} ok`,
+        stderr: ""
+      }))
+    ).resolves.toEqual([
+      {
+        commandId: "script:build",
+        exitCode: 0,
+        stdout: "script:build ok",
+        stderr: ""
+      },
+      {
+        commandId: "script:test",
+        exitCode: 0,
+        stdout: "script:test ok",
+        stderr: ""
+      }
+    ]);
+  });
+
+  it("fails build validation when a build command exits nonzero", () => {
+    const commands = createRepositoryValidationCommands("/repo", {
+      scripts: {
+        build: "next build"
+      }
+    });
+
+    expect(
+      validateCommandResults(commands, [
+        {
+          commandId: "script:build",
+          exitCode: 1,
+          stdout: "",
+          stderr: "build failed"
+        }
+      ])
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "BUILD_VALIDATION_COMMAND_FAILED",
+          level: "build",
+          severity: "error",
+          source: "script:build"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("fails existing test validation without treating failures as pre-existing", () => {
+    const commands = createRepositoryValidationCommands("/repo", {
+      scripts: {
+        test: "vitest run"
+      }
+    });
+
+    expect(
+      validateCommandResults(commands, [
+        {
+          commandId: "script:test",
+          exitCode: 1,
+          stdout: "1 failed",
+          stderr: ""
+        }
+      ])
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "EXISTING_TEST_COMMAND_FAILED",
+          level: "existing-tests",
+          severity: "error",
+          suggestedAction: "Fix the failing test or compare it against an explicit scan baseline."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("fails validation when a configured command produces no result", () => {
+    const commands = createRepositoryValidationCommands("/repo", {
+      scripts: {
+        typecheck: "tsc -b"
+      }
+    });
+
+    expect(validateCommandResults(commands, [])).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "VALIDATION_COMMAND_RESULT_MISSING",
+          level: "build",
+          severity: "error",
+          source: "script:typecheck"
         }
       ],
       warnings: []

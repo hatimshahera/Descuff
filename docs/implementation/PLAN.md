@@ -178,8 +178,8 @@ Validation note:
 ## Phase 6 - Validation
 
 - [x] static validation
-- [ ] build validation
-- [ ] existing test runner integration
+- [x] build validation
+- [x] existing test runner integration
 - [ ] test baseline recording and comparison
 - [ ] runtime validation
 - [ ] runtime configuration schema

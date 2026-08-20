@@ -22,6 +22,26 @@ export interface ValidationSummary {
   warnings: ValidationFailure[];
 }
 
+export interface ValidationCommand {
+  id: string;
+  level: "build" | "existing-tests";
+  command: string;
+  args: string[];
+  cwd: string;
+  evidence: EvidenceRef[];
+}
+
+export interface ValidationCommandResult {
+  commandId: string;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}
+
+export type ValidationCommandRunner = (
+  command: ValidationCommand
+) => Promise<ValidationCommandResult>;
+
 export function createEmptyValidationSummary(): ValidationSummary {
   return {
     passed: true,
@@ -71,6 +91,114 @@ export function validateStaticStandardResults(
           suggestedAction: "Return typed validation failures from the standard adapter."
         });
       }
+    }
+  }
+
+  return createValidationSummary(issues);
+}
+
+export function createRepositoryValidationCommands(
+  projectRoot: string,
+  packageJson: { scripts?: Record<string, string> },
+  evidence: EvidenceRef[] = []
+): ValidationCommand[] {
+  const scripts = packageJson.scripts ?? {};
+  const commands: ValidationCommand[] = [];
+
+  for (const scriptName of ["typecheck", "lint", "build"]) {
+    if (scripts[scriptName] !== undefined) {
+      commands.push({
+        id: `script:${scriptName}`,
+        level: "build",
+        command: "pnpm",
+        args: ["run", scriptName],
+        cwd: projectRoot,
+        evidence
+      });
+    }
+  }
+
+  if (scripts.test !== undefined) {
+    commands.push({
+      id: "script:test",
+      level: "existing-tests",
+      command: "pnpm",
+      args: ["run", "test"],
+      cwd: projectRoot,
+      evidence
+    });
+  }
+
+  return commands;
+}
+
+export async function runValidationCommands(
+  commands: ValidationCommand[],
+  runner: ValidationCommandRunner
+): Promise<ValidationCommandResult[]> {
+  const results: ValidationCommandResult[] = [];
+
+  for (const command of commands) {
+    const result = await runner(command);
+    results.push(result);
+  }
+
+  return results;
+}
+
+export function validateCommandResults(
+  commands: ValidationCommand[],
+  results: ValidationCommandResult[]
+): ValidationSummary {
+  const commandsById = new Map(commands.map((command) => [command.id, command]));
+  const issues: ValidationFailure[] = [];
+
+  for (const result of results) {
+    const command = commandsById.get(result.commandId);
+
+    if (command === undefined) {
+      issues.push({
+        code: "VALIDATION_COMMAND_RESULT_UNKNOWN",
+        level: "build",
+        severity: "error",
+        message: `Validation command result ${result.commandId} did not match a configured command.`,
+        source: result.commandId,
+        evidence: [],
+        suggestedAction: "Ensure validation command results are keyed by configured command id."
+      });
+      continue;
+    }
+
+    if (result.exitCode !== 0) {
+      issues.push({
+        code:
+          command.level === "existing-tests"
+            ? "EXISTING_TEST_COMMAND_FAILED"
+            : "BUILD_VALIDATION_COMMAND_FAILED",
+        level: command.level,
+        severity: "error",
+        message: `${command.command} ${command.args.join(" ")} exited with ${result.exitCode}.`,
+        source: command.id,
+        evidence: command.evidence,
+        suggestedAction:
+          command.level === "existing-tests"
+            ? "Fix the failing test or compare it against an explicit scan baseline."
+            : "Fix the failing build validation command before marking validation successful."
+      });
+    }
+  }
+
+  for (const command of commands) {
+    if (!results.some((result) => result.commandId === command.id)) {
+      issues.push({
+        code: "VALIDATION_COMMAND_RESULT_MISSING",
+        level: command.level,
+        severity: "error",
+        message: `Validation command ${command.id} did not produce a result.`,
+        source: command.id,
+        evidence: command.evidence,
+        suggestedAction: "Run every configured validation command and collect its result."
+      });
     }
   }
 

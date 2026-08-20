@@ -14,8 +14,8 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 ## Tasks
 
 - [x] Implement static validation.
-- [ ] Implement build validation.
-- [ ] Integrate existing repository test commands.
+- [x] Implement build validation.
+- [x] Integrate existing repository test commands.
 - [ ] Record test baseline during scan.
 - [ ] Compare post-change test results to baseline.
 - [ ] Implement runtime validation.
@@ -52,6 +52,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 ## Validation Notes
 
 - Static validator unit tests cover standard-adapter validation issues, generated-change metadata, typed actionable failures, warning separation, and intentionally invalid generated changes.
+- Build and existing-test command integration tests use an injected runner and fail nonzero command results without assuming failures are pre-existing.
 
 ## Completion Rule
 
