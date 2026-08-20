@@ -36,17 +36,66 @@ export interface ValidationCommandResult {
   exitCode: number;
   stdout: string;
   stderr: string;
+  failingIdentifiers?: string[];
 }
 
 export type ValidationCommandRunner = (
   command: ValidationCommand
 ) => Promise<ValidationCommandResult>;
 
+export interface ExistingTestBaselineEntry {
+  commandId: string;
+  command: string;
+  args: string[];
+  exitCode: number;
+  failingIdentifiers: string[];
+  evidence: EvidenceRef[];
+}
+
+export interface ExistingTestBaseline {
+  schemaVersion: string;
+  recordedAt: string;
+  entries: ExistingTestBaselineEntry[];
+}
+
 export function createEmptyValidationSummary(): ValidationSummary {
   return {
     passed: true,
     failures: [],
     warnings: []
+  };
+}
+
+export function recordExistingTestBaseline(
+  recordedAt: string,
+  commands: ValidationCommand[],
+  results: ValidationCommandResult[]
+): ExistingTestBaseline {
+  const commandsById = new Map(commands.map((command) => [command.id, command]));
+
+  return {
+    schemaVersion: "0.1.0",
+    recordedAt,
+    entries: results
+      .filter((result) => {
+        const command = commandsById.get(result.commandId);
+        return command?.level === "existing-tests";
+      })
+      .map((result) => {
+        const command = commandsById.get(result.commandId);
+        if (command === undefined) {
+          throw new Error(`Cannot record baseline for unknown command: ${result.commandId}`);
+        }
+
+        return {
+          commandId: result.commandId,
+          command: command.command,
+          args: [...command.args],
+          exitCode: result.exitCode,
+          failingIdentifiers: [...(result.failingIdentifiers ?? [])].sort(),
+          evidence: command.evidence
+        };
+      })
   };
 }
 
@@ -148,9 +197,13 @@ export async function runValidationCommands(
 
 export function validateCommandResults(
   commands: ValidationCommand[],
-  results: ValidationCommandResult[]
+  results: ValidationCommandResult[],
+  baseline?: ExistingTestBaseline
 ): ValidationSummary {
   const commandsById = new Map(commands.map((command) => [command.id, command]));
+  const baselineById = new Map(
+    baseline?.entries.map((entry) => [entry.commandId, entry] as const) ?? []
+  );
   const issues: ValidationFailure[] = [];
 
   for (const result of results) {
@@ -169,21 +222,22 @@ export function validateCommandResults(
       continue;
     }
 
+    if (command.level === "existing-tests") {
+      const baselineEntry = baselineById.get(command.id);
+      issues.push(...compareExistingTestResultToBaseline(command, result, baselineEntry));
+      continue;
+    }
+
     if (result.exitCode !== 0) {
       issues.push({
-        code:
-          command.level === "existing-tests"
-            ? "EXISTING_TEST_COMMAND_FAILED"
-            : "BUILD_VALIDATION_COMMAND_FAILED",
+        code: "BUILD_VALIDATION_COMMAND_FAILED",
         level: command.level,
         severity: "error",
         message: `${command.command} ${command.args.join(" ")} exited with ${result.exitCode}.`,
         source: command.id,
         evidence: command.evidence,
         suggestedAction:
-          command.level === "existing-tests"
-            ? "Fix the failing test or compare it against an explicit scan baseline."
-            : "Fix the failing build validation command before marking validation successful."
+          "Fix the failing build validation command before marking validation successful."
       });
     }
   }
@@ -203,6 +257,75 @@ export function validateCommandResults(
   }
 
   return createValidationSummary(issues);
+}
+
+function compareExistingTestResultToBaseline(
+  command: ValidationCommand,
+  result: ValidationCommandResult,
+  baselineEntry: ExistingTestBaselineEntry | undefined
+): ValidationFailure[] {
+  const issues: ValidationFailure[] = [];
+  const currentFailures = new Set(result.failingIdentifiers ?? []);
+  const baselineFailures = new Set(baselineEntry?.failingIdentifiers ?? []);
+
+  if (result.exitCode === 0) {
+    return issues;
+  }
+
+  if (baselineEntry === undefined) {
+    issues.push({
+      code: "EXISTING_TEST_COMMAND_FAILED",
+      level: "existing-tests",
+      severity: "error",
+      message: `${command.command} ${command.args.join(" ")} exited with ${result.exitCode}.`,
+      source: command.id,
+      evidence: command.evidence,
+      suggestedAction: "Fix the failing test or record an explicit scan baseline with evidence."
+    });
+    return issues;
+  }
+
+  if (baselineEntry.evidence.length === 0) {
+    issues.push({
+      code: "EXISTING_TEST_BASELINE_EVIDENCE_MISSING",
+      level: "existing-tests",
+      severity: "error",
+      message: `Baseline exception for ${command.id} must include evidence.`,
+      source: command.id,
+      evidence: [],
+      suggestedAction:
+        "Record baseline evidence during scan before accepting pre-existing failures."
+    });
+  }
+
+  for (const failure of currentFailures) {
+    if (!baselineFailures.has(failure)) {
+      issues.push({
+        code: "EXISTING_TEST_NEW_FAILURE",
+        level: "existing-tests",
+        severity: "error",
+        message: `Existing test command produced new failure ${failure}.`,
+        source: command.id,
+        evidence: command.evidence,
+        suggestedAction: "Fix the new failing test before marking validation successful."
+      });
+    }
+  }
+
+  if (currentFailures.size === 0) {
+    issues.push({
+      code: "EXISTING_TEST_FAILURE_IDENTIFIERS_MISSING",
+      level: "existing-tests",
+      severity: "error",
+      message:
+        "Failing existing test command must report failing identifiers for baseline comparison.",
+      source: command.id,
+      evidence: command.evidence,
+      suggestedAction: "Capture failing test identifiers from the configured test runner."
+    });
+  }
+
+  return issues;
 }
 
 export function validateStaticGeneratedChanges(changes: GeneratedChange[]): ValidationSummary {

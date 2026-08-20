@@ -4,6 +4,7 @@ import {
   createEmptyValidationSummary,
   createRepositoryValidationCommands,
   createValidationSummary,
+  recordExistingTestBaseline,
   runValidationCommands,
   validateCommandResults,
   validateStaticGeneratedChanges,
@@ -337,7 +338,188 @@ describe("@descuff/validator", () => {
           code: "EXISTING_TEST_COMMAND_FAILED",
           level: "existing-tests",
           severity: "error",
-          suggestedAction: "Fix the failing test or compare it against an explicit scan baseline."
+          suggestedAction: "Fix the failing test or record an explicit scan baseline with evidence."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("records existing test baselines with command, exit code, failing identifiers, and evidence", () => {
+    const commands = createRepositoryValidationCommands(
+      "/repo",
+      {
+        scripts: {
+          build: "next build",
+          test: "vitest run"
+        }
+      },
+      [evidence]
+    );
+
+    expect(
+      recordExistingTestBaseline("2026-08-20T00:00:00.000Z", commands, [
+        {
+          commandId: "script:build",
+          exitCode: 0,
+          stdout: "",
+          stderr: ""
+        },
+        {
+          commandId: "script:test",
+          exitCode: 1,
+          stdout: "checkout.test.ts failed",
+          stderr: "",
+          failingIdentifiers: ["checkout.test.ts > saves cart", "checkout.test.ts > loads cart"]
+        }
+      ])
+    ).toEqual({
+      schemaVersion: "0.1.0",
+      recordedAt: "2026-08-20T00:00:00.000Z",
+      entries: [
+        {
+          commandId: "script:test",
+          command: "pnpm",
+          args: ["run", "test"],
+          exitCode: 1,
+          failingIdentifiers: ["checkout.test.ts > loads cart", "checkout.test.ts > saves cart"],
+          evidence: [evidence]
+        }
+      ]
+    });
+  });
+
+  it("allows existing test failures that exactly match an evidenced baseline", () => {
+    const commands = createRepositoryValidationCommands(
+      "/repo",
+      {
+        scripts: {
+          test: "vitest run"
+        }
+      },
+      [evidence]
+    );
+    const baseline = recordExistingTestBaseline("2026-08-20T00:00:00.000Z", commands, [
+      {
+        commandId: "script:test",
+        exitCode: 1,
+        stdout: "",
+        stderr: "",
+        failingIdentifiers: ["checkout.test.ts > loads cart"]
+      }
+    ]);
+
+    expect(
+      validateCommandResults(
+        commands,
+        [
+          {
+            commandId: "script:test",
+            exitCode: 1,
+            stdout: "",
+            stderr: "",
+            failingIdentifiers: ["checkout.test.ts > loads cart"]
+          }
+        ],
+        baseline
+      )
+    ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
+  it("blocks new failures that do not match the existing test baseline", () => {
+    const commands = createRepositoryValidationCommands(
+      "/repo",
+      {
+        scripts: {
+          test: "vitest run"
+        }
+      },
+      [evidence]
+    );
+    const baseline = recordExistingTestBaseline("2026-08-20T00:00:00.000Z", commands, [
+      {
+        commandId: "script:test",
+        exitCode: 1,
+        stdout: "",
+        stderr: "",
+        failingIdentifiers: ["checkout.test.ts > loads cart"]
+      }
+    ]);
+
+    expect(
+      validateCommandResults(
+        commands,
+        [
+          {
+            commandId: "script:test",
+            exitCode: 1,
+            stdout: "",
+            stderr: "",
+            failingIdentifiers: ["checkout.test.ts > loads cart", "checkout.test.ts > saves cart"]
+          }
+        ],
+        baseline
+      )
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "EXISTING_TEST_NEW_FAILURE",
+          level: "existing-tests",
+          severity: "error",
+          message: "Existing test command produced new failure checkout.test.ts > saves cart."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("rejects baseline exceptions without evidence", () => {
+    const commands = createRepositoryValidationCommands("/repo", {
+      scripts: {
+        test: "vitest run"
+      }
+    });
+
+    expect(
+      validateCommandResults(
+        commands,
+        [
+          {
+            commandId: "script:test",
+            exitCode: 1,
+            stdout: "",
+            stderr: "",
+            failingIdentifiers: ["checkout.test.ts > loads cart"]
+          }
+        ],
+        {
+          schemaVersion: "0.1.0",
+          recordedAt: "2026-08-20T00:00:00.000Z",
+          entries: [
+            {
+              commandId: "script:test",
+              command: "pnpm",
+              args: ["run", "test"],
+              exitCode: 1,
+              failingIdentifiers: ["checkout.test.ts > loads cart"],
+              evidence: []
+            }
+          ]
+        }
+      )
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "EXISTING_TEST_BASELINE_EVIDENCE_MISSING",
+          level: "existing-tests",
+          severity: "error",
+          source: "script:test"
         }
       ],
       warnings: []

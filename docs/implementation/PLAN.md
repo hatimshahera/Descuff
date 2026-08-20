@@ -180,7 +180,7 @@ Validation note:
 - [x] static validation
 - [x] build validation
 - [x] existing test runner integration
-- [ ] test baseline recording and comparison
+- [x] test baseline recording and comparison
 - [ ] runtime validation
 - [ ] runtime configuration schema
 - [ ] explicit validation scenarios for mutating flows
