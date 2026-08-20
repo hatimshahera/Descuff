@@ -3,7 +3,16 @@ import { createProjectContext, descuffCommands, isDescuffCommand } from "../src/
 
 describe("@descuff/core", () => {
   it("defines the Phase 1 CLI command set", () => {
-    expect(descuffCommands).toEqual(["scan", "report", "plan", "fix", "apply-safe", "validate"]);
+    expect(descuffCommands).toEqual([
+      "scan",
+      "report",
+      "plan",
+      "start",
+      "finish",
+      "fix",
+      "apply-safe",
+      "validate"
+    ]);
     expect(isDescuffCommand("scan")).toBe(true);
     expect(isDescuffCommand("unknown")).toBe(false);
   });

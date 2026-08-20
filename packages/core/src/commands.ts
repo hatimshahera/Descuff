@@ -1,4 +1,13 @@
-export const descuffCommands = ["scan", "report", "plan", "fix", "apply-safe", "validate"] as const;
+export const descuffCommands = [
+  "scan",
+  "report",
+  "plan",
+  "start",
+  "finish",
+  "fix",
+  "apply-safe",
+  "validate"
+] as const;
 
 export type DescuffCommand = (typeof descuffCommands)[number];
 

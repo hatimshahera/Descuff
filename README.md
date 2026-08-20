@@ -13,6 +13,7 @@ Current status: first public npm release published as `descuff@0.0.1`. The valid
 - Assesses agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP.
 - Writes implementation plans for a separate coding agent. Descuff does not call an LLM.
 - Validates generated standards, runtime evidence, security boundaries, and release readiness.
+- Records before/after readiness so teams can see what changed after implementation.
 
 ## Installation
 
@@ -30,6 +31,8 @@ After npm publication, the public command shape is:
 npx descuff scan .
 npx descuff report .
 npx descuff plan .
+npx descuff start .
+npx descuff finish .
 npx descuff validate .
 ```
 
@@ -41,6 +44,8 @@ The package publishing dry run and clean packed install verification are tracked
 descuff scan [project-root]
 descuff report [project-root]
 descuff plan [project-root]
+descuff start [project-root]
+descuff finish [project-root]
 descuff fix
 descuff apply-safe [project-root]
 descuff validate [project-root]
@@ -51,6 +56,10 @@ descuff validate [project-root]
 `report` prints the application type, capabilities, route/API counts, and selected standards.
 
 `plan` writes `.descuff/plan.json` and `.descuff/plan.md` for a coding agent.
+
+`start` rescans the app, records `.descuff/baseline.json`, writes `.descuff/plan.md`, and creates `.descuff/codex-prompt.md`.
+
+`finish` rescans after implementation, validates again, and writes `.descuff/before-after.md`.
 
 `fix` prints workflow instructions. It does not invoke an LLM and does not edit application source.
 
@@ -67,6 +76,8 @@ pnpm build
 node packages/cli/dist/index.js scan fixtures/ecommerce
 node packages/cli/dist/index.js report fixtures/ecommerce
 node packages/cli/dist/index.js plan fixtures/ecommerce
+node packages/cli/dist/index.js start fixtures/ecommerce
+node packages/cli/dist/index.js finish fixtures/ecommerce
 node packages/cli/dist/index.js validate fixtures/ecommerce
 ```
 

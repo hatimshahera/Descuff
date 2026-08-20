@@ -56,6 +56,7 @@ Prepare the first public release with complete documentation, examples, CI, pack
   - `npx descuff --help`
   - `npx descuff scan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff validate /Users/hatimshaherawala/descuff/fixtures/ecommerce`
+- Follow-up website validation exposed a stale readiness artifact risk. `descuff validate` now performs a fresh scan before scoring, and the CLI includes `start` / `finish` for baseline-to-before-after workflow.
 - Earlier clean install verification passed in `/private/tmp/descuff-clean-install-20260820-1830` by installing packed tarballs and running:
   - `npx descuff scan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff report /Users/hatimshaherawala/descuff/fixtures/ecommerce`

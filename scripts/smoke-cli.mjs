@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 
 const cliPath = "packages/cli/dist/index.js";
-const commands = ["scan", "report", "plan", "fix", "apply-safe", "validate"];
+const commands = ["scan", "report", "plan", "start", "finish", "fix", "apply-safe", "validate"];
 const fixtureRoot = "fixtures/ecommerce";
 
 if (!existsSync(cliPath)) {
@@ -32,9 +32,13 @@ for (const command of commands) {
           ? "Descuff Report"
           : command === "plan"
             ? "descuff plan wrote"
-            : command === "validate"
-              ? "descuff validate passed"
-              : "no automatic file writes are enabled";
+            : command === "start"
+              ? "descuff start completed"
+              : command === "finish"
+                ? "descuff finish passed"
+                : command === "validate"
+                  ? "descuff validate passed"
+                  : "no automatic file writes are enabled";
 
   if (!result.stdout.includes(expectedOutput)) {
     console.error(`descuff ${command} produced unexpected output`);

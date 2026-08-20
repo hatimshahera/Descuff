@@ -246,3 +246,4 @@ Validation note:
 - Code-only Graphify refresh and cluster/report generation passed locally after installing `graphifyy`; generated `graphify-out/` artifacts remain ignored.
 - Fixture breadth now includes realistic ecommerce, booking, content, SaaS, and intentionally broken Next.js source fixtures with analyzer coverage.
 - npm publication completed for `descuff@0.0.1` and required `@descuff/*@0.0.1` runtime dependencies. Public `npx descuff --help`, `scan`, and `validate` verification passed against the ecommerce fixture.
+- Follow-up UX hardening added `descuff start` and `descuff finish` for baseline, coding-agent prompt, final validation, and before/after comparison. `descuff validate` now rescans before scoring readiness.

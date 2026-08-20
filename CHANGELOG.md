@@ -2,6 +2,17 @@
 
 All notable changes to Descuff will be documented in this file.
 
+## 0.0.2 - 2026-08-20
+
+### Added
+
+- Added `descuff start` to create a baseline, validation report, agent plan, and `.descuff/codex-prompt.md`.
+- Added `descuff finish` to rescan after implementation, validate again, and write `.descuff/before-after.md`.
+
+### Fixed
+
+- `descuff validate` now rescans before scoring readiness so stale validation artifacts do not survive source changes.
+
 ## 0.0.1 - 2026-08-20
 
 ### Added

@@ -46,6 +46,25 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("Readiness: 100/100");
   });
 
+  it("starts a baseline-to-agent workflow for a Next.js fixture", async () => {
+    const result = await runCli(["node", "descuff", "start", fixtureRoot]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("descuff start completed");
+    expect(result.stdout).toContain("Baseline readiness: 100/100");
+    expect(result.stdout).toContain("codex-prompt.md");
+  });
+
+  it("finishes a baseline-to-agent workflow with a before/after report", async () => {
+    await runCli(["node", "descuff", "start", fixtureRoot]);
+    const result = await runCli(["node", "descuff", "finish", fixtureRoot]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("descuff finish passed");
+    expect(result.stdout).toContain("Readiness: 100/100 -> 100/100");
+    expect(result.stdout).toContain("before-after.md");
+  });
+
   it("runs fix as a non-LLM workflow refresh command", async () => {
     const result = await runCli(["node", "descuff", "fix"]);
 
@@ -56,7 +75,16 @@ describe("descuff CLI", () => {
   });
 
   it("keeps every command represented in tests", () => {
-    expect(descuffCommands).toEqual(["scan", "report", "plan", "fix", "apply-safe", "validate"]);
+    expect(descuffCommands).toEqual([
+      "scan",
+      "report",
+      "plan",
+      "start",
+      "finish",
+      "fix",
+      "apply-safe",
+      "validate"
+    ]);
   });
 
   it("keeps apply-safe conservative in this release", async () => {
