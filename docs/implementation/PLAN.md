@@ -58,15 +58,15 @@ Required testing:
 
 ## Phase 2 - Analysis
 
-- [ ] Next.js project detection
-- [ ] App Router route discovery
-- [ ] Pages Router route discovery
-- [ ] API route discovery
-- [ ] HTTP method extraction
-- [ ] server action extraction
-- [ ] form extraction
-- [ ] authentication middleware detection
-- [ ] existing standards detection
+- [x] Next.js project detection
+- [x] App Router route discovery
+- [x] Pages Router route discovery
+- [x] API route discovery
+- [x] HTTP method extraction
+- [x] server action extraction
+- [x] form extraction
+- [x] authentication middleware detection
+- [x] existing standards detection
 - [ ] Graphify adapter
 - [ ] runtime evidence correlation
 

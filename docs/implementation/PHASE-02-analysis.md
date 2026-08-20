@@ -12,18 +12,18 @@ Build deterministic and runtime analyzers that extract evidence from Next.js app
 
 ## Tasks
 
-- [ ] Define `StructuralAnalyzer` contract.
-- [ ] Refine `ProjectContext` and `StructuralAnalysis` from Phase 01 as extraction needs become concrete.
-- [ ] Implement Next.js project detection.
-- [ ] Implement App Router route discovery.
-- [ ] Implement Pages Router route discovery.
-- [ ] Implement API route discovery.
-- [ ] Extract HTTP methods.
-- [ ] Extract imports, exports, functions, classes, and React component symbols.
-- [ ] Detect server actions where deterministic.
-- [ ] Detect forms and submission targets.
-- [ ] Detect middleware and likely authentication boundaries.
-- [ ] Detect existing standards files and routes.
+- [x] Define `StructuralAnalyzer` contract.
+- [x] Refine `ProjectContext` and `StructuralAnalysis` from Phase 01 as extraction needs become concrete.
+- [x] Implement Next.js project detection.
+- [x] Implement App Router route discovery.
+- [x] Implement Pages Router route discovery.
+- [x] Implement API route discovery.
+- [x] Extract HTTP methods.
+- [x] Extract imports, exports, functions, classes, and React component symbols.
+- [x] Detect server actions where deterministic.
+- [x] Detect forms and submission targets.
+- [x] Detect middleware and likely authentication boundaries.
+- [x] Detect existing standards files and routes.
 - [ ] Implement Playwright runtime route observation.
 - [ ] Correlate runtime network evidence with source evidence.
 - [ ] Implement `GraphifyAnalyzer` through a clean adapter.
