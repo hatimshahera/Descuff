@@ -7,5 +7,5 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["test/**/*.ts"],
-  "references": [{ "path": "../../ir" }]
+  "references": [{ "path": "../../ir" }, { "path": "../core" }]
 }

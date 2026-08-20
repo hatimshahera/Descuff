@@ -116,7 +116,7 @@ Required testing:
 - [x] shared `StandardAdapter` contract
 - [x] adapter lifecycle contract for assess/generate/plan/apply-safe/validate
 - [x] `LlmsTxtAdapter`
-- [ ] `SchemaOrgAdapter`
+- [x] `SchemaOrgAdapter`
 - [x] `OpenApiAdapter`
 - [ ] `ApiCatalogAdapter`
 - [ ] `WebMcpAdapter`

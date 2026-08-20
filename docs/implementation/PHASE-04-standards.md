@@ -19,7 +19,7 @@ Implement isolated adapters for first-release standards.
 - [x] Implement idempotency checks.
 - [x] Implement conflict policy for existing files.
 - [x] Implement `LlmsTxtAdapter`.
-- [ ] Implement `SchemaOrgAdapter`.
+- [x] Implement `SchemaOrgAdapter`.
 - [x] Implement `OpenApiAdapter`.
 - [ ] Implement `ApiCatalogAdapter`.
 - [ ] Implement `WebMcpAdapter`.
