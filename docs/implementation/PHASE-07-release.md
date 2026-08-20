@@ -56,7 +56,7 @@ Prepare the first public release with complete documentation, examples, CI, pack
   - `npx descuff plan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff validate /Users/hatimshaherawala/descuff/fixtures/ecommerce`
 - Release checklist passed for current release scope: docs, license, changelog, public ecommerce example, CI, package dry run, clean install CLI smoke, and explicit critical/high defect marker audit.
-- Critical/high triage found no known critical or high-severity defects. Remaining open items are release-scope caveats: placeholder non-ecommerce fixtures and missing local `graphify` executable.
+- Critical/high triage found no known critical or high-severity defects. Non-blocking release caveats: no npm registry publication has been performed, Graphify is not on this shell's default PATH, and Graphify community labels are generic without an LLM backend key.
 - Graphify was installed with `uv tool install --upgrade graphifyy`. The executable is available at `/Users/hatimshaherawala/.local/bin/graphify`, but that directory is not on this shell's default PATH.
 - Code-only Graphify refresh passed with `/Users/hatimshaherawala/.local/bin/graphify . --update --no-viz --code-only`, producing `graphify-out/graph.json` with 1001 nodes, 1324 edges, and 74 communities.
 - Graphify cluster/report refresh passed with `/Users/hatimshaherawala/.local/bin/graphify cluster-only /Users/hatimshaherawala/descuff --no-viz`, producing `graphify-out/GRAPH_REPORT.md` with generic community labels because no LLM backend key was configured.
