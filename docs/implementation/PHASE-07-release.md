@@ -11,16 +11,16 @@ Prepare the first public release with complete documentation, examples, CI, pack
 
 ## Tasks
 
-- [ ] Complete README.
-- [ ] Add installation instructions.
-- [ ] Add contributing guide.
-- [ ] Add changelog.
-- [ ] Add license.
-- [ ] Add public examples.
+- [x] Complete README.
+- [x] Add installation instructions.
+- [x] Add contributing guide.
+- [x] Add changelog.
+- [x] Add license.
+- [x] Add public examples.
 - [ ] Complete fixture applications.
 - [ ] Run Graphify over Descuff.
-- [ ] Configure coding-agent instructions to use Graphify for repository exploration.
-- [ ] Verify CI is green.
+- [x] Configure coding-agent instructions to use Graphify for repository exploration.
+- [x] Verify CI is green.
 - [ ] Run package publishing dry run.
 - [ ] Run full release checklist.
 - [ ] Triage all known critical and high-severity defects.
@@ -41,6 +41,16 @@ Prepare the first public release with complete documentation, examples, CI, pack
 - Documentation command verification.
 - CI verification.
 - Release dry run.
+
+## Validation Notes
+
+- `pnpm run ci` passed on 2026-08-20 after wiring `scan`, `report`, `plan`, and `validate` to the ecommerce fixture.
+- Documentation command verification passed with:
+  - `node packages/cli/dist/index.js scan fixtures/ecommerce`
+  - `node packages/cli/dist/index.js report fixtures/ecommerce`
+  - `node packages/cli/dist/index.js validate fixtures/ecommerce`
+- `pnpm --filter @descuff/cli pack --dry-run` succeeds, but the current package identity is still `@descuff/cli`, so it does not yet satisfy the `npx descuff scan` release acceptance criterion.
+- Live Graphify refresh remains blocked locally unless the `graphify` executable is installed. Repository coding-agent instructions and smoke checks verify the optional Graphify workflow guidance.
 
 ## Completion Rule
 

@@ -213,13 +213,13 @@ Validation note:
 
 ## Phase 7 - Release
 
-- [ ] complete README
-- [ ] installation instructions
-- [ ] contributing guide
-- [ ] changelog
-- [ ] license
-- [ ] public examples
-- [ ] CI green on all required checks
+- [x] complete README
+- [x] installation instructions
+- [x] contributing guide
+- [x] changelog
+- [x] license
+- [x] public examples
+- [x] CI green on all required checks
 - [ ] package publishing dry run
 - [ ] no known critical or high-severity defects
 
@@ -236,3 +236,9 @@ Required testing:
 - CLI smoke tests from packaged artifact.
 - Release checklist verification.
 - Documentation link and command verification.
+
+Validation note:
+
+- `pnpm run ci` passed on 2026-08-20 with formatting, linting, typechecking, 121 tests, build, and CLI smoke for all six commands.
+- Documentation command verification passed against `fixtures/ecommerce`.
+- Package dry run currently produces an `@descuff/cli` tarball, so `npx descuff` package readiness remains incomplete.
