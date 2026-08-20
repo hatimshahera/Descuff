@@ -1,0 +1,227 @@
+# Descuff Implementation Plan
+
+This is the master tracker. A task or phase is complete only when its acceptance criteria and associated tests pass.
+
+Repository status at plan creation:
+
+- Workspace contained no source files, package manifests, CI, or Git metadata.
+- No existing Graphify output was present.
+- Planning documentation is the initial project artifact.
+
+## Phase Dependencies
+
+```text
+Phase 1 Foundation
+  -> Phase 2 Analysis
+  -> Phase 3 Semantic Model
+  -> Phase 4 Standards
+  -> Phase 5 Agent Workflow
+  -> Phase 6 Validation
+  -> Phase 7 Release
+```
+
+Cross-cutting dependencies:
+
+- Fixtures start in Phase 1 and expand through all later phases.
+- Minimal versioned evidence and `StructuralAnalysis` contracts start in Phase 1. Phase 2 populates them. Phase 3 transforms them into the semantic `ApplicationModel`.
+- Validation scaffolding starts in Phase 1 but becomes product-complete in Phase 6.
+- Graphify is optional infrastructure and depends on Phase 2 analyzer contracts.
+
+## Phase 1 - Foundation
+
+- [ ] pnpm workspace scaffold
+- [ ] TypeScript strict configuration
+- [ ] package boundaries created
+- [ ] CLI command shell
+- [ ] minimal versioned evidence contracts
+- [ ] `StructuralAnalysis` contract
+- [ ] config loading shell
+- [ ] Vitest setup
+- [ ] Playwright setup
+- [ ] CI workflow
+- [ ] initial fixtures
+- [x] planning and architecture docs
+
+Acceptance criteria:
+
+- `pnpm install` succeeds.
+- `pnpm format`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` run.
+- CLI exposes `descuff scan`, `descuff report`, `descuff plan`, `descuff fix`, `descuff apply-safe`, and `descuff validate` placeholders.
+- Package boundaries match the documented monorepo structure.
+- Configuration, caches, and process-wide state are passed explicitly through typed contexts or documented cache interfaces.
+
+Required testing:
+
+- CLI smoke tests for every command.
+- Package import tests.
+- CI workflow dry run or equivalent local command verification.
+
+## Phase 2 - Analysis
+
+- [ ] Next.js project detection
+- [ ] App Router route discovery
+- [ ] Pages Router route discovery
+- [ ] API route discovery
+- [ ] HTTP method extraction
+- [ ] server action extraction
+- [ ] form extraction
+- [ ] authentication middleware detection
+- [ ] existing standards detection
+- [ ] Graphify adapter
+- [ ] runtime evidence correlation
+
+Acceptance criteria:
+
+- Analyzer emits Descuff-owned `StructuralAnalysis`.
+- Phase 2 does not create the full semantic `ApplicationModel`; that transformation belongs to Phase 3.
+- Static facts include evidence references.
+- Runtime observations are correlated with source evidence.
+- Graphify output is consumed only through `GraphifyAdapter`.
+- Unsupported patterns produce typed warnings rather than silent omissions.
+
+Required testing:
+
+- Unit tests for route and API extraction.
+- Fixture tests for App Router and Pages Router applications.
+- Runtime Playwright tests for route rendering and network observation.
+- Graphify adapter contract tests with sample graph output.
+
+## Phase 3 - Semantic Model
+
+- [ ] versioned IR schemas
+- [ ] evidence index
+- [ ] entity model
+- [ ] capability model
+- [ ] capability risk classification
+- [ ] application type assessment
+- [ ] IR validation at boundaries
+- [ ] deterministic readiness scoring foundation
+
+Acceptance criteria:
+
+- Every semantic conclusion requires evidence.
+- Invalid IR fails schema validation with typed errors.
+- Capability risk classification covers all required classes.
+- Readiness score has deterministic categories, weights, caps, blocking failures, schema version, and lost-point reasons.
+
+Required testing:
+
+- Schema validation tests.
+- Capability classification tests.
+- IR transformation tests.
+- Golden fixture expected IR tests.
+
+## Phase 4 - Standards
+
+- [ ] shared `StandardAdapter` contract
+- [ ] adapter lifecycle contract for assess/generate/plan/apply-safe/validate
+- [ ] `LlmsTxtAdapter`
+- [ ] `SchemaOrgAdapter`
+- [ ] `OpenApiAdapter`
+- [ ] `ApiCatalogAdapter`
+- [ ] `WebMcpAdapter`
+- [ ] vertical E2E path with `llms.txt`
+- [ ] vertical E2E path with Schema.org or OpenAPI
+- [ ] idempotent generated changes
+- [ ] dry-run diffs
+- [ ] conflict policy for existing files
+- [ ] sensitive capability approval gates
+
+Acceptance criteria:
+
+- Each adapter can assess, generate, and validate through the common contract.
+- `generate` returns proposed changes in memory and never writes files.
+- Generated changes are deterministic and idempotent.
+- `apply-safe` never exposes sensitive or high-consequence capabilities.
+- `apply-safe` is transactional or leaves recoverable partial changes with a recovery report.
+- Standard-specific concepts do not leak into the core IR.
+- WebMCP is treated as experimental/proposed and pinned to a supported draft version.
+
+Required testing:
+
+- Unit tests for each adapter.
+- Golden generated-output tests.
+- Vertical scan-to-validation tests for `llms.txt` and one richer standard before full-depth implementation of later adapters.
+- Idempotency tests.
+- Safety gate tests.
+
+## Phase 5 - Agent Workflow
+
+- [ ] `.descuff/plan.json` schema
+- [ ] `.descuff/plan.md` renderer
+- [ ] `descuff fix` coding-agent instructions
+- [ ] `descuff fix` non-LLM command semantics
+- [ ] minimal source-reading guidance
+- [ ] Graphify developer workflow instructions
+- [ ] `pnpm graph:refresh`
+
+Acceptance criteria:
+
+- Coding agents can follow generated plans without Descuff owning an LLM API key.
+- `descuff fix` refreshes plans and workflow instructions only; it does not invoke an LLM and does not directly edit application source.
+- Plans distinguish automatic, approval-required, and blocked changes.
+- Agent instructions require scan, implementation, existing tests, validation, and repair loop.
+- Graphify is configured as developer infrastructure after repository architecture exists.
+
+Required testing:
+
+- Plan schema tests.
+- Renderer snapshot tests.
+- Agent workflow fixture dry runs.
+- Graphify command smoke test when Graphify is available.
+
+## Phase 6 - Validation
+
+- [ ] static validation
+- [ ] build validation
+- [ ] existing test runner integration
+- [ ] test baseline recording and comparison
+- [ ] runtime validation
+- [ ] runtime configuration schema
+- [ ] explicit validation scenarios for mutating flows
+- [ ] security validation
+- [ ] regression validation
+- [ ] typed failure catalog
+- [ ] readiness report integration
+
+Acceptance criteria:
+
+- `descuff validate` fails clearly with typed actionable errors.
+- Validation proves behavior for generated standards.
+- Existing test failures block success unless they match a recorded scan baseline with explicit evidence.
+- Security boundaries and human UI invariants are checked.
+- Runtime analysis is read-only by default unless an explicit validation scenario allows invocation.
+
+Required testing:
+
+- Validator unit tests.
+- Build/test command integration tests.
+- Playwright runtime validation tests.
+- Security regression fixture tests.
+- End-to-end fixture validation.
+
+## Phase 7 - Release
+
+- [ ] complete README
+- [ ] installation instructions
+- [ ] contributing guide
+- [ ] changelog
+- [ ] license
+- [ ] public examples
+- [ ] CI green on all required checks
+- [ ] package publishing dry run
+- [ ] no known critical or high-severity defects
+
+Acceptance criteria:
+
+- A developer can run `npx descuff scan` on a real Next.js app and receive a trustworthy report.
+- A coding agent can implement the plan refreshed by `descuff fix`.
+- `npx descuff validate` independently proves generated standards work.
+- Documentation explains architecture, usage, safety model, and contribution workflow.
+
+Required testing:
+
+- Full fixture E2E tests.
+- CLI smoke tests from packaged artifact.
+- Release checklist verification.
+- Documentation link and command verification.
