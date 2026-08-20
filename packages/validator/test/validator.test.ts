@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { ApplicationModel, EvidenceRef } from "@descuff/ir";
+import {
+  createEmptyStructuralAnalysis,
+  type ApplicationModel,
+  type EvidenceRef
+} from "@descuff/ir";
 import type { StandardAdapter } from "@descuff/standard-core";
 import {
   createEmptyValidationSummary,
@@ -12,6 +16,7 @@ import {
   runStandardValidation,
   validateCommandResults,
   validateRuntimeConfig,
+  validateRuntimeObservations,
   validateSecurityModel,
   validateStaticGeneratedChanges,
   validateStaticStandardResults,
@@ -862,6 +867,91 @@ describe("@descuff/validator", () => {
         ]
       })
     ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
+  it("fails runtime validation when semantic routes and APIs are not observed", () => {
+    expect(
+      validateRuntimeObservations(
+        createReadyApplicationModel(),
+        createEmptyStructuralAnalysis("/repo")
+      )
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "RUNTIME_ROUTE_NOT_OBSERVED",
+          level: "runtime",
+          severity: "error",
+          source: "route:/"
+        },
+        {
+          code: "RUNTIME_API_NOT_OBSERVED",
+          level: "runtime",
+          severity: "error",
+          source: "api:GET:/api/products"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("fails runtime validation when observed routes and APIs return failed statuses", () => {
+    const analysis = createEmptyStructuralAnalysis("/repo");
+    analysis.runtimeRoutes.push({
+      id: "runtime-route:/",
+      path: "/",
+      status: 500,
+      evidence: [evidence]
+    });
+    analysis.runtimeApiOperations.push({
+      id: "runtime-api:GET:/api/products",
+      method: "GET",
+      path: "/api/products",
+      status: 404,
+      evidence: [evidence]
+    });
+
+    expect(validateRuntimeObservations(createReadyApplicationModel(), analysis)).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "RUNTIME_ROUTE_STATUS_FAILED",
+          level: "runtime",
+          severity: "error",
+          source: "route:/"
+        },
+        {
+          code: "RUNTIME_API_STATUS_FAILED",
+          level: "runtime",
+          severity: "error",
+          source: "api:GET:/api/products"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("passes runtime validation when semantic routes and read APIs are observed successfully", () => {
+    const analysis = createEmptyStructuralAnalysis("/repo");
+    analysis.runtimeRoutes.push({
+      id: "runtime-route:/",
+      path: "/",
+      status: 200,
+      evidence: [evidence]
+    });
+    analysis.runtimeApiOperations.push({
+      id: "runtime-api:GET:/api/products",
+      method: "GET",
+      path: "/api/products",
+      status: 200,
+      evidence: [evidence]
+    });
+
+    expect(validateRuntimeObservations(createReadyApplicationModel(), analysis)).toEqual({
       passed: true,
       failures: [],
       warnings: []

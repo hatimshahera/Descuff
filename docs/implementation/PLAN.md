@@ -181,7 +181,7 @@ Validation note:
 - [x] build validation
 - [x] existing test runner integration
 - [x] test baseline recording and comparison
-- [ ] runtime validation
+- [x] runtime validation
 - [x] runtime configuration schema
 - [x] explicit validation scenarios for mutating flows
 - [x] standard-specific validation runners

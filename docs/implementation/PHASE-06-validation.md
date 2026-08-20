@@ -18,7 +18,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - [x] Integrate existing repository test commands.
 - [x] Record test baseline during scan.
 - [x] Compare post-change test results to baseline.
-- [ ] Implement runtime validation.
+- [x] Implement runtime validation.
 - [x] Implement runtime configuration schema.
 - [x] Implement explicit validation scenarios for mutating flows.
 - [x] Implement standard-specific validation runners.
@@ -55,6 +55,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - Build and existing-test command integration tests use an injected runner and fail nonzero command results without assuming failures are pre-existing.
 - Existing-test baseline tests record command, exit code, failing identifiers, and evidence; validation accepts only matching evidenced baseline failures and blocks new failures.
 - Runtime config tests enforce HTTP(S) base URLs, environment-variable names without embedded values, explicit mutating scenarios, complete side-effect verification/cleanup, and safe test environments for high-consequence operations.
+- Runtime observation tests verify semantic routes and read-only API operations are observed with successful HTTP status codes.
 - Standard-specific validation runner tests execute adapter `validate` methods, aggregate typed failures, and convert runner exceptions into actionable validation failures.
 - Security validation tests block authenticated/admin capabilities without auth boundaries, public authenticated-read exposure, and public sensitive or high-consequence capabilities.
 - UI regression tests compare route invariants, block missing routes and unexpected title/heading changes, and warn on accessibility landmark changes.

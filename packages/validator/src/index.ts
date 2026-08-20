@@ -4,6 +4,7 @@ import {
   type EvidenceRef,
   type HttpMethod,
   type ReadinessScore,
+  type StructuralAnalysis,
   scoreReadiness
 } from "@descuff/ir";
 import type {
@@ -522,6 +523,84 @@ export function validateRuntimeConfig(config: RuntimeValidationConfig): Validati
   return createValidationSummary(issues);
 }
 
+export function validateRuntimeObservations(
+  model: ApplicationModel,
+  analysis: StructuralAnalysis
+): ValidationSummary {
+  const issues: ValidationFailure[] = [];
+  const runtimeRoutesByPath = new Map(analysis.runtimeRoutes.map((route) => [route.path, route]));
+  const runtimeApisByOperation = new Map(
+    analysis.runtimeApiOperations.map((operation) => [
+      `${operation.method}:${operation.path}`,
+      operation
+    ])
+  );
+
+  for (const route of model.routes) {
+    const observed = runtimeRoutesByPath.get(route.path);
+
+    if (observed === undefined) {
+      issues.push({
+        code: "RUNTIME_ROUTE_NOT_OBSERVED",
+        level: "runtime",
+        severity: "error",
+        message: `Route ${route.path} was not observed during runtime validation.`,
+        source: route.id,
+        evidence: route.evidence,
+        suggestedAction:
+          "Start the application and validate the route against the configured base URL."
+      });
+      continue;
+    }
+
+    if (!isSuccessfulRuntimeStatus(observed.status)) {
+      issues.push({
+        code: "RUNTIME_ROUTE_STATUS_FAILED",
+        level: "runtime",
+        severity: "error",
+        message: `Route ${route.path} returned HTTP ${observed.status}.`,
+        source: route.id,
+        evidence: [...route.evidence, ...observed.evidence],
+        suggestedAction:
+          "Fix the route or generated references before marking runtime validation successful."
+      });
+    }
+  }
+
+  for (const api of model.apis.filter((operation) => isReadOnlyMethod(operation.method))) {
+    const observed = runtimeApisByOperation.get(`${api.method}:${api.path}`);
+
+    if (observed === undefined) {
+      issues.push({
+        code: "RUNTIME_API_NOT_OBSERVED",
+        level: "runtime",
+        severity: "error",
+        message: `${api.method} ${api.path} was not observed during runtime validation.`,
+        source: api.id,
+        evidence: api.evidence,
+        suggestedAction:
+          "Start the application and validate the API operation against the configured base URL."
+      });
+      continue;
+    }
+
+    if (!isSuccessfulRuntimeStatus(observed.status)) {
+      issues.push({
+        code: "RUNTIME_API_STATUS_FAILED",
+        level: "runtime",
+        severity: "error",
+        message: `${api.method} ${api.path} returned HTTP ${observed.status}.`,
+        source: api.id,
+        evidence: [...api.evidence, ...observed.evidence],
+        suggestedAction:
+          "Fix the API handler or generated references before marking runtime validation successful."
+      });
+    }
+  }
+
+  return createValidationSummary(issues);
+}
+
 export function validateSecurityModel(model: ApplicationModel): ValidationSummary {
   const issues: ValidationFailure[] = [];
 
@@ -710,6 +789,10 @@ function validateRuntimeOperationAuthorization(
 
 function isReadOnlyMethod(method: HttpMethod): boolean {
   return method === "GET" || method === "HEAD" || method === "OPTIONS";
+}
+
+function isSuccessfulRuntimeStatus(status: number): boolean {
+  return status >= 200 && status < 400;
 }
 
 function errorMessage(error: unknown): string {
