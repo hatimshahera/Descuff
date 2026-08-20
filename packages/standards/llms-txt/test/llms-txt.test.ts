@@ -4,6 +4,10 @@ import {
   type ApplicationModel,
   type EvidenceRef
 } from "@descuff/ir";
+import {
+  checkGeneratedChangeIdempotency,
+  planGeneratedChangeApplications
+} from "@descuff/standard-core";
 import { LlmsTxtAdapter, llmsTxtAdapterId } from "../src/index.js";
 
 const evidence: EvidenceRef = {
@@ -60,6 +64,40 @@ describe("@descuff/standard-llms-txt", () => {
         ""
       ].join("\n")
     );
+  });
+
+  it("passes shared idempotency checks across generation passes", async () => {
+    const adapter = new LlmsTxtAdapter();
+    const appModel = model();
+
+    expect(
+      checkGeneratedChangeIdempotency(
+        await adapter.generate(appModel),
+        await adapter.generate(appModel)
+      )
+    ).toEqual({
+      idempotent: true,
+      issues: []
+    });
+  });
+
+  it("requires approval instead of replacing an existing llms.txt conflict", async () => {
+    const adapter = new LlmsTxtAdapter();
+    const [change] = await adapter.generate(model());
+
+    expect(
+      planGeneratedChangeApplications(
+        [change],
+        new Map([["public/llms.txt", "# Existing\n\nDo not replace silently.\n"]])
+      )
+    ).toEqual([
+      {
+        change,
+        status: "requires-approval",
+        existingContent: "# Existing\n\nDo not replace silently.\n",
+        reason: "Existing file differs and requires explicit approval before replacement."
+      }
+    ]);
   });
 
   it("requires approval when sensitive or high-consequence capabilities exist", async () => {

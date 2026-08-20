@@ -16,8 +16,8 @@ Implement isolated adapters for first-release standards.
 - [x] Define `GeneratedChange`.
 - [x] Define explicit assess/generate/plan/apply-safe/validate lifecycle.
 - [x] Implement dry-run diff support.
-- [ ] Implement idempotency checks.
-- [ ] Implement conflict policy for existing files.
+- [x] Implement idempotency checks.
+- [x] Implement conflict policy for existing files.
 - [x] Implement `LlmsTxtAdapter`.
 - [ ] Implement `SchemaOrgAdapter`.
 - [ ] Implement `OpenApiAdapter`.

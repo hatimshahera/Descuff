@@ -122,9 +122,9 @@ Required testing:
 - [ ] `WebMcpAdapter`
 - [ ] vertical E2E path with `llms.txt`
 - [ ] vertical E2E path with Schema.org or OpenAPI
-- [ ] idempotent generated changes
+- [x] idempotent generated changes
 - [x] dry-run diffs
-- [ ] conflict policy for existing files
+- [x] conflict policy for existing files
 - [ ] sensitive capability approval gates
 
 Acceptance criteria:
