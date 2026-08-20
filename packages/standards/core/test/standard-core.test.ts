@@ -4,6 +4,7 @@ import {
   createDryRunDiffs,
   createSensitiveCapabilityApprovalGates,
   generatedChangeSafetyForApprovalGates,
+  planApplySafeGeneratedChanges,
   planGeneratedChangeApplications,
   standardAdapterLifecycle,
   type GeneratedChange
@@ -132,6 +133,95 @@ describe("@descuff/standard-core", () => {
     ]);
     expect(generatedChangeSafetyForApprovalGates(gates)).toBe("approval-required");
     expect(generatedChangeSafetyForApprovalGates([])).toBe("automatic");
+  });
+
+  it("plans only deterministic automatic generated writes for apply-safe", () => {
+    const [change] = changes({ conflictPolicy: "approval-required" });
+
+    expect(planApplySafeGeneratedChanges([change])).toEqual({
+      writes: [
+        {
+          change,
+          path: "public/llms.txt",
+          content: "# App\n\n> Generated",
+          alreadyApplied: false
+        }
+      ],
+      blocked: [],
+      recoveryReport:
+        "# apply-safe recovery report\n\n## Writes\n\n- public/llms.txt: ready to write\n"
+    });
+  });
+
+  it("treats already-applied content as safe without rewriting", () => {
+    const [change] = changes({ conflictPolicy: "approval-required" });
+
+    expect(
+      planApplySafeGeneratedChanges([change], new Map([["public/llms.txt", change.content]]))
+    ).toEqual({
+      writes: [
+        {
+          change,
+          path: "public/llms.txt",
+          content: change.content,
+          alreadyApplied: true
+        }
+      ],
+      blocked: [],
+      recoveryReport:
+        "# apply-safe recovery report\n\n## Writes\n\n- public/llms.txt: already applied\n"
+    });
+  });
+
+  it("blocks apply-safe when an existing file would be replaced", () => {
+    const [change] = changes({ conflictPolicy: "approval-required" });
+
+    expect(
+      planApplySafeGeneratedChanges([change], new Map([["public/llms.txt", "# Existing"]]))
+    ).toEqual({
+      writes: [],
+      blocked: [
+        {
+          change,
+          status: "requires-approval",
+          reason: "Existing file differs and requires explicit approval before replacement."
+        }
+      ],
+      recoveryReport:
+        "# apply-safe recovery report\n\n## Blocked\n\n- public/llms.txt: requires-approval - Existing file differs and requires explicit approval before replacement.\n"
+    });
+  });
+
+  it("blocks approval-required and non-deterministic generated changes", () => {
+    const [approvalRequired] = changes({ conflictPolicy: "approval-required" });
+    const nonDeterministic = {
+      ...approvalRequired,
+      id: "llms-txt:nondeterministic",
+      deterministic: false,
+      safety: "automatic" as const
+    };
+
+    expect(
+      planApplySafeGeneratedChanges([
+        {
+          ...approvalRequired,
+          safety: "approval-required"
+        },
+        nonDeterministic
+      ])
+    ).toMatchObject({
+      writes: [],
+      blocked: [
+        {
+          status: "not-automatic",
+          reason: "apply-safe only applies changes classified as automatic."
+        },
+        {
+          status: "not-deterministic",
+          reason: "apply-safe only applies deterministic generated changes."
+        }
+      ]
+    });
   });
 });
 

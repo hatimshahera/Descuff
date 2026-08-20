@@ -103,6 +103,25 @@ export interface GeneratedChangeIdempotencyResult {
   issues: GeneratedChangeIdempotencyIssue[];
 }
 
+export interface ApplySafeWrite {
+  change: GeneratedChange;
+  path: string;
+  content: string;
+  alreadyApplied: boolean;
+}
+
+export interface ApplySafeBlockedChange {
+  change: GeneratedChange;
+  status: GeneratedChangeApplicationStatus | "not-deterministic" | "not-automatic";
+  reason: string;
+}
+
+export interface ApplySafePlan {
+  writes: ApplySafeWrite[];
+  blocked: ApplySafeBlockedChange[];
+  recoveryReport: string;
+}
+
 export interface StandardValidationIssue {
   code: string;
   severity: ValidationSeverity;
@@ -245,6 +264,86 @@ export function checkGeneratedChangeIdempotency(
     idempotent: issues.length === 0,
     issues
   };
+}
+
+export function planApplySafeGeneratedChanges(
+  changes: GeneratedChange[],
+  existingFiles: ReadonlyMap<string, string> = new Map()
+): ApplySafePlan {
+  const writes: ApplySafeWrite[] = [];
+  const blocked: ApplySafeBlockedChange[] = [];
+  const applications = planGeneratedChangeApplications(changes, existingFiles);
+
+  for (const application of applications) {
+    if (!application.change.deterministic) {
+      blocked.push({
+        change: application.change,
+        status: "not-deterministic",
+        reason: "apply-safe only applies deterministic generated changes."
+      });
+      continue;
+    }
+
+    if (application.change.safety !== "automatic") {
+      blocked.push({
+        change: application.change,
+        status: "not-automatic",
+        reason: "apply-safe only applies changes classified as automatic."
+      });
+      continue;
+    }
+
+    if (application.status === "write" || application.status === "already-applied") {
+      writes.push({
+        change: application.change,
+        path: application.change.path,
+        content: application.change.content,
+        alreadyApplied: application.status === "already-applied"
+      });
+      continue;
+    }
+
+    blocked.push({
+      change: application.change,
+      status: application.status,
+      reason: application.reason
+    });
+  }
+
+  return {
+    writes,
+    blocked,
+    recoveryReport: renderApplySafeRecoveryReport(writes, blocked)
+  };
+}
+
+function renderApplySafeRecoveryReport(
+  writes: ApplySafeWrite[],
+  blocked: ApplySafeBlockedChange[]
+): string {
+  const lines = ["# apply-safe recovery report", ""];
+
+  if (writes.length > 0) {
+    lines.push("## Writes", "");
+    for (const write of writes) {
+      lines.push(`- ${write.path}: ${write.alreadyApplied ? "already applied" : "ready to write"}`);
+    }
+    lines.push("");
+  }
+
+  if (blocked.length > 0) {
+    lines.push("## Blocked", "");
+    for (const item of blocked) {
+      lines.push(`- ${item.change.path}: ${item.status} - ${item.reason}`);
+    }
+    lines.push("");
+  }
+
+  if (writes.length === 0 && blocked.length === 0) {
+    lines.push("No generated changes were provided.", "");
+  }
+
+  return `${lines.join("\n").trimEnd()}\n`;
 }
 
 export function createSensitiveCapabilityApprovalGates(capabilities: Capability[]): ApprovalGate[] {

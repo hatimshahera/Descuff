@@ -26,7 +26,7 @@ Implement isolated adapters for first-release standards.
 - [x] Prove vertical E2E path with `llms.txt`.
 - [x] Prove vertical E2E path with Schema.org or OpenAPI.
 - [x] Implement sensitive and high-consequence capability approval gates.
-- [ ] Integrate safe deterministic generation with `apply-safe`.
+- [x] Integrate safe deterministic generation with `apply-safe`.
 
 ## Acceptance Criteria
 
