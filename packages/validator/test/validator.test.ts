@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { EvidenceRef } from "@descuff/ir";
+import type { ApplicationModel, EvidenceRef } from "@descuff/ir";
+import type { StandardAdapter } from "@descuff/standard-core";
 import {
   createEmptyValidationSummary,
   createRepositoryValidationCommands,
   createValidationSummary,
   recordExistingTestBaseline,
   runValidationCommands,
+  runStandardValidation,
   validateCommandResults,
   validateRuntimeConfig,
   validateStaticGeneratedChanges,
@@ -103,6 +105,86 @@ describe("@descuff/validator", () => {
           path: "public/llms.txt",
           evidence: [evidence],
           suggestedAction: "Repair llms-txt output and rerun descuff validate."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("runs standard-specific validation adapters and aggregates typed failures", async () => {
+    const adapter: StandardAdapter = {
+      id: "llms-txt",
+      async assess() {
+        throw new Error("unused");
+      },
+      async generate() {
+        throw new Error("unused");
+      },
+      async validate() {
+        return {
+          standardId: "llms-txt",
+          valid: false,
+          issues: [
+            {
+              code: "LLMS_TXT_ROUTE_MISSING",
+              severity: "error",
+              message: "llms.txt does not reference route /products.",
+              path: "public/llms.txt",
+              evidence: [evidence]
+            }
+          ]
+        };
+      }
+    };
+
+    await expect(
+      runStandardValidation([adapter], {
+        model: createApplicationModel(),
+        generatedChanges: []
+      })
+    ).resolves.toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "LLMS_TXT_ROUTE_MISSING",
+          level: "static",
+          severity: "error",
+          source: "llms-txt",
+          suggestedAction: "Repair llms-txt output and rerun descuff validate."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("converts standard validation runner exceptions into actionable failures", async () => {
+    const adapter: StandardAdapter = {
+      id: "openapi",
+      async assess() {
+        throw new Error("unused");
+      },
+      async generate() {
+        throw new Error("unused");
+      },
+      async validate() {
+        throw new Error("invalid parser state");
+      }
+    };
+
+    await expect(
+      runStandardValidation([adapter], {
+        model: createApplicationModel(),
+        generatedChanges: []
+      })
+    ).resolves.toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "STANDARD_VALIDATION_RUNNER_FAILED",
+          level: "static",
+          severity: "error",
+          message: "openapi validation runner failed: invalid parser state",
+          source: "openapi"
         }
       ],
       warnings: []
@@ -707,3 +789,32 @@ describe("@descuff/validator", () => {
     });
   });
 });
+
+function createApplicationModel(): ApplicationModel {
+  return {
+    schemaVersion: "0.1.0",
+    project: {
+      rootDir: "/repo",
+      framework: "nextjs",
+      evidence: [evidence]
+    },
+    applicationType: {
+      type: "ecommerce",
+      confidence: "high",
+      evidence: [evidence]
+    },
+    entities: [],
+    capabilities: [],
+    routes: [],
+    apis: [],
+    authentication: {
+      boundaries: [],
+      evidence: []
+    },
+    integrations: [],
+    standards: [],
+    evidence: {
+      items: [evidence]
+    }
+  };
+}

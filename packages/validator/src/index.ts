@@ -1,5 +1,10 @@
 import { classifyCapabilityRisk, type EvidenceRef, type HttpMethod } from "@descuff/ir";
-import type { GeneratedChange, StandardValidationResult } from "@descuff/standard-core";
+import type {
+  GeneratedChange,
+  StandardAdapter,
+  StandardValidationContext,
+  StandardValidationResult
+} from "@descuff/standard-core";
 
 export type ValidationLevel =
   "static" | "build" | "existing-tests" | "runtime" | "security" | "regression";
@@ -169,6 +174,37 @@ export function validateStaticStandardResults(
   }
 
   return createValidationSummary(issues);
+}
+
+export async function runStandardValidation(
+  adapters: StandardAdapter[],
+  context: StandardValidationContext
+): Promise<ValidationSummary> {
+  const results: StandardValidationResult[] = [];
+  const issues: ValidationFailure[] = [];
+
+  for (const adapter of adapters) {
+    try {
+      results.push(await adapter.validate(context));
+    } catch (error) {
+      issues.push({
+        code: "STANDARD_VALIDATION_RUNNER_FAILED",
+        level: "static",
+        severity: "error",
+        message: `${adapter.id} validation runner failed: ${errorMessage(error)}`,
+        source: adapter.id,
+        evidence: [],
+        suggestedAction: "Fix the standard validation runner before trusting validation output."
+      });
+    }
+  }
+
+  const standardSummary = validateStaticStandardResults(results);
+  return createValidationSummary([
+    ...standardSummary.failures,
+    ...standardSummary.warnings,
+    ...issues
+  ]);
 }
 
 export function createRepositoryValidationCommands(
@@ -505,4 +541,8 @@ function validateRuntimeOperationAuthorization(
 
 function isReadOnlyMethod(method: HttpMethod): boolean {
   return method === "GET" || method === "HEAD" || method === "OPTIONS";
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
