@@ -10,6 +10,7 @@ import {
   runStandardValidation,
   validateCommandResults,
   validateRuntimeConfig,
+  validateSecurityModel,
   validateStaticGeneratedChanges,
   validateStaticStandardResults
 } from "../src/index.js";
@@ -781,6 +782,146 @@ describe("@descuff/validator", () => {
             evidence: [evidence]
           }
         ]
+      })
+    ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
+  it("fails security validation when authenticated capabilities have no auth boundary", () => {
+    expect(
+      validateSecurityModel({
+        ...createApplicationModel(),
+        capabilities: [
+          {
+            id: "capability:orders",
+            name: "View orders",
+            operationType: "read",
+            risk: "AUTHENTICATED_READ",
+            visibility: "authenticated",
+            inputs: [],
+            outputs: [],
+            linkedRoutes: ["/orders"],
+            linkedApis: [],
+            evidence: [evidence],
+            confidence: "high"
+          }
+        ]
+      })
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "SECURITY_AUTH_BOUNDARY_MISSING",
+          level: "security",
+          severity: "error",
+          source: "capability:orders"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("fails security validation when authenticated-read capabilities are marked public", () => {
+    expect(
+      validateSecurityModel({
+        ...createApplicationModel(),
+        capabilities: [
+          {
+            id: "capability:profile",
+            name: "View profile",
+            operationType: "read",
+            risk: "AUTHENTICATED_READ",
+            visibility: "public",
+            inputs: [],
+            outputs: [],
+            linkedRoutes: ["/profile"],
+            linkedApis: [],
+            evidence: [evidence],
+            confidence: "high"
+          }
+        ]
+      })
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "SECURITY_AUTHENTICATED_READ_EXPOSED_PUBLICLY",
+          level: "security",
+          severity: "error",
+          source: "capability:profile"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("fails security validation when sensitive capabilities are public", () => {
+    expect(
+      validateSecurityModel({
+        ...createApplicationModel(),
+        capabilities: [
+          {
+            id: "capability:checkout",
+            name: "Checkout",
+            operationType: "write",
+            risk: "HIGH_CONSEQUENCE",
+            visibility: "public",
+            inputs: [],
+            outputs: [],
+            linkedRoutes: [],
+            linkedApis: ["/api/checkout"],
+            evidence: [evidence],
+            confidence: "high"
+          }
+        ]
+      })
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "SECURITY_SENSITIVE_CAPABILITY_PUBLIC",
+          level: "security",
+          severity: "error",
+          source: "capability:checkout"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("passes security validation for authenticated capabilities with auth evidence", () => {
+    expect(
+      validateSecurityModel({
+        ...createApplicationModel(),
+        capabilities: [
+          {
+            id: "capability:orders",
+            name: "View orders",
+            operationType: "read",
+            risk: "AUTHENTICATED_READ",
+            visibility: "authenticated",
+            inputs: [],
+            outputs: [],
+            linkedRoutes: ["/orders"],
+            linkedApis: [],
+            evidence: [evidence],
+            confidence: "high"
+          }
+        ],
+        authentication: {
+          boundaries: [
+            {
+              id: "auth:middleware",
+              kind: "middleware",
+              sourceFile: "middleware.ts",
+              evidence: [evidence]
+            }
+          ],
+          evidence: [evidence]
+        }
       })
     ).toEqual({
       passed: true,

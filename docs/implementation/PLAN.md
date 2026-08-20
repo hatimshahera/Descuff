@@ -185,7 +185,7 @@ Validation note:
 - [x] runtime configuration schema
 - [x] explicit validation scenarios for mutating flows
 - [x] standard-specific validation runners
-- [ ] security validation
+- [x] security validation
 - [ ] regression validation
 - [x] typed failure catalog
 - [ ] readiness report integration
