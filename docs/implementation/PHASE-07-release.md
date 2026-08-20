@@ -57,13 +57,14 @@ Prepare the first public release with complete documentation, examples, CI, pack
   - `npx descuff scan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff validate /Users/hatimshaherawala/descuff/fixtures/ecommerce`
 - Follow-up website validation exposed a stale readiness artifact risk. `descuff validate` now performs a fresh scan before scoring, and the CLI includes `start` / `finish` for baseline-to-before-after workflow.
+- `descuff@0.0.2` was published and verified with public `npx descuff --help`, `npx descuff start`, `npx descuff finish`, and website validation.
 - Earlier clean install verification passed in `/private/tmp/descuff-clean-install-20260820-1830` by installing packed tarballs and running:
   - `npx descuff scan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff report /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff plan /Users/hatimshaherawala/descuff/fixtures/ecommerce`
   - `npx descuff validate /Users/hatimshaherawala/descuff/fixtures/ecommerce`
 - Release checklist passed for current release scope: docs, license, changelog, public ecommerce example, CI, package dry run, clean install CLI smoke, and explicit critical/high defect marker audit.
-- Critical/high triage found no known critical or high-severity defects. Non-blocking release caveats: `descuff@0.0.0` exists but is superseded by `0.0.1`, Graphify is not on this shell's default PATH, and Graphify community labels are generic without an LLM backend key.
+- Critical/high triage found no known critical or high-severity defects. Non-blocking release caveats: `descuff@0.0.0` exists but is superseded by `0.0.2`, Graphify is not on this shell's default PATH, and Graphify community labels are generic without an LLM backend key.
 - Graphify was installed with `uv tool install --upgrade graphifyy`. The executable is available at `/Users/hatimshaherawala/.local/bin/graphify`, but that directory is not on this shell's default PATH.
 - Code-only Graphify refresh passed with `/Users/hatimshaherawala/.local/bin/graphify . --update --no-viz --code-only`, producing `graphify-out/graph.json` with 1001 nodes, 1324 edges, and 74 communities.
 - Graphify cluster/report refresh passed with `/Users/hatimshaherawala/.local/bin/graphify cluster-only /Users/hatimshaherawala/descuff --no-viz`, producing `graphify-out/GRAPH_REPORT.md` with generic community labels because no LLM backend key was configured.

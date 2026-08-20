@@ -1,138 +1,140 @@
 # Descuff
 
-We turn every website into an interface AI agents can actually use.
+Turn your existing website into an interface AI agents can use.
 
-Descuff is an open-source developer tool for analyzing existing web applications, planning agent-facing standards adoption, and validating the result. The first release targets Next.js applications.
+Descuff is an open-source developer tool for measuring, planning, and validating agent-facing standards adoption. It scans an existing app, creates a baseline, writes an implementation plan for your coding agent, and proves the before/after difference.
 
-Current status: first public npm release published as `descuff@0.0.1`. The validated path is a conventional Next.js app fixture that exercises scan, report, plan, agent workflow guidance, generated standards, and validation.
+Current release: `descuff@0.0.2` on npm. v1 supports Next.js App Router and Pages Router codebases.
+
+## Quick Start
+
+Run Descuff inside a Next.js project:
+
+```bash
+npx descuff start .
+```
+
+Descuff writes:
+
+```text
+.descuff/baseline.json
+.descuff/model.json
+.descuff/assessments.json
+.descuff/generated-changes.json
+.descuff/plan.md
+.descuff/codex-prompt.md
+```
+
+Give `.descuff/codex-prompt.md` and `.descuff/plan.md` to Codex, Cursor, Claude Code, or another coding agent. After implementation:
+
+```bash
+npx descuff finish .
+```
+
+Descuff rescans, validates, and writes:
+
+```text
+.descuff/final-validation.json
+.descuff/before-after.md
+```
 
 ## What Descuff Does
 
-- Scans a Next.js project and records evidence-backed structural facts.
-- Builds a Descuff-owned semantic model for application type, routes, API operations, capabilities, risk, and readiness.
-- Assesses agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP.
-- Writes implementation plans for a separate coding agent. Descuff does not call an LLM.
-- Validates generated standards, runtime evidence, security boundaries, and release readiness.
-- Records before/after readiness so teams can see what changed after implementation.
-
-## Installation
-
-For local development from this repository:
-
-```bash
-pnpm install
-pnpm build
-node packages/cli/dist/index.js scan fixtures/ecommerce
-```
-
-After npm publication, the public command shape is:
-
-```bash
-npx descuff scan .
-npx descuff report .
-npx descuff plan .
-npx descuff start .
-npx descuff finish .
-npx descuff validate .
-```
-
-The package publishing dry run and clean packed install verification are tracked in `docs/implementation/PHASE-07-release.md`.
+- Detects Next.js routes, API operations, forms, middleware, server-action evidence, and existing standards.
+- Builds an evidence-backed semantic model of application type, capabilities, risks, routes, APIs, standards, and readiness.
+- Recommends agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP.
+- Generates a conservative implementation plan for a developer-owned coding agent.
+- Validates standards, security boundaries, runtime evidence, and readiness.
+- Reports before/after improvement so teams can see what changed.
 
 ## Commands
 
 ```bash
-descuff scan [project-root]
-descuff report [project-root]
-descuff plan [project-root]
-descuff start [project-root]
-descuff finish [project-root]
-descuff fix
-descuff apply-safe [project-root]
-descuff validate [project-root]
+npx descuff start [project-root]
+npx descuff finish [project-root]
+npx descuff scan [project-root]
+npx descuff report [project-root]
+npx descuff plan [project-root]
+npx descuff validate [project-root]
+npx descuff fix
+npx descuff apply-safe [project-root]
 ```
 
-`scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, and `.descuff/generated-changes.json`.
-
-`report` prints the application type, capabilities, route/API counts, and selected standards.
-
-`plan` writes `.descuff/plan.json` and `.descuff/plan.md` for a coding agent.
-
-`start` rescans the app, records `.descuff/baseline.json`, writes `.descuff/plan.md`, and creates `.descuff/codex-prompt.md`.
-
-`finish` rescans after implementation, validates again, and writes `.descuff/before-after.md`.
-
-`fix` prints workflow instructions. It does not invoke an LLM and does not edit application source.
-
-`apply-safe` is intentionally disabled for automatic writes in this release.
-
-`validate` writes `.descuff/validation.json` and `.descuff/validation-repair.md`, then exits non-zero on validation failure.
-
-## Example
-
-The current end-to-end release fixture is `fixtures/ecommerce`, a small Next.js ecommerce app with App Router pages, a Pages Router page, API routes, server actions, middleware, `llms.txt`, and OpenAPI evidence.
-
-```bash
-pnpm build
-node packages/cli/dist/index.js scan fixtures/ecommerce
-node packages/cli/dist/index.js report fixtures/ecommerce
-node packages/cli/dist/index.js plan fixtures/ecommerce
-node packages/cli/dist/index.js start fixtures/ecommerce
-node packages/cli/dist/index.js finish fixtures/ecommerce
-node packages/cli/dist/index.js validate fixtures/ecommerce
-```
-
-Expected validated summary:
+Recommended first-time flow:
 
 ```text
-descuff validate passed
-Readiness: 100/100
+start -> coding agent implements plan -> finish
+```
+
+Lower-level commands:
+
+- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, and `.descuff/generated-changes.json`.
+- `report` prints application type, capability count, route/API counts, and standard status.
+- `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
+- `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
+- `fix` prints agent workflow instructions. It does not invoke an LLM and does not edit source directly.
+- `apply-safe` is intentionally disabled for automatic source writes in this release.
+
+## Example Result
+
+A simple Next.js landing page with one waitlist endpoint can move from:
+
+```text
+Readiness: 60/100
+Standards: none
+```
+
+to:
+
+```text
+Readiness: 85/100
+Standards: api-catalog, llms-txt, openapi, schema-org
 Failures: 0
 Warnings: 0
 ```
+
+The remaining points depend on the app. A simple landing page may not have structured product, article, booking, or workspace entities for Descuff to model.
 
 ## Safety Model
 
 Descuff treats runtime analysis as read-only by default. It does not invoke mutating HTTP methods, submit forms, execute server actions, or expose sensitive/high-consequence capabilities unless a validation scenario explicitly defines setup, expected side effects, verification, and cleanup.
 
-Generated standards are proposed in memory before any write. In this release, automatic safe application is disabled; coding agents or developers review and implement the generated plan.
+Descuff does not directly call an LLM. It writes a plan and prompt for the coding agent you already use.
 
-## Architecture
+## Supported Today
 
-The main flow is:
+- Next.js App Router
+- Next.js Pages Router
+- API routes
+- basic form and server-action evidence
+- existing `llms.txt`, OpenAPI, Schema.org JSON-LD, API Catalog, and WebMCP detection
 
-```text
-Next.js source + runtime evidence
-  -> StructuralAnalysis
-  -> ApplicationModel
-  -> standard adapters
-  -> agent implementation plan
-  -> validation readiness report
+Not yet supported as a general-purpose website crawler:
+
+```bash
+npx descuff scan https://example.com
 ```
 
-Key documents:
+Descuff v1 expects a local Next.js codebase:
 
-- `docs/architecture/overview.md`
-- `docs/architecture/analyzers.md`
-- `docs/architecture/semantic-ir.md`
-- `docs/architecture/standards-adapters.md`
-- `docs/architecture/validation.md`
-- `docs/decisions/`
+```bash
+cd my-nextjs-app
+npx descuff start .
+```
+
+## Documentation
+
+- [How To Use Descuff](HOW-TO-USE.md)
+- [Next Potential Features](docs/NEXT-FEATURES.md)
+- [Architecture Overview](docs/architecture/overview.md)
+- [Validation](docs/architecture/validation.md)
+- [Standards Adapters](docs/architecture/standards-adapters.md)
+- [Implementation Plan](docs/implementation/PLAN.md)
 
 ## Development
 
 ```bash
 pnpm install
-pnpm format
-pnpm lint
-pnpm typecheck
-pnpm build
-pnpm test
-pnpm smoke
-```
-
-Use the full release check locally with:
-
-```bash
 pnpm run ci
 ```
 

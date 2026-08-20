@@ -31,4 +31,4 @@ All notable changes to Descuff will be documented in this file.
 
 - `apply-safe` does not write application source in this release.
 - Graphify is optional developer infrastructure and may require adding `~/.local/bin` to `PATH`.
-- `0.0.0` was superseded by `0.0.1` because the initial registry publish used workspace dependency metadata. `latest` points to `0.0.1`.
+- `0.0.0` was superseded by `0.0.1` because the initial registry publish used workspace dependency metadata. `latest` now points to `0.0.2`.
