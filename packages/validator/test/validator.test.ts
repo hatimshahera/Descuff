@@ -5,6 +5,8 @@ import {
   createEmptyValidationSummary,
   createRepositoryValidationCommands,
   createValidationSummary,
+  createValidationReadinessReport,
+  mergeValidationSummaries,
   recordExistingTestBaseline,
   runValidationCommands,
   runStandardValidation,
@@ -75,6 +77,81 @@ describe("@descuff/validator", () => {
           suggestedAction: "Add optional metadata."
         }
       ]
+    });
+  });
+
+  it("merges validation summaries without turning warnings into blockers", () => {
+    expect(
+      mergeValidationSummaries([
+        createValidationSummary([
+          {
+            code: "STATIC_WARNING",
+            level: "static",
+            severity: "warning",
+            message: "Optional metadata is missing.",
+            source: "llms-txt",
+            evidence: [evidence],
+            suggestedAction: "Add optional metadata."
+          }
+        ]),
+        createEmptyValidationSummary()
+      ])
+    ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: [
+        {
+          code: "STATIC_WARNING",
+          level: "static",
+          severity: "warning",
+          message: "Optional metadata is missing.",
+          source: "llms-txt",
+          evidence: [evidence],
+          suggestedAction: "Add optional metadata."
+        }
+      ]
+    });
+  });
+
+  it("integrates readiness scoring with validation blockers", () => {
+    const report = createValidationReadinessReport(createReadyApplicationModel(), [
+      createValidationSummary([
+        {
+          code: "OPENAPI_OPERATION_MISSING",
+          level: "static",
+          severity: "error",
+          message: "OpenAPI document is missing GET /api/products.",
+          source: "openapi",
+          evidence: [evidence],
+          suggestedAction: "Regenerate OpenAPI output."
+        }
+      ])
+    ]);
+
+    expect(report.ready).toBe(false);
+    expect(report.readiness.score).toBe(100);
+    expect(report.blockers).toMatchObject([
+      {
+        code: "OPENAPI_OPERATION_MISSING",
+        severity: "error"
+      }
+    ]);
+  });
+
+  it("marks readiness report ready only when score is complete and validation passes", () => {
+    expect(createValidationReadinessReport(createReadyApplicationModel(), [])).toMatchObject({
+      schemaVersion: "0.1.0",
+      ready: true,
+      readiness: {
+        score: 100,
+        maxScore: 100
+      },
+      validation: {
+        passed: true,
+        failures: [],
+        warnings: []
+      },
+      blockers: []
     });
   });
 
@@ -1106,5 +1183,71 @@ function createApplicationModel(): ApplicationModel {
     evidence: {
       items: [evidence]
     }
+  };
+}
+
+function createReadyApplicationModel(): ApplicationModel {
+  return {
+    ...createApplicationModel(),
+    entities: [
+      {
+        id: "entity:product",
+        name: "Product",
+        kind: "catalog",
+        properties: [],
+        relationships: [],
+        evidence: [evidence]
+      }
+    ],
+    capabilities: [
+      {
+        id: "capability:search",
+        name: "Search products",
+        operationType: "read",
+        risk: "PUBLIC_READ",
+        visibility: "public",
+        inputs: [],
+        outputs: [],
+        linkedRoutes: ["/"],
+        linkedApis: ["api:GET:/api/products"],
+        evidence: [evidence],
+        confidence: "high"
+      }
+    ],
+    routes: [
+      {
+        id: "route:/",
+        path: "/",
+        routerKind: "next-app",
+        sourceFile: "app/page.tsx",
+        runtimeObserved: true,
+        evidence: [evidence]
+      }
+    ],
+    apis: [
+      {
+        id: "api:GET:/api/products",
+        path: "/api/products",
+        method: "GET",
+        sourceFile: "app/api/products/route.ts",
+        runtimeObserved: true,
+        sideEffect: "read",
+        evidence: [evidence]
+      }
+    ],
+    standards: [
+      {
+        id: "standard:llms-txt",
+        kind: "llms-txt",
+        sourceFile: "public/llms.txt",
+        evidence: [evidence]
+      },
+      {
+        id: "standard:schema-org",
+        kind: "schema-org",
+        sourceFile: "app/page.tsx",
+        evidence: [evidence]
+      }
+    ]
   };
 }

@@ -2,7 +2,9 @@ import {
   classifyCapabilityRisk,
   type ApplicationModel,
   type EvidenceRef,
-  type HttpMethod
+  type HttpMethod,
+  type ReadinessScore,
+  scoreReadiness
 } from "@descuff/ir";
 import type {
   GeneratedChange,
@@ -107,6 +109,14 @@ export interface UiRegressionBaseline {
   routes: UiRouteInvariant[];
 }
 
+export interface ValidationReadinessReport {
+  schemaVersion: string;
+  readiness: ReadinessScore;
+  validation: ValidationSummary;
+  ready: boolean;
+  blockers: ValidationFailure[];
+}
+
 export function createEmptyValidationSummary(): ValidationSummary {
   return {
     passed: true,
@@ -157,6 +167,28 @@ export function createValidationSummary(issues: ValidationFailure[]): Validation
     failures,
     warnings
   };
+}
+
+export function createValidationReadinessReport(
+  model: ApplicationModel,
+  summaries: ValidationSummary[]
+): ValidationReadinessReport {
+  const validation = mergeValidationSummaries(summaries);
+  const readiness = scoreReadiness(model);
+
+  return {
+    schemaVersion: "0.1.0",
+    readiness,
+    validation,
+    ready: readiness.score === readiness.maxScore && validation.passed,
+    blockers: validation.failures
+  };
+}
+
+export function mergeValidationSummaries(summaries: ValidationSummary[]): ValidationSummary {
+  return createValidationSummary(
+    summaries.flatMap((summary) => [...summary.failures, ...summary.warnings])
+  );
 }
 
 export function validateStaticStandardResults(

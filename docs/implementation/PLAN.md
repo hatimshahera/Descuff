@@ -188,7 +188,7 @@ Validation note:
 - [x] security validation
 - [x] regression validation
 - [x] typed failure catalog
-- [ ] readiness report integration
+- [x] readiness report integration
 
 Acceptance criteria:
 

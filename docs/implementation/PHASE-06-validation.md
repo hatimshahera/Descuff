@@ -25,7 +25,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - [x] Implement security validation.
 - [x] Implement human UI regression validation.
 - [x] Implement typed failure catalog.
-- [ ] Integrate readiness scoring and validation results.
+- [x] Integrate readiness scoring and validation results.
 - [ ] Add repair-oriented suggested actions.
 
 ## Acceptance Criteria
@@ -58,6 +58,7 @@ Make `descuff validate` independently prove standards correctness, runtime behav
 - Standard-specific validation runner tests execute adapter `validate` methods, aggregate typed failures, and convert runner exceptions into actionable validation failures.
 - Security validation tests block authenticated/admin capabilities without auth boundaries, public authenticated-read exposure, and public sensitive or high-consequence capabilities.
 - UI regression tests compare route invariants, block missing routes and unexpected title/heading changes, and warn on accessibility landmark changes.
+- Readiness report tests merge validation summaries with IR readiness scoring and block readiness when validation failures remain.
 
 ## Completion Rule
 
