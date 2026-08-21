@@ -1,9 +1,14 @@
+import type { ApplicationModel } from "@descuff/ir";
 import type { GeneratedChange } from "@descuff/standard-core";
 import { createValidationSummary } from "./summary.js";
 import type { ValidationFailure, ValidationSummary } from "./types.js";
 
-export function validateStaticGeneratedChanges(changes: GeneratedChange[]): ValidationSummary {
+export function validateStaticGeneratedChanges(
+  changes: GeneratedChange[],
+  model?: ApplicationModel
+): ValidationSummary {
   const issues: ValidationFailure[] = [];
+  const evidenceIds = new Set(model?.evidence.items.map((item) => item.id) ?? []);
 
   for (const change of changes) {
     if (change.path.trim().length === 0) {
@@ -29,6 +34,24 @@ export function validateStaticGeneratedChanges(changes: GeneratedChange[]): Vali
         evidence: [],
         suggestedAction: "Attach source or runtime evidence to the generated change."
       });
+    }
+
+    if (model !== undefined) {
+      for (const ref of change.evidence) {
+        if (!evidenceIds.has(ref.id)) {
+          issues.push({
+            code: "STATIC_GENERATED_CHANGE_EVIDENCE_UNKNOWN",
+            level: "static",
+            severity: "error",
+            message: `Generated change ${change.id} references evidence ${ref.id} that is not present in the semantic evidence index.`,
+            source: change.standardId,
+            path: change.path,
+            evidence: [ref],
+            suggestedAction:
+              "Regenerate the plan from the current model so generated changes cite known evidence."
+          });
+        }
+      }
     }
 
     if (change.safety === "automatic" && !change.deterministic) {

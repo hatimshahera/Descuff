@@ -421,6 +421,50 @@ describe("@descuff/validator", () => {
     });
   });
 
+  it("rejects generated changes that cite evidence outside the semantic evidence index", () => {
+    const unknownEvidence = {
+      ...evidence,
+      id: "source:invented",
+      location: "app/invented.tsx"
+    };
+
+    expect(
+      validateStaticGeneratedChanges(
+        [
+          {
+            standardId: "llms-txt",
+            id: "llms-txt:invented",
+            kind: "create-file",
+            path: "public/llms.txt",
+            content: "# Invented\n",
+            deterministic: true,
+            safety: "automatic",
+            conflictPolicy: "approval-required",
+            evidence: [unknownEvidence]
+          }
+        ],
+        createApplicationModel()
+      )
+    ).toEqual({
+      passed: false,
+      failures: [
+        {
+          code: "STATIC_GENERATED_CHANGE_EVIDENCE_UNKNOWN",
+          level: "static",
+          severity: "error",
+          message:
+            "Generated change llms-txt:invented references evidence source:invented that is not present in the semantic evidence index.",
+          source: "llms-txt",
+          path: "public/llms.txt",
+          evidence: [unknownEvidence],
+          suggestedAction:
+            "Regenerate the plan from the current model so generated changes cite known evidence."
+        }
+      ],
+      warnings: []
+    });
+  });
+
   it("fails when source fingerprints changed after artifacts were generated", () => {
     expect(
       validateSourceFingerprints(

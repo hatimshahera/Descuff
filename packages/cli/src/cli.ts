@@ -245,7 +245,7 @@ async function validateArtifacts(
   artifacts: ScanArtifacts
 ): Promise<{ summary: ValidationSummary; report: ValidationReadinessReport }> {
   const summary = mergeValidationSummaries([
-    validateStaticGeneratedChanges(artifacts.generatedChanges),
+    validateStaticGeneratedChanges(artifacts.generatedChanges, artifacts.model),
     await runStandardValidation(standardAdapters(), {
       model: artifacts.model,
       generatedChanges: artifacts.generatedChanges
