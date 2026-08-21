@@ -56,6 +56,8 @@ export function createDocumentModelContextRuntime(page: BrowserLikePage): WebMcp
       return page.evaluate(() => {
         const browserGlobal = globalThis as BrowserGlobal;
         const doc = browserGlobal.document;
+        const isBrowserRecord = (value: unknown): value is Record<string, unknown> =>
+          typeof value === "object" && value !== null && !Array.isArray(value);
 
         if (typeof doc?.modelContext?.getTools !== "function") {
           return [];
@@ -74,7 +76,7 @@ export function createDocumentModelContextRuntime(page: BrowserLikePage): WebMcp
               frameUrl: browserGlobal.location?.href ?? ""
             };
 
-            if (isRecord(tool.annotations)) {
+            if (isBrowserRecord(tool.annotations)) {
               discovered.annotations = tool.annotations;
             }
 
@@ -110,8 +112,4 @@ export function createDocumentModelContextRuntime(page: BrowserLikePage): WebMcp
         .then((result) => ({ toolName, result }));
     }
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

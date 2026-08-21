@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createServer, type Server } from "node:http";
 import { createProjectContext } from "@descuff/core";
 import {
   createEmptyStructuralAnalysis,
@@ -11,9 +12,12 @@ import {
 import {
   correlateRuntimeEvidence,
   createDocumentModelContextRuntime,
+  createPlaywrightBrowserClient,
   RuntimeAnalyzer,
   sanitizeNetworkObservation
 } from "../src/index.js";
+
+const browserIt = process.env.DESCUFF_BROWSER_TESTS === "1" ? it : it.skip;
 
 describe("@descuff/analyzer-runtime", () => {
   it("implements the structural analyzer contract", async () => {
@@ -26,17 +30,20 @@ describe("@descuff/analyzer-runtime", () => {
   });
 
   it("observes configured runtime routes and read-only API operations", async () => {
-    const analysis = await new RuntimeAnalyzer(async () => ({
-      async get() {
-        return { status: 200, headers: { "content-type": "text/html" } };
-      },
-      async fetch() {
-        return { status: 200, headers: { "content-type": "application/json" } };
-      },
-      async dispose() {
-        return undefined;
-      }
-    })).analyze({
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: { "content-type": "text/html" } };
+        },
+        async fetch() {
+          return { status: 200, headers: { "content-type": "application/json" } };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      null
+    ).analyze({
       rootDir: "/repo",
       cwd: "/repo",
       runtime: {
@@ -62,17 +69,20 @@ describe("@descuff/analyzer-runtime", () => {
   });
 
   it("respects route limits for runtime observations", async () => {
-    const analysis = await new RuntimeAnalyzer(async () => ({
-      async get() {
-        return { status: 200, headers: {} };
-      },
-      async fetch() {
-        return { status: 200, headers: {} };
-      },
-      async dispose() {
-        return undefined;
-      }
-    })).analyze({
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: {} };
+        },
+        async fetch() {
+          return { status: 200, headers: {} };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      null
+    ).analyze({
       rootDir: "/repo",
       cwd: "/repo",
       runtime: {
@@ -301,6 +311,56 @@ describe("@descuff/analyzer-runtime", () => {
     expect(calls).toHaveLength(3);
   });
 
+  browserIt("observes rendered page evidence and WebMCP tools with Playwright", async () => {
+    const server = await startFixtureServer();
+    try {
+      const baseUrl = `http://127.0.0.1:${server.port}`;
+      const browser = await createPlaywrightBrowserClient(baseUrl, {
+        maxRoutes: 5,
+        maxPageLoadMs: 5_000,
+        maxNetworkRequests: 20,
+        maxResponseBodyBytes: 2_048,
+        maxRedirects: 3,
+        allowedOrigins: [baseUrl],
+        blockedOrigins: []
+      });
+
+      try {
+        const page = await browser.visit("/", {
+          maxRoutes: 5,
+          maxPageLoadMs: 5_000,
+          maxNetworkRequests: 20,
+          maxResponseBodyBytes: 2_048,
+          maxRedirects: 3,
+          allowedOrigins: [baseUrl],
+          blockedOrigins: []
+        });
+
+        expect(page).toMatchObject({
+          status: 200,
+          title: "Runtime Fixture",
+          headings: ["Runtime Fixture"],
+          formCount: 1,
+          jsonLdCount: 1,
+          webMcpSupported: true
+        });
+        expect(page.webMcpTools).toContainEqual(
+          expect.objectContaining({
+            name: "search_products",
+            description: "Search products",
+            annotations: { readOnlyHint: true },
+            origin: baseUrl
+          })
+        );
+        expect(page.network.some((request) => request.url.endsWith("/api/products"))).toBe(true);
+      } finally {
+        await browser.dispose();
+      }
+    } finally {
+      await server.close();
+    }
+  });
+
   it("correlates static and runtime evidence by route and API operation", () => {
     const analysis = createEmptyStructuralAnalysis("/repo");
     const routeEvidence = {
@@ -366,3 +426,74 @@ describe("@descuff/analyzer-runtime", () => {
     ]);
   });
 });
+
+interface FixtureServer {
+  port: number;
+  close(): Promise<void>;
+}
+
+function startFixtureServer(): Promise<FixtureServer> {
+  const server: Server = createServer((request, response) => {
+    if (request.url === "/api/products") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ products: [{ id: "desk", name: "Desk" }] }));
+      return;
+    }
+
+    response.writeHead(200, { "content-type": "text/html" });
+    response.end(`<!doctype html>
+      <html>
+        <head>
+          <title>Runtime Fixture</title>
+          <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Runtime Fixture"}</script>
+        </head>
+        <body>
+          <h1>Runtime Fixture</h1>
+          <form action="/api/products" method="get"><input name="q" /></form>
+          <script>
+            const tools = [];
+            document.modelContext = {
+              async registerTool(tool) {
+                tools.push({ ...tool, origin: window.location.origin });
+              },
+              async getTools() {
+                return tools;
+              },
+              async executeTool(tool, input) {
+                return tool.execute(JSON.parse(input));
+              }
+            };
+            document.modelContext.registerTool({
+              name: "search_products",
+              description: "Search products",
+              inputSchema: { type: "object", properties: { q: { type: "string" } } },
+              annotations: { readOnlyHint: true },
+              execute: async ({ q }) => {
+                const result = await fetch("/api/products?q=" + encodeURIComponent(q || ""));
+                return result.text();
+              }
+            });
+            fetch("/api/products");
+          </script>
+        </body>
+      </html>`);
+  });
+
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (address === null || typeof address === "string") {
+        reject(new Error("Fixture server did not bind to a TCP port."));
+        return;
+      }
+      resolve({
+        port: address.port,
+        close: () =>
+          new Promise((closeResolve, closeReject) => {
+            server.close((error) => (error === undefined ? closeResolve() : closeReject(error)));
+          })
+      });
+    });
+  });
+}

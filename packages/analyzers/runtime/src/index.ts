@@ -1,4 +1,12 @@
-import { request } from "@playwright/test";
+import {
+  chromium,
+  request,
+  type Browser,
+  type BrowserContext,
+  type Page,
+  type Request,
+  type Response
+} from "@playwright/test";
 import {
   createEmptyStructuralAnalysis,
   type HttpMethod,
@@ -9,6 +17,7 @@ import {
 import type { ProjectContext, StructuralAnalyzer } from "@descuff/core";
 import { correlateRuntimeEvidence } from "./correlation.js";
 import { runtimeEvidence } from "./runtime-evidence.js";
+import { createDocumentModelContextRuntime } from "./webmcp-runtime.js";
 import type { DiscoveredWebMcpTool } from "./webmcp-runtime.js";
 
 export interface RuntimeHttpResponse {
@@ -76,10 +85,12 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
     private readonly createClient: (
       baseUrl: string
     ) => Promise<RuntimeHttpClient> = createPlaywrightClient,
-    private readonly createBrowserClient?: (
-      baseUrl: string,
-      limits: Required<RuntimeResourceLimits>
-    ) => Promise<RuntimeBrowserClient>
+    private readonly createBrowserClient:
+      | ((
+          baseUrl: string,
+          limits: Required<RuntimeResourceLimits>
+        ) => Promise<RuntimeBrowserClient>)
+      | null = createPlaywrightBrowserClient
   ) {}
 
   async analyze(project: ProjectContext): Promise<StructuralAnalysis> {
@@ -152,11 +163,22 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
         analysis.evidence.items.push(evidence);
       }
 
-      if (this.createBrowserClient !== undefined) {
+      if (this.createBrowserClient !== null) {
         const browser = await this.createBrowserClient(project.runtime.baseUrl, limits);
         try {
           for (const route of project.runtime.routes.slice(0, limits.maxRoutes)) {
-            const page = await browser.visit(route, limits);
+            let page: RuntimeBrowserPageResult;
+            try {
+              page = await browser.visit(route, limits);
+            } catch (error) {
+              analysis.warnings.push({
+                code: "RUNTIME_BROWSER_VISIT_FAILED",
+                message: `Runtime browser analysis failed for ${route}: ${errorMessage(error)}.`,
+                evidence: []
+              });
+              continue;
+            }
+
             const sanitizedNetwork = page.network
               .slice(0, limits.maxNetworkRequests)
               .map((observation) => sanitizeNetworkObservation(observation, limits));
@@ -261,6 +283,137 @@ async function createPlaywrightClient(baseUrl: string): Promise<RuntimeHttpClien
       await context.dispose();
     }
   };
+}
+
+export async function createPlaywrightBrowserClient(
+  baseUrl: string,
+  limits: Required<RuntimeResourceLimits>
+): Promise<RuntimeBrowserClient> {
+  const browser = await chromium.launch();
+  const context = await browser.newContext({
+    baseURL: baseUrl,
+    ignoreHTTPSErrors: true
+  });
+
+  return new PlaywrightBrowserRuntimeClient(browser, context, baseUrl, limits);
+}
+
+class PlaywrightBrowserRuntimeClient implements RuntimeBrowserClient {
+  constructor(
+    private readonly browser: Browser,
+    private readonly context: BrowserContext,
+    private readonly baseUrl: string,
+    private readonly defaultLimits: Required<RuntimeResourceLimits>
+  ) {}
+
+  async visit(
+    path: string,
+    limits: Required<RuntimeResourceLimits> = this.defaultLimits
+  ): Promise<RuntimeBrowserPageResult> {
+    const page = await this.context.newPage();
+    const network: RuntimeNetworkObservation[] = [];
+    const networkTasks: Array<Promise<void>> = [];
+
+    page.on("response", (response) => {
+      if (network.length + networkTasks.length >= limits.maxNetworkRequests) {
+        return;
+      }
+      networkTasks.push(captureNetworkObservation(response, network, limits));
+    });
+
+    try {
+      const response = await page.goto(path, {
+        waitUntil: "domcontentloaded",
+        timeout: limits.maxPageLoadMs
+      });
+      const redirectCount = countRedirects(response?.request() ?? null);
+      if (redirectCount > limits.maxRedirects) {
+        throw new Error(`Redirect count ${redirectCount} exceeded limit ${limits.maxRedirects}`);
+      }
+
+      await page
+        .waitForLoadState("networkidle", { timeout: Math.min(2_000, limits.maxPageLoadMs) })
+        .catch(() => undefined);
+      await Promise.allSettled(networkTasks);
+
+      const runtime = createDocumentModelContextRuntime(page);
+      const webMcpSupported = await runtime.isSupported();
+      const webMcpTools = webMcpSupported ? await runtime.listTools() : [];
+      const rendered = await readRenderedPageEvidence(page);
+      const currentUrl = page.url();
+
+      return {
+        url: currentUrl,
+        status: response?.status() ?? 0,
+        ...rendered,
+        origin: originFor(currentUrl, this.baseUrl),
+        network,
+        webMcpSupported,
+        webMcpTools
+      };
+    } finally {
+      await page.close();
+    }
+  }
+
+  async dispose(): Promise<void> {
+    await this.context.close();
+    await this.browser.close();
+  }
+}
+
+async function captureNetworkObservation(
+  response: Response,
+  network: RuntimeNetworkObservation[],
+  limits: Required<RuntimeResourceLimits>
+): Promise<void> {
+  const request = response.request();
+  const observation: RuntimeNetworkObservation = {
+    url: response.url(),
+    method: request.method(),
+    status: response.status(),
+    requestHeaders: request.headers(),
+    responseHeaders: response.headers()
+  };
+
+  const contentType = response.headers()["content-type"] ?? "";
+  if (isTextualContentType(contentType)) {
+    try {
+      observation.responseBody = (await response.text()).slice(0, limits.maxResponseBodyBytes);
+    } catch {
+      // Some Playwright responses cannot expose a body after redirects or failed requests.
+    }
+  }
+
+  network.push(observation);
+}
+
+async function readRenderedPageEvidence(
+  page: Page
+): Promise<Pick<RuntimeBrowserPageResult, "title" | "headings" | "formCount" | "jsonLdCount">> {
+  return page.evaluate(() => {
+    interface ElementLike {
+      textContent: string | null;
+    }
+
+    interface DocumentLike {
+      title: string;
+      querySelectorAll(selector: string): ElementLike[];
+    }
+
+    const doc = (globalThis as unknown as { document: DocumentLike }).document;
+    const headings = Array.from(doc.querySelectorAll("h1,h2,h3"))
+      .map((element) => element.textContent?.trim() ?? "")
+      .filter((text) => text.length > 0)
+      .slice(0, 25);
+
+    return {
+      ...(doc.title.length === 0 ? {} : { title: doc.title }),
+      headings,
+      formCount: doc.querySelectorAll("form").length,
+      jsonLdCount: doc.querySelectorAll('script[type="application/ld+json"]').length
+    };
+  });
 }
 
 function normalizeRuntimeLimits(
@@ -381,6 +534,20 @@ function isSensitiveField(field: string): boolean {
   return /password|token|secret|api[-_]?key|authorization|cookie/i.test(field);
 }
 
+function isTextualContentType(contentType: string): boolean {
+  return /json|text|xml|javascript|x-www-form-urlencoded/i.test(contentType);
+}
+
+function countRedirects(request: Request | null): number {
+  let count = 0;
+  let current = request?.redirectedFrom() ?? null;
+  while (current !== null) {
+    count += 1;
+    current = current.redirectedFrom();
+  }
+  return count;
+}
+
 function isOriginAllowed(
   origin: string,
   limits: Required<Pick<RuntimeResourceLimits, "allowedOrigins" | "blockedOrigins">>
@@ -390,4 +557,16 @@ function isOriginAllowed(
   }
 
   return limits.allowedOrigins.length === 0 || limits.allowedOrigins.includes(origin);
+}
+
+function originFor(url: string, baseUrl: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return new URL(baseUrl).origin;
+  }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
