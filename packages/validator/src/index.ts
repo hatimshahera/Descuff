@@ -31,6 +31,7 @@ export {
 } from "./summary.js";
 export { createValidationReadinessReport } from "./readiness-validator.js";
 export { renderValidationRepairGuide } from "./repair-guide.js";
+export { renderValidationSummaryDetails } from "./result-formatting.js";
 export { validateUiRegression } from "./regression-validator.js";
 export { validateRuntimeConfig, validateRuntimeObservations } from "./runtime-validator.js";
 export { validateSecurityModel } from "./security-validator.js";

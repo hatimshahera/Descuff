@@ -13,6 +13,7 @@ import {
   mergeValidationSummaries,
   recordExistingTestBaseline,
   renderValidationRepairGuide,
+  renderValidationSummaryDetails,
   runValidationCommands,
   runStandardValidation,
   validateCapabilityConfidence,
@@ -167,6 +168,53 @@ describe("@descuff/validator", () => {
         ])
       )
     ).toContain("- Evidence: source:route");
+  });
+
+  it("renders typed validation summary details for agent and CLI consumers", () => {
+    expect(
+      renderValidationSummaryDetails(
+        createValidationSummary([
+          {
+            code: "STATIC_ERROR",
+            level: "static",
+            severity: "error",
+            message: "Required metadata is missing.",
+            source: "llms-txt",
+            path: "public/llms.txt",
+            evidence: [evidence],
+            suggestedAction: "Add required metadata."
+          },
+          {
+            code: "RUNTIME_WARNING",
+            level: "runtime",
+            severity: "warning",
+            message: "Runtime page evidence was not collected.",
+            source: "/",
+            evidence: [],
+            suggestedAction: "Run browser validation."
+          }
+        ])
+      )
+    ).toBe(
+      [
+        "Failure details:",
+        "  - [STATIC_ERROR] static/error llms-txt public/llms.txt",
+        "    Required metadata is missing.",
+        "    Action: Add required metadata.",
+        "    Evidence: source:route",
+        "",
+        "Warning details:",
+        "  - [RUNTIME_WARNING] runtime/warning /",
+        "    Runtime page evidence was not collected.",
+        "    Action: Run browser validation.",
+        "    Evidence: none",
+        ""
+      ].join("\n")
+    );
+  });
+
+  it("does not render validation summary details when there are no issues", () => {
+    expect(renderValidationSummaryDetails(createEmptyValidationSummary())).toBe("");
   });
 
   it("integrates readiness scoring with validation blockers", () => {

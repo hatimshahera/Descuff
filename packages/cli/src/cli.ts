@@ -30,6 +30,7 @@ import {
   createValidationReadinessReport,
   mergeValidationSummaries,
   renderValidationRepairGuide,
+  renderValidationSummaryDetails,
   runStandardValidation,
   type ValidationReadinessReport,
   type ValidationSummary,
@@ -203,14 +204,16 @@ async function finishCommand(projectRoot: string): Promise<CommandResult> {
   await writeJson(projectRoot, "final-validation.json", validation.report);
   await writeArtifact(projectRoot, "before-after.md", comparison);
 
-  const stdout = [
+  const stdout = `${[
     `descuff finish ${validation.summary.passed ? "passed" : "failed"}`,
     `Readiness: ${baseline.readiness.score}/${baseline.readiness.maxScore} -> ${finalSnapshot.readiness.score}/${finalSnapshot.readiness.maxScore}`,
     `Failures: ${baseline.validation.failures.length} -> ${finalSnapshot.validation.failures.length}`,
     `Warnings: ${baseline.validation.warnings.length} -> ${finalSnapshot.validation.warnings.length}`,
     `Before/after report: ${join(artifactDir(projectRoot), "before-after.md")}`,
-    ""
-  ].join("\n");
+    renderValidationSummaryDetails(validation.summary).trimEnd()
+  ]
+    .filter((line) => line.length > 0)
+    .join("\n")}\n`;
 
   return {
     exitCode: validation.summary.passed ? 0 : 1,
@@ -224,14 +227,16 @@ async function validateCommand(projectRoot: string): Promise<CommandResult> {
   await writeScanArtifacts(projectRoot, artifacts);
   const validation = await validateArtifacts(projectRoot, artifacts);
 
-  const stdout = [
+  const stdout = `${[
     `descuff validate ${validation.summary.passed ? "passed" : "failed"}`,
     `Readiness: ${validation.report.readiness.score}/${validation.report.readiness.maxScore}`,
     `Failures: ${validation.summary.failures.length}`,
     `Warnings: ${validation.summary.warnings.length}`,
     `Artifacts: ${artifactDir(projectRoot)}`,
-    ""
-  ].join("\n");
+    renderValidationSummaryDetails(validation.summary).trimEnd()
+  ]
+    .filter((line) => line.length > 0)
+    .join("\n")}\n`;
 
   return {
     exitCode: validation.summary.passed ? 0 : 1,
