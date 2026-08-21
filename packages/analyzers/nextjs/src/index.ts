@@ -129,20 +129,31 @@ async function detectNextFramework(
   rootDir: string,
   files: string[]
 ): Promise<StructuralAnalysis["framework"]> {
-  const packageJson = files.find((filePath) => relative(rootDir, filePath) === "package.json");
-  if (packageJson === undefined) {
+  const packageJsonFiles = files.filter((filePath) => basename(filePath) === "package.json");
+  if (packageJsonFiles.length === 0) {
     return { kind: "unknown", detected: false, evidence: [] };
   }
 
-  const source = await readFile(packageJson, "utf8");
-  const detected = /"next"\s*:/.test(source);
-  const evidence = detected
-    ? [sourceEvidence(rootDir, packageJson, "Next.js dependency detected in package.json")]
-    : [];
+  let detectedPackageJson: string | undefined;
+  for (const candidate of packageJsonFiles) {
+    const source = await readFile(candidate, "utf8");
+    if (/"next"\s*:/.test(source)) {
+      detectedPackageJson = candidate;
+      break;
+    }
+  }
+
+  if (detectedPackageJson === undefined) {
+    return { kind: "unknown", detected: false, evidence: [] };
+  }
+
+  const evidence = [
+    sourceEvidence(rootDir, detectedPackageJson, "Next.js dependency detected in package.json")
+  ];
 
   return {
-    kind: detected ? "nextjs" : "unknown",
-    detected,
+    kind: "nextjs",
+    detected: true,
     evidence
   };
 }
@@ -261,6 +272,11 @@ function hasRouteHandlerAuthEvidence(source: string): boolean {
   return (
     hasAuthenticatedParseRequest(source) ||
     /\b(checkAuth|getBearerToken|getServerSession|getToken|currentUser|auth)\s*\(/.test(source) ||
+    /\b(withV1ApiWrapper|authenticatedApiClient|withApiWrapper|withV3ApiWrapper)\s*\(/.test(
+      source
+    ) ||
+    /\b(authentication|authenticated)\b/.test(source) ||
+    /\b(hasPermission|requireV3WorkspaceAccess|requireSessionWorkspaceAccess)\s*\(/.test(source) ||
     /\bcan(?:View|Update|Delete|Create|Manage|Enforce|Access)[A-Za-z0-9_]*\s*\(/.test(source) ||
     /from\s+["']@clerk\/nextjs\/server["']/.test(source) ||
     /from\s+["']next-auth/.test(source)

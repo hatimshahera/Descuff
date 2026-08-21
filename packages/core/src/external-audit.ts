@@ -403,6 +403,55 @@ export const phase10CompletedExternalAuditResults: ExternalRepoAuditResult[] = [
           "Pending: normalize or omit intercepted and parallel route markers in public llms.txt route references."
       }
     ]
+  }),
+  createExternalRepoAuditResult({
+    auditedAt: "2026-08-21T00:00:00.000Z",
+    target: {
+      ...auditTargetFromCandidate("formbricks"),
+      commitSha: "ab8fc21ff9be51cee9cf2e02d77cd7f79c553e24"
+    },
+    descuffVersion: "0.0.2",
+    commandsRun: ["descuff start", "pnpm run ci"],
+    expectedCapabilities: [
+      "post /api/v1/client/{workspaceId}/responses",
+      "post /api/v1/webhooks",
+      "delete /api/v1/webhooks/{webhookId}",
+      "post /api/v3/surveys",
+      "patch /api/v3/surveys/{surveyId}",
+      "post /api/v3/workflows"
+    ],
+    detectedCapabilities: [
+      "post /api/v1/client/{workspaceId}/responses",
+      "post /api/v1/webhooks",
+      "delete /api/v1/webhooks/{webhookId}",
+      "post /api/v3/surveys",
+      "patch /api/v3/surveys/{surveyId}",
+      "post /api/v3/workflows"
+    ],
+    missedCapabilities: [],
+    inventedCapabilities: [],
+    findings: [
+      {
+        kind: "missed-capability",
+        severity: "major",
+        summary: "Nested apps/web Next.js routes and APIs were missed from the monorepo root.",
+        evidence: ["apps/web/app", "apps/web/package.json", ".descuff/model.json"],
+        followUp:
+          "Fixed by detecting nested Next package manifests and route roots under monorepo app folders."
+      },
+      {
+        kind: "validation-false-positive",
+        severity: "major",
+        summary: "Wrapper-authenticated webhook mutations were initially treated as public.",
+        evidence: [
+          "apps/web/app/api/v1/webhooks/route.ts",
+          "apps/web/app/api/v1/webhooks/[webhookId]/route.ts",
+          ".descuff/validation-repair.md"
+        ],
+        followUp:
+          "Fixed by recognizing wrapper-based route-handler auth evidence such as withV1ApiWrapper, authenticatedApiClient, authentication, and hasPermission."
+      }
+    ]
   })
 ];
 

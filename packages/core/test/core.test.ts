@@ -119,7 +119,8 @@ describe("@descuff/core", () => {
       "nextjs-saas-starter",
       "calcom-developer-starter-kit",
       "clerk-nextjs-pages-quickstart",
-      "umami"
+      "umami",
+      "formbricks"
     ]);
     expect(
       phase10CompletedExternalAuditResults.every(
@@ -137,6 +138,9 @@ describe("@descuff/core", () => {
     );
     expect(renderExternalRepoAuditMarkdown(phase10CompletedExternalAuditResults)).toContain(
       "Fixed by detecting route-handler auth evidence and applying same-file authenticated/admin capability visibility."
+    );
+    expect(renderExternalRepoAuditMarkdown(phase10CompletedExternalAuditResults)).toContain(
+      "Fixed by detecting nested Next package manifests and route roots under monorepo app folders."
     );
   });
 });

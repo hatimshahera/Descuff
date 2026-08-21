@@ -1,0 +1,9 @@
+{
+  "name": "@descuff/fixture-monorepo-next",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ]
+}

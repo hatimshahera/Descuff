@@ -89,7 +89,16 @@ function routeSegmentsToPath(segments: string[]): string {
 
 function routeRootSegments(rootDir: string, filePath: string): string[] {
   const segments = relative(rootDir, filePath).split(sep);
-  return segments[0] === "src" ? segments.slice(1) : segments;
+  if (segments[0] === "src") {
+    return segments.slice(1);
+  }
+
+  const nestedRouteRoot = segments.findIndex((segment) => segment === "app" || segment === "pages");
+  if (nestedRouteRoot > 0) {
+    return segments.slice(nestedRouteRoot);
+  }
+
+  return segments;
 }
 
 function isRouteGroup(segment: string): boolean {

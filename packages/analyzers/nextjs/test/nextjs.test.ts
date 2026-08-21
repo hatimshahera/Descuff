@@ -72,6 +72,25 @@ describe("@descuff/analyzer-nextjs", () => {
     expect(validateStructuralAnalysis(analysis).valid).toBe(true);
   });
 
+  it("discovers nested Next.js apps in monorepos", async () => {
+    const analysis = await new NativeNextAnalyzer().analyze(
+      createProjectContext("fixtures/monorepo-next")
+    );
+
+    expect(analysis.framework).toMatchObject({ kind: "nextjs", detected: true });
+    expect(analysis.framework.evidence).toContainEqual(
+      expect.objectContaining({
+        location: "apps/web/package.json"
+      })
+    );
+    expect(analysis.routes.map((route) => `${route.routerKind} ${route.path}`)).toEqual([
+      "next-app /"
+    ]);
+    expect(
+      analysis.apiOperations.map((operation) => `${operation.method} ${operation.path}`)
+    ).toEqual(["GET /api/forms/{formId}"]);
+  });
+
   it("extracts symbols, server actions, forms, auth boundaries, and standards with evidence", async () => {
     const analysis = await new NativeNextAnalyzer().analyze(
       createProjectContext("fixtures/ecommerce")
