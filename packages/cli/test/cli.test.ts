@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendFile, cp, mkdtemp, readFile, rm } from "node:fs/promises";
+import { appendFile, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { descuffCommands } from "@descuff/core";
@@ -78,6 +78,41 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("descuff start completed");
     expect(result.stdout).toContain("Baseline readiness: 100/100");
     expect(result.stdout).toContain("codex-prompt.md");
+  });
+
+  it("does not generate API or WebMCP plans for static sites without APIs", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-static-"));
+
+    try {
+      await mkdir(join(tempRoot, "app"), { recursive: true });
+      await writeFile(
+        join(tempRoot, "package.json"),
+        JSON.stringify({
+          name: "static-site",
+          private: true,
+          dependencies: {
+            next: "14.2.6"
+          }
+        })
+      );
+      await writeFile(
+        join(tempRoot, "app", "page.tsx"),
+        "export default function Page() { return <main><h1>Static Site</h1></main>; }\n"
+      );
+
+      const result = await runCli(["node", "descuff", "start", tempRoot]);
+      const generatedChanges = JSON.parse(
+        await readFile(join(tempRoot, ".descuff", "generated-changes.json"), "utf8")
+      ) as Array<{ standardId: string }>;
+
+      expect(result.exitCode).toBe(0);
+      expect(generatedChanges.map((change) => change.standardId).sort()).toEqual([
+        "llms-txt",
+        "schema-org"
+      ]);
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("finishes a baseline-to-agent workflow with a before/after report", async () => {

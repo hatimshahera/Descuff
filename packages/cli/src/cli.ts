@@ -251,10 +251,13 @@ async function validateArtifacts(
 ): Promise<{ summary: ValidationSummary; report: ValidationReadinessReport }> {
   const summary = mergeValidationSummaries([
     validateStaticGeneratedChanges(artifacts.generatedChanges, artifacts.model),
-    await runStandardValidation(standardAdapters(), {
-      model: artifacts.model,
-      generatedChanges: artifacts.generatedChanges
-    }),
+    await runStandardValidation(
+      applicableStandardAdapters(standardAdapters(), artifacts.assessments),
+      {
+        model: artifacts.model,
+        generatedChanges: artifacts.generatedChanges
+      }
+    ),
     validateRuntimeObservations(artifacts.model, artifacts.analysis),
     validateSecurityModel(artifacts.model),
     validateCapabilityConfidence(artifacts.model),
@@ -304,7 +307,9 @@ async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
   const model = structuralAnalysisToApplicationModel(analysisWithRuntime);
   const adapters = standardAdapters();
   const assessments = await Promise.all(adapters.map((adapter) => adapter.assess(model)));
-  const generated = await Promise.all(adapters.map((adapter) => adapter.generate(model)));
+  const generated = await Promise.all(
+    applicableStandardAdapters(adapters, assessments).map((adapter) => adapter.generate(model))
+  );
 
   return {
     analysis: analysisWithRuntime,
@@ -411,6 +416,18 @@ function standardAdapters(): StandardAdapter[] {
     new ApiCatalogAdapter(),
     new WebMcpAdapter()
   ];
+}
+
+function applicableStandardAdapters(
+  adapters: StandardAdapter[],
+  assessments: StandardAssessment[]
+): StandardAdapter[] {
+  const applicableIds = new Set(
+    assessments
+      .filter((assessment) => assessment.applicability !== "not-applicable")
+      .map((assessment) => assessment.standardId)
+  );
+  return adapters.filter((adapter) => applicableIds.has(adapter.id));
 }
 
 function withSyntheticReadOnlyRuntime(analysis: StructuralAnalysis): StructuralAnalysis {
