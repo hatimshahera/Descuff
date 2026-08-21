@@ -22,21 +22,22 @@ describe("@descuff/standard-webmcp", () => {
     expect(webMcpAdapterId).toBe("webmcp");
   });
 
-  it("assesses existing WebMCP with evidence", async () => {
+  it("treats existing WebMCP metadata as planning evidence, not implementation proof", async () => {
     const assessment = await new WebMcpAdapter().assess(model({ includeExistingStandard: true }));
 
     expect(assessment).toMatchObject({
       standardId: "webmcp",
-      applicability: "implemented",
+      applicability: "recommended",
       generatedChangeEligibility: "automatic"
     });
     expect(assessment.evidence.map((ref) => ref.id)).toContain("source:webmcp");
+    expect(assessment.rationale.join("\n")).toContain("metadata-only files do not prove");
   });
 
-  it("generates a pinned draft manifest for public read GET tools only", async () => {
+  it("generates metadata and an implementation plan for public read GET tools only", async () => {
     const changes = await new WebMcpAdapter().generate(model());
 
-    expect(changes).toHaveLength(1);
+    expect(changes).toHaveLength(2);
     expect(changes[0]).toMatchObject({
       standardId: "webmcp",
       id: "webmcp:manifest",
@@ -58,6 +59,17 @@ describe("@descuff/standard-webmcp", () => {
         }
       ]
     });
+    expect(changes[1]).toMatchObject({
+      standardId: "webmcp",
+      id: "webmcp:implementation-plan",
+      kind: "companion-file",
+      path: ".descuff/webmcp-implementation-plan.md",
+      deterministic: true,
+      safety: "automatic",
+      conflictPolicy: "companion-file"
+    });
+    expect(changes[1]?.content).toContain("document.modelContext.registerTool");
+    expect(changes[1]?.content).toContain("get_api_search");
   });
 
   it("requires approval for sensitive or high-consequence capabilities without exposing them", async () => {
@@ -75,7 +87,7 @@ describe("@descuff/standard-webmcp", () => {
     });
   });
 
-  it("validates generated WebMCP manifests", async () => {
+  it("warns that generated WebMCP manifests are metadata-only", async () => {
     const adapter = new WebMcpAdapter();
     const appModel = model();
     const generatedChanges = await adapter.generate(appModel);
@@ -83,7 +95,16 @@ describe("@descuff/standard-webmcp", () => {
     await expect(adapter.validate({ model: appModel, generatedChanges })).resolves.toEqual({
       standardId: "webmcp",
       valid: true,
-      issues: []
+      issues: [
+        {
+          code: "WEBMCP_METADATA_ONLY",
+          severity: "warning",
+          message:
+            "WebMCP metadata is planning evidence only; browser registration must be validated with runtime WebMCP discovery.",
+          path: "public/webmcp.json",
+          evidence: []
+        }
+      ]
     });
   });
 
@@ -120,6 +141,11 @@ describe("@descuff/standard-webmcp", () => {
       valid: false,
       issues: [
         {
+          code: "WEBMCP_METADATA_ONLY",
+          message:
+            "WebMCP metadata is planning evidence only; browser registration must be validated with runtime WebMCP discovery."
+        },
+        {
           code: "WEBMCP_DRAFT_UNSUPPORTED",
           message: `WebMCP manifest must use supported draft ${supportedWebMcpDraft}.`
         },
@@ -142,11 +168,20 @@ describe("@descuff/standard-webmcp", () => {
     const validation = await adapter.validate({ model: appModel, generatedChanges });
 
     expect(assessment.applicability).toBe("recommended");
-    expect(generatedChanges).toHaveLength(1);
+    expect(generatedChanges).toHaveLength(2);
     expect(validation).toEqual({
       standardId: "webmcp",
       valid: true,
-      issues: []
+      issues: [
+        {
+          code: "WEBMCP_METADATA_ONLY",
+          severity: "warning",
+          message:
+            "WebMCP metadata is planning evidence only; browser registration must be validated with runtime WebMCP discovery.",
+          path: "public/webmcp.json",
+          evidence: []
+        }
+      ]
     });
   });
 });

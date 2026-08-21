@@ -80,6 +80,32 @@ export interface RuntimeApiObservation {
   evidence: EvidenceRef[];
 }
 
+export interface RuntimePageObservation {
+  id: string;
+  path: string;
+  url: string;
+  status: number;
+  title?: string;
+  headings: string[];
+  formCount: number;
+  jsonLdCount: number;
+  networkRequestCount: number;
+  truncatedNetworkRequestCount: number;
+  origin: string;
+  evidence: EvidenceRef[];
+}
+
+export interface RuntimeWebMcpToolObservation {
+  id: string;
+  name: string;
+  description: string;
+  inputSchema: unknown;
+  annotations?: Record<string, unknown>;
+  origin: string;
+  frameUrl: string;
+  evidence: EvidenceRef[];
+}
+
 export interface EvidenceCorrelation {
   id: string;
   staticEvidence: EvidenceRef[];
@@ -106,6 +132,8 @@ export interface StructuralAnalysis {
   existingStandards: ExistingStandard[];
   runtimeRoutes: RuntimeRouteObservation[];
   runtimeApiOperations: RuntimeApiObservation[];
+  runtimePages: RuntimePageObservation[];
+  runtimeWebMcpTools: RuntimeWebMcpToolObservation[];
   correlations: EvidenceCorrelation[];
   evidence: EvidenceIndex;
   warnings: StructuralWarning[];
@@ -128,6 +156,8 @@ export function createEmptyStructuralAnalysis(projectRoot: string): StructuralAn
     existingStandards: [],
     runtimeRoutes: [],
     runtimeApiOperations: [],
+    runtimePages: [],
+    runtimeWebMcpTools: [],
     correlations: [],
     evidence: {
       schemaVersion: "0.1.0",

@@ -17,6 +17,7 @@ export const webMcpAdapterId = "webmcp";
 export const supportedWebMcpDraft = "webmcp-draft-2026-08";
 
 const generatedPath = "public/webmcp.json";
+const implementationPlanPath = ".descuff/webmcp-implementation-plan.md";
 
 interface WebMcpManifest {
   draft: typeof supportedWebMcpDraft;
@@ -35,11 +36,11 @@ export class WebMcpAdapter implements StandardAdapter {
   readonly id = webMcpAdapterId;
 
   async assess(model: ApplicationModel): Promise<StandardAssessment> {
-    const existing = model.standards.filter((standard) => standard.kind === "webmcp");
+    const metadataOnly = model.standards.filter((standard) => standard.kind === "webmcp");
     const publicReadTools = publicReadToolCandidates(model);
     const approvalGates = createSensitiveCapabilityApprovalGates(model.capabilities);
     const evidence = uniqueEvidence([
-      ...existing.flatMap((standard) => standard.evidence),
+      ...metadataOnly.flatMap((standard) => standard.evidence),
       ...publicReadTools.flatMap((candidate) => [
         ...candidate.capability.evidence,
         ...candidate.api.evidence
@@ -48,24 +49,21 @@ export class WebMcpAdapter implements StandardAdapter {
 
     return {
       standardId: this.id,
-      applicability:
-        existing.length > 0
-          ? "implemented"
-          : publicReadTools.length > 0
-            ? "recommended"
-            : "not-applicable",
+      applicability: publicReadTools.length > 0 ? "recommended" : "not-applicable",
       evidence,
       rationale: [
-        existing.length > 0
-          ? "Existing WebMCP evidence was detected."
-          : "Only public read GET capabilities are eligible for the supported WebMCP draft."
+        metadataOnly.length > 0
+          ? "Existing WebMCP metadata was detected, but metadata-only files do not prove browser tool registration."
+          : "Only public read GET capabilities are eligible for WebMCP planning.",
+        "Real WebMCP implementation requires browser registration through document.modelContext.registerTool(...), discovered through a runtime compatibility layer."
       ],
       riskNotes: approvalGates.map(approvalGateToRiskNote),
       generatedChangeEligibility: generatedChangeSafetyForApprovalGates(approvalGates),
       validationRequirements: [
         {
-          id: "webmcp-supported-draft",
-          description: `Validate WebMCP manifest against supported draft ${supportedWebMcpDraft}.`,
+          id: "webmcp-browser-registration",
+          description:
+            "Validate that planned tools are registered in the browser with document.modelContext and discoverable through WebMCP runtime analysis.",
           evidence
         }
       ]
@@ -75,6 +73,14 @@ export class WebMcpAdapter implements StandardAdapter {
   async generate(model: ApplicationModel): Promise<GeneratedChange[]> {
     const approvalGates = createSensitiveCapabilityApprovalGates(model.capabilities);
     const publicReadTools = publicReadToolCandidates(model);
+
+    const evidence = uniqueEvidence([
+      ...model.project.evidence,
+      ...publicReadTools.flatMap((candidate) => [
+        ...candidate.capability.evidence,
+        ...candidate.api.evidence
+      ])
+    ]);
 
     return [
       {
@@ -86,13 +92,18 @@ export class WebMcpAdapter implements StandardAdapter {
         deterministic: true,
         safety: generatedChangeSafetyForApprovalGates(approvalGates),
         conflictPolicy: "approval-required",
-        evidence: uniqueEvidence([
-          ...model.project.evidence,
-          ...publicReadTools.flatMap((candidate) => [
-            ...candidate.capability.evidence,
-            ...candidate.api.evidence
-          ])
-        ])
+        evidence
+      },
+      {
+        standardId: this.id,
+        id: "webmcp:implementation-plan",
+        kind: "companion-file",
+        path: implementationPlanPath,
+        content: renderWebMcpImplementationPlan(publicReadTools),
+        deterministic: true,
+        safety: generatedChangeSafetyForApprovalGates(approvalGates),
+        conflictPolicy: "companion-file",
+        evidence
       }
     ];
   }
@@ -119,6 +130,15 @@ export class WebMcpAdapter implements StandardAdapter {
     if (manifest === undefined) {
       return validationResult(issues);
     }
+
+    issues.push({
+      code: "WEBMCP_METADATA_ONLY",
+      severity: "warning",
+      message:
+        "WebMCP metadata is planning evidence only; browser registration must be validated with runtime WebMCP discovery.",
+      path: generatedPath,
+      evidence: []
+    });
 
     if (manifest.draft !== supportedWebMcpDraft) {
       issues.push({
@@ -162,6 +182,46 @@ function renderWebMcpManifest(candidates: WebMcpToolCandidate[]): WebMcpManifest
       risk: "PUBLIC_READ"
     }))
   };
+}
+
+function renderWebMcpImplementationPlan(candidates: WebMcpToolCandidate[]): string {
+  const lines = [
+    "# WebMCP Implementation Plan",
+    "",
+    "This file is a coding-agent implementation aid. It is not proof of WebMCP support.",
+    "",
+    "Real WebMCP support requires browser tool registration through `document.modelContext.registerTool(...)` and runtime discovery through Descuff's WebMCP compatibility layer.",
+    "",
+    "## Tools",
+    ""
+  ];
+
+  if (candidates.length === 0) {
+    lines.push("No public read GET capabilities are eligible for WebMCP registration.", "");
+    return lines.join("\n");
+  }
+
+  for (const candidate of candidates.sort(compareCandidates)) {
+    const name = toolName(candidate.capability);
+    lines.push(`### ${name}`, "");
+    lines.push(`- Capability: ${candidate.capability.name}`);
+    lines.push(`- API: GET ${candidate.api.path}`);
+    lines.push("- Risk: PUBLIC_READ");
+    lines.push("- Required registration fields:");
+    lines.push(`  - name: \`${name}\``);
+    lines.push(`  - description: ${candidate.capability.name}`);
+    lines.push("  - inputSchema: JSON-compatible object schema");
+    lines.push("  - execute: read-only function that preserves existing auth and data boundaries");
+    lines.push("  - annotations: include read-only intent, such as `readOnlyHint: true`");
+    lines.push("- Validation:");
+    lines.push("  - load a browser page where the tool is registered");
+    lines.push("  - discover it through the WebMCP runtime abstraction");
+    lines.push("  - validate schema, annotations, origin, and linked capability");
+    lines.push("  - execute only with scenario-approved safe inputs");
+    lines.push("");
+  }
+
+  return lines.join("\n");
 }
 
 interface WebMcpToolCandidate {

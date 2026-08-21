@@ -36,13 +36,25 @@ describe("@descuff/validator ecommerce website fixture E2E", () => {
     ]);
     const report = createValidationReadinessReport(model, [summary]);
 
-    expect(generatedChanges.map((change) => change.standardId).sort()).toEqual([
+    expect([...new Set(generatedChanges.map((change) => change.standardId))].sort()).toEqual([
       "llms-txt",
       "openapi",
       "schema-org",
       "webmcp"
     ]);
-    expect(summary).toEqual({ passed: true, failures: [], warnings: [] });
+    expect(summary).toMatchObject({
+      passed: true,
+      failures: [],
+      warnings: [
+        {
+          code: "WEBMCP_METADATA_ONLY",
+          level: "static",
+          severity: "warning",
+          source: "webmcp",
+          path: "public/webmcp.json"
+        }
+      ]
+    });
     expect(report).toMatchObject({
       ready: true,
       readiness: {
@@ -51,8 +63,7 @@ describe("@descuff/validator ecommerce website fixture E2E", () => {
       },
       validation: {
         passed: true,
-        failures: [],
-        warnings: []
+        failures: []
       }
     });
   });

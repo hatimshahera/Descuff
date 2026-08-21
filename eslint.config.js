@@ -6,6 +6,7 @@ export default tseslint.config(
     ignores: [
       "node_modules/",
       "dist/",
+      "**/dist/",
       "coverage/",
       "graphify-out/",
       "fixtures/**/.next/",
@@ -18,7 +19,8 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         console: "readonly",
-        process: "readonly"
+        process: "readonly",
+        URL: "readonly"
       }
     }
   }
