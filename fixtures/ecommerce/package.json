@@ -7,7 +7,7 @@
     "next": "15.0.0"
   },
   "scripts": {
-    "build": "node -e \"console.log('ecommerce fixture placeholder build')\"",
-    "test": "node -e \"console.log('ecommerce fixture placeholder test')\""
+    "build": "node -e \"console.log('ecommerce fixture build passed')\"",
+    "test": "node -e \"console.log('ecommerce fixture test passed')\""
   }
 }

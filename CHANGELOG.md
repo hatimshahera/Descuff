@@ -17,7 +17,7 @@ All notable changes to Descuff will be documented in this file.
 
 ### Added
 
-- Phase-based TypeScript/pnpm monorepo scaffold.
+- TypeScript/pnpm monorepo foundation.
 - Next.js static analyzer for App Router, Pages Router, API routes, server actions, forms, middleware, existing standards, and runtime correlation.
 - Descuff-owned structural and semantic IR with evidence-backed capability, risk, application-type, validation, and readiness models.
 - Standard adapters for `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP.
