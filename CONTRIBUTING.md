@@ -1,36 +1,28 @@
 # Contributing
 
-Descuff is implemented phase by phase. Before production code changes, read:
-
-- `AGENTS.md`
-- `docs/implementation/PLAN.md`
-- the relevant phase file in `docs/implementation/`
-- related architecture docs and ADRs
-
-Do not mark tasks complete until their acceptance criteria and tests pass.
+Thanks for helping improve Descuff. This project is a TypeScript/pnpm monorepo for the `descuff` CLI and its analyzer, standards, workflow, reporting, and validation packages.
 
 ## Development Setup
 
 ```bash
 pnpm install
-pnpm build
-pnpm test
-```
-
-Run the full local release check before opening a release-facing change:
-
-```bash
 pnpm run ci
 ```
 
-## Phase Discipline
+Use focused checks while developing:
 
-- Work one phase at a time unless a maintainer explicitly asks otherwise.
-- Keep `docs/implementation/PLAN.md` and the active phase file synchronized.
+```bash
+pnpm build
+pnpm test
+pnpm lint
+```
+
+## Project Boundaries
+
 - Preserve Descuff-owned IR and evidence contracts independent of framework, standard, runtime, and Graphify storage formats.
 - Keep external standards behind adapters.
 - Keep Graphify optional and behind `GraphifyAdapter`.
-- Record newly discovered architectural decisions as ADRs.
+- Prefer small, focused changes with tests that cover the behavior being changed.
 
 ## Safety And Validation
 
@@ -39,6 +31,9 @@ pnpm run ci
 - Never silently expose sensitive or high-consequence capabilities.
 - Validation must prove behavior, not just file existence.
 
-## Commit Scope
+## Pull Requests
 
-Prefer small, phase-aligned changes with focused tests. Do not revert unrelated user or contributor work while preparing a change.
+- Explain the user-facing change.
+- Include tests for behavior changes.
+- Run `pnpm run ci` before submitting when possible.
+- Do not commit `.descuff/`, `graphify-out/`, `dist/`, `node_modules/`, or local build artifacts.

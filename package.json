@@ -1,9 +1,27 @@
 {
   "name": "descuff-workspace",
   "version": "0.0.2",
+  "description": "Turn local Next.js websites into interfaces AI agents can understand and use.",
   "private": true,
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hatimshahera/Descuff.git"
+  },
+  "homepage": "https://github.com/hatimshahera/Descuff#readme",
+  "bugs": {
+    "url": "https://github.com/hatimshahera/Descuff/issues"
+  },
+  "keywords": [
+    "agents",
+    "ai-agents",
+    "llms.txt",
+    "nextjs",
+    "openapi",
+    "schema-org",
+    "webmcp"
+  ],
   "packageManager": "pnpm@10.30.0",
   "engines": {
     "node": ">=20.11.0"
@@ -17,8 +35,7 @@
     "test": "vitest run",
     "typecheck": "tsc -b tsconfig.packages.json --pretty false",
     "ci": "pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm smoke",
-    "smoke": "node scripts/smoke-cli.mjs",
-    "graph:refresh": "graphify . --update --no-viz"
+    "smoke": "node scripts/smoke-cli.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -1,7 +1,5 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-
 const cliPath = "packages/cli/dist/index.js";
 const commands = ["scan", "report", "plan", "start", "finish", "fix", "apply-safe", "validate"];
 const fixtureRoot = "fixtures/ecommerce";
@@ -43,24 +41,6 @@ for (const command of commands) {
   if (!result.stdout.includes(expectedOutput)) {
     console.error(`descuff ${command} produced unexpected output`);
     console.error(result.stdout);
-    process.exit(1);
-  }
-}
-
-const packageJson = JSON.parse(await readFile("package.json", "utf8"));
-if (packageJson.scripts?.["graph:refresh"] !== "graphify . --update --no-viz") {
-  console.error("Missing expected graph:refresh script.");
-  process.exit(1);
-}
-
-const agentInstructions = await readFile("AGENTS.md", "utf8");
-for (const expectedInstruction of [
-  "Treat Graphify as optional developer infrastructure",
-  "Refresh the local repository graph with `pnpm graph:refresh`",
-  "Query `graphify-out/graph.json` for repository-navigation questions"
-]) {
-  if (!agentInstructions.includes(expectedInstruction)) {
-    console.error(`Missing Graphify agent instruction: ${expectedInstruction}`);
     process.exit(1);
   }
 }

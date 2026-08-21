@@ -2,6 +2,12 @@
 
 Descuff v1 works on local Next.js codebases. Run it from the root of the app you want to improve.
 
+Install is optional. The easiest path is:
+
+```bash
+npx descuff start .
+```
+
 ## 1. Start With A Baseline
 
 ```bash

@@ -1,0 +1,33 @@
+name: Bug Report
+description: Report something that is broken or confusing in Descuff.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the command you ran and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant output
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Descuff version
+      placeholder: npx descuff --version
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: node --version
+  - type: textarea
+    id: app
+    attributes:
+      label: App details
+      description: Framework, router type, and anything relevant about the project being scanned.

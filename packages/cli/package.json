@@ -1,8 +1,27 @@
 {
   "name": "descuff",
   "version": "0.0.2",
+  "description": "Turn local Next.js websites into interfaces AI agents can understand and use.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hatimshahera/Descuff.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/hatimshahera/Descuff#readme",
+  "bugs": {
+    "url": "https://github.com/hatimshahera/Descuff/issues"
+  },
+  "keywords": [
+    "agents",
+    "ai-agents",
+    "llms.txt",
+    "nextjs",
+    "openapi",
+    "schema-org",
+    "webmcp"
+  ],
   "files": [
     "dist",
     "README.md"

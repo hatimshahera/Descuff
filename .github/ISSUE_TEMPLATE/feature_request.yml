@@ -1,0 +1,25 @@
+name: Feature Request
+description: Suggest an improvement for Descuff.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow or limitation should this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should Descuff do?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context
+      description: Example apps, standards, agent workflows, or validation behavior that matter.

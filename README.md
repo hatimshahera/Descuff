@@ -1,10 +1,14 @@
 # Descuff
 
-Turn your existing website into an interface AI agents can use.
+[![npm version](https://img.shields.io/npm/v/descuff.svg)](https://www.npmjs.com/package/descuff)
+[![CI](https://github.com/hatimshahera/Descuff/actions/workflows/ci.yml/badge.svg)](https://github.com/hatimshahera/Descuff/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Descuff is an open-source developer tool for measuring, planning, and validating agent-facing standards adoption. It scans an existing app, creates a baseline, writes an implementation plan for your coding agent, and proves the before/after difference.
+Turn your existing website into an interface AI agents can understand and use.
 
-Current release: `descuff@0.0.2` on npm. v1 supports Next.js App Router and Pages Router codebases.
+Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe WebMCP metadata.
+
+Current release: `descuff@0.0.2` on npm. Descuff v1 supports local Next.js App Router and Pages Router codebases.
 
 ## Quick Start
 
@@ -25,7 +29,9 @@ Descuff writes:
 .descuff/codex-prompt.md
 ```
 
-Give `.descuff/codex-prompt.md` and `.descuff/plan.md` to Codex, Cursor, Claude Code, or another coding agent. After implementation:
+Give `.descuff/codex-prompt.md` and `.descuff/plan.md` to Codex, Cursor, Claude Code, or another coding agent. The agent implements the standards in your app while preserving the existing UI and behavior.
+
+After implementation:
 
 ```bash
 npx descuff finish .
@@ -46,6 +52,16 @@ Descuff rescans, validates, and writes:
 - Generates a conservative implementation plan for a developer-owned coding agent.
 - Validates standards, security boundaries, runtime evidence, and readiness.
 - Reports before/after improvement so teams can see what changed.
+
+## Why It Exists
+
+Most websites were designed for humans and browsers. AI agents need clearer entry points: public summaries, structured entities, documented APIs, discoverable catalogs, and strict safety boundaries around anything sensitive or mutating.
+
+Descuff gives developers a repeatable workflow:
+
+```text
+baseline -> plan -> implement with your coding agent -> validate -> compare
+```
 
 ## Commands
 
@@ -125,11 +141,8 @@ npx descuff start .
 ## Documentation
 
 - [How To Use Descuff](HOW-TO-USE.md)
-- [Next Potential Features](docs/NEXT-FEATURES.md)
-- [Architecture Overview](docs/architecture/overview.md)
-- [Validation](docs/architecture/validation.md)
-- [Standards Adapters](docs/architecture/standards-adapters.md)
-- [Implementation Plan](docs/implementation/PLAN.md)
+- [CLI Package README](packages/cli/README.md)
+- [Example Next.js App](examples/ecommerce-nextjs/README.md)
 
 ## Development
 
@@ -138,4 +151,6 @@ pnpm install
 pnpm run ci
 ```
 
-Read `AGENTS.md`, `docs/implementation/PLAN.md`, the active phase file, related architecture docs, and relevant ADRs before implementing production changes.
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a change.
