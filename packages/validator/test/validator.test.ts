@@ -1291,6 +1291,92 @@ describe("@descuff/validator", () => {
     });
   });
 
+  it("fails WebMCP runtime validation when executed tools do not match API runtime evidence", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.runtimeApiOperations = [];
+    analysis.runtimePages.push(runtimePage());
+    analysis.runtimeWebMcpTools.push({
+      id: "runtime-webmcp:https://example.test:search",
+      name: "search",
+      description: "Search products",
+      inputSchema: { type: "object" },
+      annotations: { readOnlyHint: true },
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      evidence: [evidence]
+    });
+    analysis.runtimeWebMcpToolExecutions.push({
+      id: "runtime-webmcp-execution:https://example.test:search",
+      toolName: "search",
+      status: "executed",
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      resultShape: "object",
+      resultSummary: '{"products":[]}',
+      evidence: [evidence]
+    });
+
+    expect(
+      validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
+    ).toMatchObject({
+      passed: false,
+      failures: expect.arrayContaining([
+        expect.objectContaining({
+          code: "WEBMCP_TOOL_RUNTIME_MISMATCH",
+          level: "runtime",
+          severity: "error",
+          source: "capability:search"
+        })
+      ]),
+      warnings: []
+    });
+  });
+
+  it("fails WebMCP runtime validation when tool result shape differs from linked API", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.runtimeApiOperations[0] = {
+      ...analysis.runtimeApiOperations[0]!,
+      responseShape: "array",
+      responseSummary: "[]"
+    };
+    analysis.runtimePages.push(runtimePage());
+    analysis.runtimeWebMcpTools.push({
+      id: "runtime-webmcp:https://example.test:search",
+      name: "search",
+      description: "Search products",
+      inputSchema: { type: "object" },
+      annotations: { readOnlyHint: true },
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      evidence: [evidence]
+    });
+    analysis.runtimeWebMcpToolExecutions.push({
+      id: "runtime-webmcp-execution:https://example.test:search",
+      toolName: "search",
+      status: "executed",
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      resultShape: "object",
+      resultSummary: '{"products":[]}',
+      evidence: [evidence]
+    });
+
+    expect(
+      validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
+    ).toMatchObject({
+      passed: false,
+      failures: expect.arrayContaining([
+        expect.objectContaining({
+          code: "WEBMCP_TOOL_RUNTIME_MISMATCH",
+          level: "runtime",
+          severity: "error",
+          source: "capability:search"
+        })
+      ]),
+      warnings: []
+    });
+  });
+
   it("blocks low-confidence capabilities from implementation recommendations", () => {
     expect(
       validateCapabilityConfidence({

@@ -36,7 +36,11 @@ describe("@descuff/analyzer-runtime", () => {
           return { status: 200, headers: { "content-type": "text/html" } };
         },
         async fetch() {
-          return { status: 200, headers: { "content-type": "application/json" } };
+          return {
+            status: 200,
+            headers: { "content-type": "application/json" },
+            body: '{"products":[]}'
+          };
         },
         async dispose() {
           return undefined;
@@ -60,7 +64,13 @@ describe("@descuff/analyzer-runtime", () => {
       expect.objectContaining({ path: "/", status: 200 })
     );
     expect(analysis.runtimeApiOperations).toContainEqual(
-      expect.objectContaining({ path: "/api/products", method: "GET", status: 200 })
+      expect.objectContaining({
+        path: "/api/products",
+        method: "GET",
+        status: 200,
+        responseShape: "object",
+        responseSummary: '{"products":[]}'
+      })
     );
     expect(analysis.warnings).toContainEqual(
       expect.objectContaining({ code: "RUNTIME_MUTATION_SKIPPED" })

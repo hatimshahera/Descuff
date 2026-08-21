@@ -77,6 +77,8 @@ export interface RuntimeApiObservation {
   method: HttpMethod;
   status: number;
   contentType?: string;
+  responseShape?: string;
+  responseSummary?: string;
   evidence: EvidenceRef[];
 }
 

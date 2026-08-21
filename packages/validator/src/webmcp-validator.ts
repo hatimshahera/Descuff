@@ -150,6 +150,68 @@ export function validateWebMcpBehavior(
           suggestedAction:
             "Record minimal result shape evidence so validation can compare behavior across runs."
         });
+      } else {
+        const runtimeApi = analysis.runtimeApiOperations.find(
+          (operation) =>
+            operation.method === candidate.api.method && operation.path === candidate.api.path
+        );
+
+        if (runtimeApi === undefined || runtimeApi.status < 200 || runtimeApi.status >= 400) {
+          issues.push({
+            code: "WEBMCP_TOOL_RUNTIME_MISMATCH",
+            level: "runtime",
+            severity: "error",
+            message: `WebMCP tool ${expectedName} executed but linked GET ${candidate.api.path} was not successfully observed at runtime.`,
+            source: candidate.capability.id,
+            evidence: [
+              ...candidate.capability.evidence,
+              ...candidate.api.evidence,
+              ...execution.evidence,
+              ...(runtimeApi?.evidence ?? [])
+            ],
+            suggestedAction:
+              "Validate the linked GET API successfully and ensure the WebMCP tool uses that same application data boundary."
+          });
+        } else if (
+          runtimeApi.responseShape !== undefined &&
+          execution.resultShape !== runtimeApi.responseShape
+        ) {
+          issues.push({
+            code: "WEBMCP_TOOL_RUNTIME_MISMATCH",
+            level: "runtime",
+            severity: "error",
+            message: `WebMCP tool ${expectedName} returned ${execution.resultShape}, but linked GET ${candidate.api.path} returned ${runtimeApi.responseShape}.`,
+            source: candidate.capability.id,
+            evidence: [
+              ...candidate.capability.evidence,
+              ...candidate.api.evidence,
+              ...execution.evidence,
+              ...runtimeApi.evidence
+            ],
+            suggestedAction:
+              "Align the WebMCP tool result with the linked application API response shape."
+          });
+        } else if (
+          runtimeApi.responseSummary !== undefined &&
+          execution.resultSummary !== undefined &&
+          execution.resultSummary !== runtimeApi.responseSummary
+        ) {
+          issues.push({
+            code: "WEBMCP_TOOL_RUNTIME_MISMATCH",
+            level: "runtime",
+            severity: "error",
+            message: `WebMCP tool ${expectedName} result summary did not match linked GET ${candidate.api.path}.`,
+            source: candidate.capability.id,
+            evidence: [
+              ...candidate.capability.evidence,
+              ...candidate.api.evidence,
+              ...execution.evidence,
+              ...runtimeApi.evidence
+            ],
+            suggestedAction:
+              "Ensure the WebMCP tool reads from the same data boundary as the linked GET API."
+          });
+        }
       }
     }
 

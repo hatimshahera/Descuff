@@ -24,6 +24,7 @@ import type { DiscoveredWebMcpTool } from "./webmcp-runtime.js";
 export interface RuntimeHttpResponse {
   status: number;
   headers: Record<string, string | undefined>;
+  body?: string;
 }
 
 export interface RuntimeHttpClient {
@@ -168,9 +169,13 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
           evidence: [evidence]
         };
         const contentType = response.headers["content-type"];
-        analysis.runtimeApiOperations.push(
-          contentType === undefined ? observation : { ...observation, contentType }
-        );
+        const responseSummary =
+          response.body === undefined ? undefined : summarizeRuntimeValue(response.body);
+        analysis.runtimeApiOperations.push({
+          ...observation,
+          ...(contentType === undefined ? {} : { contentType }),
+          ...(responseSummary === undefined ? {} : responseSummary)
+        });
         analysis.evidence.items.push(evidence);
       }
 
@@ -299,7 +304,12 @@ async function createPlaywrightClient(baseUrl: string): Promise<RuntimeHttpClien
     },
     async fetch(path, options) {
       const response = await context.fetch(path, options);
-      return { status: response.status(), headers: response.headers() };
+      const headers = response.headers();
+      const contentType = headers["content-type"] ?? "";
+      const body = isTextualContentType(contentType)
+        ? await response.text().catch(() => "")
+        : undefined;
+      return { status: response.status(), headers, ...(body === undefined ? {} : { body }) };
     },
     async dispose() {
       await context.dispose();
@@ -554,13 +564,40 @@ async function collectWebMcpToolExecutions(
 function summarizeWebMcpExecutionResult(
   result: unknown
 ): Pick<RuntimeWebMcpToolExecutionObservation, "resultShape" | "resultSummary"> {
-  const resultShape = Array.isArray(result) ? "array" : result === null ? "null" : typeof result;
-  const summary = redactSensitiveBody(JSON.stringify(result)?.slice(0, 512) ?? "");
+  const summary = summarizeRuntimeValue(result);
 
   return {
-    resultShape,
-    ...(summary.length === 0 ? {} : { resultSummary: summary })
+    resultShape: summary.responseShape,
+    ...(summary.responseSummary === undefined ? {} : { resultSummary: summary.responseSummary })
   };
+}
+
+function summarizeRuntimeValue(value: unknown): {
+  responseShape: string;
+  responseSummary?: string;
+} {
+  const normalized = typeof value === "string" ? parseJsonLikeString(value) : value;
+  const responseShape = Array.isArray(normalized)
+    ? "array"
+    : normalized === null
+      ? "null"
+      : typeof normalized;
+  const serialized = JSON.stringify(normalized);
+  const responseSummary =
+    serialized === undefined ? undefined : redactSensitiveBody(serialized.slice(0, 512));
+
+  return {
+    responseShape,
+    ...(responseSummary === undefined || responseSummary.length === 0 ? {} : { responseSummary })
+  };
+}
+
+function parseJsonLikeString(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }
 
 export function sanitizeNetworkObservation(
