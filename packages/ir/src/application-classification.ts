@@ -7,7 +7,9 @@ export function assessApplicationType(analysis: StructuralAnalysis): Application
   );
   const vocabulary = [
     ...analysis.routes.map((route) => route.path),
+    ...analysis.routes.map((route) => route.sourceFile),
     ...analysis.apiOperations.map((operation) => operation.path),
+    ...analysis.apiOperations.map((operation) => operation.sourceFile),
     ...analysis.symbols.map((symbol) => symbol.name)
   ]
     .join(" ")
@@ -21,7 +23,7 @@ export function assessApplicationType(analysis: StructuralAnalysis): Application
     return { type: "booking", confidence: "medium", evidence };
   }
 
-  if (/article|blog|content|newsletter/.test(vocabulary)) {
+  if (/\bposts\b|article|blog|content|newsletter/.test(vocabulary)) {
     return { type: "content", confidence: "medium", evidence };
   }
 

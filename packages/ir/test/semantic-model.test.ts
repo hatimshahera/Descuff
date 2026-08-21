@@ -5,6 +5,7 @@ import { NativeNextAnalyzer } from "@descuff/analyzer-nextjs";
 import {
   assessApplicationType,
   classifyCapabilityRisk,
+  createEmptyStructuralAnalysis,
   scoreReadiness,
   structuralAnalysisToApplicationModel,
   validateApplicationModel
@@ -27,6 +28,31 @@ describe("semantic ApplicationModel", () => {
     expect(assessApplicationType(analysis)).toMatchObject({
       type: "ecommerce",
       confidence: "high"
+    });
+  });
+
+  it("classifies Pages Router post routes as content applications", () => {
+    const analysis = createEmptyStructuralAnalysis("/blog");
+    const evidence = {
+      id: "source:pages/posts/[slug].js",
+      kind: "source" as const,
+      location: "pages/posts/[slug].js",
+      confidence: "high" as const,
+      summary: "Next.js page route discovered"
+    };
+
+    analysis.routes.push({
+      id: "route:posts_slug",
+      path: "/posts/{slug}",
+      routerKind: "next-pages",
+      sourceFile: "pages/posts/[slug].js",
+      evidence: [evidence]
+    });
+    analysis.evidence.items.push(evidence);
+
+    expect(assessApplicationType(analysis)).toMatchObject({
+      type: "content",
+      confidence: "medium"
     });
   });
 
