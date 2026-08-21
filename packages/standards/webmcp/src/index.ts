@@ -85,17 +85,6 @@ export class WebMcpAdapter implements StandardAdapter {
     return [
       {
         standardId: this.id,
-        id: "webmcp:manifest",
-        kind: "create-file",
-        path: generatedPath,
-        content: `${JSON.stringify(renderWebMcpManifest(publicReadTools), null, 2)}\n`,
-        deterministic: true,
-        safety: generatedChangeSafetyForApprovalGates(approvalGates),
-        conflictPolicy: "approval-required",
-        evidence
-      },
-      {
-        standardId: this.id,
         id: "webmcp:implementation-plan",
         kind: "companion-file",
         path: implementationPlanPath,
@@ -111,18 +100,12 @@ export class WebMcpAdapter implements StandardAdapter {
   async validate(context: StandardValidationContext): Promise<StandardValidationResult> {
     const issues: StandardValidationIssue[] = [];
     const content =
+      context.existingFiles?.get(generatedPath) ??
       context.generatedChanges.find(
         (change) => change.standardId === this.id && change.path === generatedPath
-      )?.content ?? context.existingFiles?.get(generatedPath);
+      )?.content;
 
     if (content === undefined) {
-      issues.push({
-        code: "WEBMCP_MANIFEST_MISSING",
-        severity: "error",
-        message: "WebMCP manifest content was not provided for validation.",
-        path: generatedPath,
-        evidence: []
-      });
       return validationResult(issues);
     }
 
@@ -170,19 +153,6 @@ export class WebMcpAdapter implements StandardAdapter {
 }
 
 export const webMcpAdapter = new WebMcpAdapter();
-
-function renderWebMcpManifest(candidates: WebMcpToolCandidate[]): WebMcpManifest {
-  return {
-    draft: supportedWebMcpDraft,
-    tools: candidates.sort(compareCandidates).map((candidate) => ({
-      name: toolName(candidate.capability),
-      description: candidate.capability.name,
-      method: "GET",
-      path: candidate.api.path,
-      risk: "PUBLIC_READ"
-    }))
-  };
-}
 
 function renderWebMcpImplementationPlan(
   model: ApplicationModel,

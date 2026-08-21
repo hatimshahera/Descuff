@@ -34,32 +34,11 @@ describe("@descuff/standard-webmcp", () => {
     expect(assessment.rationale.join("\n")).toContain("metadata-only files do not prove");
   });
 
-  it("generates metadata and an implementation plan for public read GET tools only", async () => {
+  it("generates an implementation plan for public read GET tools only", async () => {
     const changes = await new WebMcpAdapter().generate(model());
 
-    expect(changes).toHaveLength(2);
+    expect(changes).toHaveLength(1);
     expect(changes[0]).toMatchObject({
-      standardId: "webmcp",
-      id: "webmcp:manifest",
-      kind: "create-file",
-      path: "public/webmcp.json",
-      deterministic: true,
-      safety: "automatic",
-      conflictPolicy: "approval-required"
-    });
-    expect(JSON.parse(changes[0]?.content ?? "")).toEqual({
-      draft: supportedWebMcpDraft,
-      tools: [
-        {
-          name: "get_api_search",
-          description: "get /api/search",
-          method: "GET",
-          path: "/api/search",
-          risk: "PUBLIC_READ"
-        }
-      ]
-    });
-    expect(changes[1]).toMatchObject({
       standardId: "webmcp",
       id: "webmcp:implementation-plan",
       kind: "companion-file",
@@ -68,11 +47,12 @@ describe("@descuff/standard-webmcp", () => {
       safety: "automatic",
       conflictPolicy: "companion-file"
     });
-    expect(changes[1]?.content).toContain("document.modelContext.registerTool");
-    expect(changes[1]?.content).toContain("Detected framework: Next.js.");
-    expect(changes[1]?.content).toContain("App Router");
-    expect(changes[1]?.content).toContain("'use client'");
-    expect(changes[1]?.content).toContain("get_api_search");
+    expect(changes[0]?.content).toContain("document.modelContext.registerTool");
+    expect(changes[0]?.content).toContain("Detected framework: Next.js.");
+    expect(changes[0]?.content).toContain("App Router");
+    expect(changes[0]?.content).toContain("'use client'");
+    expect(changes[0]?.content).toContain("get_api_search");
+    expect(changes.some((change) => change.path === "public/webmcp.json")).toBe(false);
   });
 
   it("requires approval for sensitive or high-consequence capabilities without exposing them", async () => {
@@ -81,21 +61,46 @@ describe("@descuff/standard-webmcp", () => {
     );
 
     expect(generated[0]?.safety).toBe("approval-required");
-    expect(JSON.parse(generated[0]?.content ?? "")).toMatchObject({
-      tools: [
-        {
-          name: "get_api_search"
-        }
-      ]
-    });
+    expect(generated[0]?.content).toContain("get_api_search");
+    expect(generated[0]?.content).not.toContain("post /api/checkout");
   });
 
-  it("warns that generated WebMCP manifests are metadata-only", async () => {
+  it("does not require generated WebMCP metadata for validation", async () => {
     const adapter = new WebMcpAdapter();
     const appModel = model();
     const generatedChanges = await adapter.generate(appModel);
 
     await expect(adapter.validate({ model: appModel, generatedChanges })).resolves.toEqual({
+      standardId: "webmcp",
+      valid: true,
+      issues: []
+    });
+  });
+
+  it("warns that existing WebMCP manifests are metadata-only", async () => {
+    await expect(
+      new WebMcpAdapter().validate({
+        model: model(),
+        generatedChanges: [],
+        existingFiles: new Map([
+          [
+            "public/webmcp.json",
+            JSON.stringify({
+              draft: supportedWebMcpDraft,
+              tools: [
+                {
+                  name: "get_api_search",
+                  description: "get /api/search",
+                  method: "GET",
+                  path: "/api/search",
+                  risk: "PUBLIC_READ"
+                }
+              ]
+            })
+          ]
+        ])
+      })
+    ).resolves.toEqual({
       standardId: "webmcp",
       valid: true,
       issues: [
@@ -171,20 +176,11 @@ describe("@descuff/standard-webmcp", () => {
     const validation = await adapter.validate({ model: appModel, generatedChanges });
 
     expect(assessment.applicability).toBe("recommended");
-    expect(generatedChanges).toHaveLength(2);
+    expect(generatedChanges).toHaveLength(1);
     expect(validation).toEqual({
       standardId: "webmcp",
       valid: true,
-      issues: [
-        {
-          code: "WEBMCP_METADATA_ONLY",
-          severity: "warning",
-          message:
-            "WebMCP metadata is planning evidence only; browser registration must be validated with runtime WebMCP discovery.",
-          path: "public/webmcp.json",
-          evidence: []
-        }
-      ]
+      issues: []
     });
   });
 });

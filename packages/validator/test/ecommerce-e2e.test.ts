@@ -45,15 +45,7 @@ describe("@descuff/validator ecommerce website fixture E2E", () => {
     expect(summary).toMatchObject({
       passed: true,
       failures: [],
-      warnings: [
-        {
-          code: "WEBMCP_METADATA_ONLY",
-          level: "static",
-          severity: "warning",
-          source: "webmcp",
-          path: "public/webmcp.json"
-        }
-      ]
+      warnings: []
     });
     expect(report).toMatchObject({
       ready: true,
