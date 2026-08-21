@@ -174,6 +174,184 @@ export const phase10ExternalAuditCandidates: ExternalRepoAuditCandidate[] = [
   }
 ];
 
+export const phase10CompletedExternalAuditResults: ExternalRepoAuditResult[] = [
+  createExternalRepoAuditResult({
+    auditedAt: "2026-08-21T00:00:00.000Z",
+    target: {
+      ...auditTargetFromCandidate("tailnext"),
+      commitSha: "cd8304fc50c0626d2e607fd74e93451a10382bd8"
+    },
+    descuffVersion: "0.0.2",
+    commandsRun: ["descuff start", "descuff validate", "pnpm run ci"],
+    expectedCapabilities: [],
+    detectedCapabilities: [],
+    missedCapabilities: [],
+    inventedCapabilities: [],
+    findings: [
+      {
+        kind: "bad-plan",
+        severity: "major",
+        summary:
+          "Generated standards included OpenAPI, API Catalog, and WebMCP despite no APIs or capabilities.",
+        evidence: [".descuff/generated-changes.json", ".descuff/plan.md"],
+        followUp: "Fixed by filtering generation and validation to applicable standard assessments."
+      }
+    ]
+  }),
+  createExternalRepoAuditResult({
+    auditedAt: "2026-08-21T00:00:00.000Z",
+    target: {
+      ...auditTargetFromCandidate("netlify-nextjs-blog-theme"),
+      commitSha: "939134917f33813c970972abb0f3a1ec9bf35d03"
+    },
+    descuffVersion: "0.0.2",
+    commandsRun: ["descuff start", "descuff validate", "pnpm run ci"],
+    expectedCapabilities: [],
+    detectedCapabilities: [],
+    missedCapabilities: [],
+    inventedCapabilities: [],
+    findings: [
+      {
+        kind: "wrong-classification",
+        severity: "minor",
+        summary: "Pages Router posts route was classified as unknown instead of content.",
+        evidence: ["pages/posts/[slug].js", ".descuff/model.json"],
+        followUp:
+          "Fixed by including route source files in classification vocabulary and matching plural posts."
+      }
+    ]
+  }),
+  createExternalRepoAuditResult({
+    auditedAt: "2026-08-21T00:00:00.000Z",
+    target: {
+      ...auditTargetFromCandidate("nextjs-commerce-app-router"),
+      commitSha: "5da4bbb6db48c0c7fc38bb060948947b661a98e7"
+    },
+    descuffVersion: "0.0.2",
+    commandsRun: ["descuff start", "descuff validate", "pnpm run ci"],
+    expectedCapabilities: [
+      "post /api/sepet",
+      "basketInformationFnc",
+      "getExistData",
+      "submitShipping"
+    ],
+    detectedCapabilities: [
+      "post /api/sepet",
+      "basketInformationFnc",
+      "getExistData",
+      "submitShipping"
+    ],
+    missedCapabilities: [],
+    inventedCapabilities: [],
+    findings: [
+      {
+        kind: "missed-capability",
+        severity: "major",
+        summary: "File-level Server Actions were extracted as plain symbols, not capabilities.",
+        evidence: ["app/lib/actions.ts", ".descuff/model.json"],
+        followUp:
+          "Fixed by detecting file-level use server exports and modelling conservative Server Action capabilities."
+      }
+    ]
+  }),
+  createExternalRepoAuditResult({
+    auditedAt: "2026-08-21T00:00:00.000Z",
+    target: {
+      ...auditTargetFromCandidate("nextjs-saas-starter"),
+      commitSha: "6e33e58b1e553a41fe22e6b941a7229a002de361"
+    },
+    descuffVersion: "0.0.2",
+    commandsRun: ["descuff start", "descuff validate", "pnpm run ci"],
+    expectedCapabilities: [
+      "get /api/team",
+      "get /api/user",
+      "get /api/stripe/checkout",
+      "post /api/stripe/webhook"
+    ],
+    detectedCapabilities: [
+      "get /api/team",
+      "get /api/user",
+      "get /api/stripe/checkout",
+      "post /api/stripe/webhook"
+    ],
+    missedCapabilities: [],
+    inventedCapabilities: [],
+    findings: [
+      {
+        kind: "wrong-classification",
+        severity: "major",
+        summary: "Checkout evidence caused a SaaS app to be classified as ecommerce.",
+        evidence: [".descuff/model.json"],
+        followUp: "Fixed by weighting application-type signals instead of using first match."
+      },
+      {
+        kind: "bad-plan",
+        severity: "major",
+        summary: "Team and user reads were treated as public reads and made WebMCP-eligible.",
+        evidence: ["app/api/team/route.ts", "app/api/user/route.ts"],
+        followUp: "Fixed by classifying team, user, and session paths as authenticated reads."
+      }
+    ]
+  }),
+  createExternalRepoAuditResult({
+    auditedAt: "2026-08-21T00:00:00.000Z",
+    target: {
+      ...auditTargetFromCandidate("calcom-developer-starter-kit"),
+      commitSha: "5095882439600a0ce4e17955fac1c39f07764d0c"
+    },
+    descuffVersion: "0.0.2",
+    commandsRun: ["descuff start", "descuff validate", "pnpm run ci"],
+    expectedCapabilities: [
+      "fetchSlotsAction",
+      "createBookingAction",
+      "rescheduleBookingAction",
+      "cancelBookingAction"
+    ],
+    detectedCapabilities: [
+      "fetchSlotsAction",
+      "createBookingAction",
+      "rescheduleBookingAction",
+      "cancelBookingAction"
+    ],
+    missedCapabilities: [],
+    inventedCapabilities: [],
+    findings: [
+      {
+        kind: "missed-capability",
+        severity: "major",
+        summary: "The src/app route root and file-level Server Actions were initially missed.",
+        evidence: ["src/app", "src/features/booker/actions.ts", "src/features/booking/actions.ts"],
+        followUp:
+          "Fixed by supporting src route roots and modelling file-level Server Actions as capabilities."
+      }
+    ]
+  }),
+  createExternalRepoAuditResult({
+    auditedAt: "2026-08-21T00:00:00.000Z",
+    target: {
+      ...auditTargetFromCandidate("clerk-nextjs-pages-quickstart"),
+      commitSha: "74d18db94837a559e0da06f062a46d63b6fd3a9e"
+    },
+    descuffVersion: "0.0.2",
+    commandsRun: ["descuff start", "descuff validate", "pnpm run ci"],
+    expectedCapabilities: [],
+    detectedCapabilities: [],
+    missedCapabilities: [],
+    inventedCapabilities: [],
+    findings: [
+      {
+        kind: "unsupported-pattern",
+        severity: "major",
+        summary:
+          "Next.js proxy.ts auth boundaries and protected route visibility were not modelled.",
+        evidence: ["proxy.ts", "pages/protected.tsx"],
+        followUp:
+          "Fixed by modelling proxy auth boundaries and filtering authenticated routes from public metadata."
+      }
+    ]
+  })
+];
+
 export function renderExternalRepoCoverageMatrix(
   candidates: ExternalRepoAuditCandidate[] = phase10ExternalAuditCandidates
 ): string {
@@ -189,6 +367,23 @@ export function renderExternalRepoCoverageMatrix(
   lines.push("");
 
   return lines.join("\n");
+}
+
+function auditTargetFromCandidate(id: string): Omit<ExternalRepoAuditTarget, "commitSha"> {
+  const candidate = phase10ExternalAuditCandidates.find((item) => item.id === id);
+  if (candidate === undefined) {
+    throw new Error(`Unknown external audit candidate: ${id}`);
+  }
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    repositoryUrl: candidate.repositoryUrl,
+    framework: candidate.framework,
+    routerKinds: candidate.routerKinds,
+    coverageTags: candidate.coverageTags,
+    selectionRationale: candidate.selectionRationale
+  };
 }
 
 export function renderExternalRepoAuditMarkdown(audits: ExternalRepoAuditResult[]): string {

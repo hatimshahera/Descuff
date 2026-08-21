@@ -5,6 +5,7 @@ import {
   descuffCommands,
   externalRepoAuditSchemaVersion,
   isDescuffCommand,
+  phase10CompletedExternalAuditResults,
   phase10ExternalAuditCandidates,
   renderExternalRepoAuditMarkdown,
   renderExternalRepoCoverageMatrix
@@ -108,5 +109,30 @@ describe("@descuff/core", () => {
       "| 1 | Tailnext | yes | app-router, javascript, static-content, marketing-site |"
     );
     expect(renderExternalRepoCoverageMatrix()).toContain("| 9 | Dub | optional |");
+  });
+
+  it("records completed Phase 10 external audit benchmarks", () => {
+    expect(phase10CompletedExternalAuditResults.map((audit) => audit.target.id)).toEqual([
+      "tailnext",
+      "netlify-nextjs-blog-theme",
+      "nextjs-commerce-app-router",
+      "nextjs-saas-starter",
+      "calcom-developer-starter-kit",
+      "clerk-nextjs-pages-quickstart"
+    ]);
+    expect(
+      phase10CompletedExternalAuditResults.every(
+        (audit) =>
+          audit.schemaVersion === externalRepoAuditSchemaVersion &&
+          audit.missedCapabilities.length === 0 &&
+          audit.inventedCapabilities.length === 0
+      )
+    ).toBe(true);
+    expect(renderExternalRepoAuditMarkdown(phase10CompletedExternalAuditResults)).toContain(
+      "| Cal.com Developer Starter Kit | 5095882439600a0ce4e17955fac1c39f07764d0c | 1 | 0 | 0 |"
+    );
+    expect(renderExternalRepoAuditMarkdown(phase10CompletedExternalAuditResults)).toContain(
+      "Fixed by modelling proxy auth boundaries and filtering authenticated routes from public metadata."
+    );
   });
 });
