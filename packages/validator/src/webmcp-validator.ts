@@ -14,6 +14,7 @@ export function validateWebMcpBehavior(
   const issues: ValidationFailure[] = [];
   const claimsWebMcp = model.standards.some((standard) => standard.kind === "webmcp");
   const observedTools = analysis.runtimeWebMcpTools;
+  const observedExecutions = analysis.runtimeWebMcpToolExecutions;
 
   if (!claimsWebMcp && observedTools.length === 0) {
     return createValidationSummary(issues);
@@ -103,6 +104,53 @@ export function validateWebMcpBehavior(
         suggestedAction:
           "Set readOnlyHint: true for safe read-only tools or require an explicit validation scenario for mutating tools."
       });
+    }
+
+    if (observed.annotations?.readOnlyHint === true) {
+      const execution = observedExecutions.find(
+        (candidate) =>
+          candidate.toolName === observed.name &&
+          candidate.origin === observed.origin &&
+          candidate.frameUrl === observed.frameUrl
+      );
+
+      if (execution === undefined) {
+        issues.push({
+          code: "WEBMCP_TOOL_EXECUTION_MISSING",
+          level: "runtime",
+          severity: "error",
+          message: `WebMCP tool ${expectedName} was discovered but no safe execution evidence was recorded.`,
+          source: candidate.capability.id,
+          evidence: [...candidate.capability.evidence, ...observed.evidence],
+          suggestedAction:
+            "Run browser runtime validation with safe WebMCP execution enabled for read-only tools."
+        });
+      } else if (execution.status !== "executed") {
+        issues.push({
+          code:
+            execution.status === "skipped"
+              ? "WEBMCP_TOOL_EXECUTION_SKIPPED"
+              : "WEBMCP_TOOL_EXECUTION_FAILED",
+          level: "runtime",
+          severity: "error",
+          message: `WebMCP tool ${expectedName} execution ${execution.status}.`,
+          source: candidate.capability.id,
+          evidence: [...candidate.capability.evidence, ...execution.evidence],
+          suggestedAction:
+            "Fix the read-only WebMCP tool execution path before claiming behavioral WebMCP support."
+        });
+      } else if (execution.resultShape === undefined) {
+        issues.push({
+          code: "WEBMCP_TOOL_RESULT_MISSING",
+          level: "runtime",
+          severity: "error",
+          message: `WebMCP tool ${expectedName} executed but did not record result shape evidence.`,
+          source: candidate.capability.id,
+          evidence: [...candidate.capability.evidence, ...execution.evidence],
+          suggestedAction:
+            "Record minimal result shape evidence so validation can compare behavior across runs."
+        });
+      }
     }
 
     if (!isKnownPageOrigin(observed.origin, analysis)) {

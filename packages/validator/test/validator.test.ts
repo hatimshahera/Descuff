@@ -1232,12 +1232,61 @@ describe("@descuff/validator", () => {
       frameUrl: "https://example.test/",
       evidence: [evidence]
     });
+    analysis.runtimeWebMcpToolExecutions.push({
+      id: "runtime-webmcp-execution:https://example.test:search",
+      toolName: "search",
+      status: "executed",
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      resultShape: "object",
+      resultSummary: '{"products":[]}',
+      evidence: [evidence]
+    });
 
     expect(
       validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
     ).toEqual({
       passed: true,
       failures: [],
+      warnings: []
+    });
+  });
+
+  it("fails WebMCP runtime validation when safe tool execution fails", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.runtimePages.push(runtimePage());
+    analysis.runtimeWebMcpTools.push({
+      id: "runtime-webmcp:https://example.test:search",
+      name: "search",
+      description: "Search products",
+      inputSchema: { type: "object" },
+      annotations: { readOnlyHint: true },
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      evidence: [evidence]
+    });
+    analysis.runtimeWebMcpToolExecutions.push({
+      id: "runtime-webmcp-execution:https://example.test:search",
+      toolName: "search",
+      status: "failed",
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      error: "fixture failed",
+      evidence: [evidence]
+    });
+
+    expect(
+      validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "WEBMCP_TOOL_EXECUTION_FAILED",
+          level: "runtime",
+          severity: "error",
+          source: "capability:search"
+        }
+      ],
       warnings: []
     });
   });

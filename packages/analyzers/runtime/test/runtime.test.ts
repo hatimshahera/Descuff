@@ -150,6 +150,15 @@ describe("@descuff/analyzer-runtime", () => {
                 origin: "http://example.test",
                 frameUrl: "http://example.test/"
               }
+            ],
+            webMcpToolExecutions: [
+              {
+                toolName: "search_products",
+                status: "executed",
+                origin: "http://example.test",
+                frameUrl: "http://example.test/",
+                result: { products: [] }
+              }
             ]
           };
         },
@@ -182,6 +191,13 @@ describe("@descuff/analyzer-runtime", () => {
         name: "search_products",
         description: "Search products",
         origin: "http://example.test"
+      })
+    );
+    expect(analysis.runtimeWebMcpToolExecutions).toContainEqual(
+      expect.objectContaining({
+        toolName: "search_products",
+        status: "executed",
+        resultShape: "object"
       })
     );
     expect(validateStructuralAnalysis(analysis).valid).toBe(true);
@@ -219,6 +235,15 @@ describe("@descuff/analyzer-runtime", () => {
                 origin: "https://blocked.test",
                 frameUrl: "https://blocked.test/"
               }
+            ],
+            webMcpToolExecutions: [
+              {
+                toolName: "blocked_tool",
+                status: "skipped",
+                origin: "https://blocked.test",
+                frameUrl: "https://blocked.test/",
+                error: "Tool is not explicitly annotated read-only."
+              }
             ]
           };
         },
@@ -241,6 +266,7 @@ describe("@descuff/analyzer-runtime", () => {
 
     expect(analysis.runtimePages).toEqual([]);
     expect(analysis.runtimeWebMcpTools).toEqual([]);
+    expect(analysis.runtimeWebMcpToolExecutions).toEqual([]);
     expect(analysis.warnings).toContainEqual(
       expect.objectContaining({ code: "RUNTIME_ORIGIN_BLOCKED" })
     );
@@ -406,6 +432,13 @@ describe("@descuff/analyzer-runtime", () => {
             name: "search_products",
             description: "Search products",
             annotations: { readOnlyHint: true },
+            origin: baseUrl
+          })
+        );
+        expect(page.webMcpToolExecutions).toContainEqual(
+          expect.objectContaining({
+            toolName: "search_products",
+            status: "executed",
             origin: baseUrl
           })
         );

@@ -11,6 +11,7 @@ import {
   createEmptyStructuralAnalysis,
   type HttpMethod,
   type RuntimePageObservation,
+  type RuntimeWebMcpToolExecutionObservation,
   type RuntimeWebMcpToolObservation,
   type StructuralAnalysis
 } from "@descuff/ir";
@@ -51,6 +52,16 @@ export interface RuntimeBrowserPageResult {
   network: RuntimeNetworkObservation[];
   webMcpSupported: boolean;
   webMcpTools: DiscoveredWebMcpTool[];
+  webMcpToolExecutions: RuntimeWebMcpToolExecutionResult[];
+}
+
+export interface RuntimeWebMcpToolExecutionResult {
+  toolName: string;
+  status: "executed" | "skipped" | "failed";
+  origin: string;
+  frameUrl: string;
+  result?: unknown;
+  error?: string;
 }
 
 export interface RuntimeBrowserClient {
@@ -229,6 +240,17 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
               );
               analysis.evidence.items.push(toolEvidence);
             }
+
+            for (const execution of page.webMcpToolExecutions) {
+              const executionEvidence = runtimeEvidence(
+                `webmcp-execution:${execution.origin}:${execution.toolName}`,
+                `Browser ${execution.status} WebMCP tool ${execution.toolName} on ${execution.origin}.`
+              );
+              analysis.runtimeWebMcpToolExecutions.push(
+                renderRuntimeWebMcpToolExecutionObservation(execution, [executionEvidence])
+              );
+              analysis.evidence.items.push(executionEvidence);
+            }
           }
         } finally {
           await browser.dispose();
@@ -339,6 +361,9 @@ class PlaywrightBrowserRuntimeClient implements RuntimeBrowserClient {
       const runtime = createDocumentModelContextRuntime(page);
       const webMcpSupported = await runtime.isSupported();
       const webMcpTools = webMcpSupported ? await runtime.listTools() : [];
+      const webMcpToolExecutions = webMcpSupported
+        ? await collectWebMcpToolExecutions(runtime, webMcpTools)
+        : [];
       const rendered = await readRenderedPageEvidence(page);
       const currentUrl = page.url();
 
@@ -349,7 +374,8 @@ class PlaywrightBrowserRuntimeClient implements RuntimeBrowserClient {
         origin: originFor(currentUrl, this.baseUrl),
         network,
         webMcpSupported,
-        webMcpTools
+        webMcpTools,
+        webMcpToolExecutions
       };
     } finally {
       await page.close();
@@ -462,6 +488,78 @@ function renderRuntimeWebMcpToolObservation(
     origin: tool.origin,
     frameUrl: tool.frameUrl,
     evidence
+  };
+}
+
+function renderRuntimeWebMcpToolExecutionObservation(
+  execution: RuntimeWebMcpToolExecutionResult,
+  evidence: RuntimeWebMcpToolExecutionObservation["evidence"]
+): RuntimeWebMcpToolExecutionObservation {
+  const summary =
+    execution.result === undefined ? undefined : summarizeWebMcpExecutionResult(execution.result);
+
+  return {
+    id: `runtime-webmcp-execution:${execution.origin}:${execution.toolName}`,
+    toolName: execution.toolName,
+    status: execution.status,
+    origin: execution.origin,
+    frameUrl: execution.frameUrl,
+    ...(summary === undefined ? {} : summary),
+    ...(execution.error === undefined ? {} : { error: execution.error }),
+    evidence
+  };
+}
+
+async function collectWebMcpToolExecutions(
+  runtime: ReturnType<typeof createDocumentModelContextRuntime>,
+  tools: DiscoveredWebMcpTool[]
+): Promise<RuntimeWebMcpToolExecutionResult[]> {
+  const executions: RuntimeWebMcpToolExecutionResult[] = [];
+
+  for (const tool of tools) {
+    if (tool.annotations?.readOnlyHint !== true) {
+      executions.push({
+        toolName: tool.name,
+        status: "skipped",
+        origin: tool.origin,
+        frameUrl: tool.frameUrl,
+        error: "Tool is not explicitly annotated read-only."
+      });
+      continue;
+    }
+
+    try {
+      const result = await runtime.executeSafeTool(tool.name, {});
+      executions.push({
+        toolName: tool.name,
+        status: "executed",
+        origin: tool.origin,
+        frameUrl: tool.frameUrl,
+        result: result.result
+      });
+    } catch (error) {
+      executions.push({
+        toolName: tool.name,
+        status: "failed",
+        origin: tool.origin,
+        frameUrl: tool.frameUrl,
+        error: errorMessage(error)
+      });
+    }
+  }
+
+  return executions;
+}
+
+function summarizeWebMcpExecutionResult(
+  result: unknown
+): Pick<RuntimeWebMcpToolExecutionObservation, "resultShape" | "resultSummary"> {
+  const resultShape = Array.isArray(result) ? "array" : result === null ? "null" : typeof result;
+  const summary = redactSensitiveBody(JSON.stringify(result)?.slice(0, 512) ?? "");
+
+  return {
+    resultShape,
+    ...(summary.length === 0 ? {} : { resultSummary: summary })
   };
 }
 
