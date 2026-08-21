@@ -5,7 +5,9 @@ import {
   descuffCommands,
   externalRepoAuditSchemaVersion,
   isDescuffCommand,
-  renderExternalRepoAuditMarkdown
+  phase10ExternalAuditCandidates,
+  renderExternalRepoAuditMarkdown,
+  renderExternalRepoCoverageMatrix
 } from "../src/index.js";
 
 describe("@descuff/core", () => {
@@ -65,5 +67,46 @@ describe("@descuff/core", () => {
     expect(renderExternalRepoAuditMarkdown([audit])).toContain(
       "- bad-plan (major): Plan proposed an OpenAPI operation for an endpoint not present in source."
     );
+  });
+
+  it("defines the Phase 10 external repository coverage matrix", () => {
+    expect(phase10ExternalAuditCandidates).toHaveLength(9);
+    expect(
+      phase10ExternalAuditCandidates.filter((candidate) => candidate.requiredForRelease)
+    ).toHaveLength(8);
+    expect(phase10ExternalAuditCandidates.map((candidate) => candidate.id)).toEqual([
+      "tailnext",
+      "netlify-nextjs-blog-theme",
+      "nextjs-commerce-app-router",
+      "nextjs-saas-starter",
+      "calcom-developer-starter-kit",
+      "clerk-nextjs-pages-quickstart",
+      "umami",
+      "formbricks",
+      "dub"
+    ]);
+    const coverageTags = phase10ExternalAuditCandidates.flatMap(
+      (candidate) => candidate.coverageTags
+    );
+    expect(coverageTags).toEqual(
+      expect.arrayContaining([
+        "app-router",
+        "pages-router",
+        "javascript",
+        "typescript",
+        "commerce",
+        "forms-heavy",
+        "auth",
+        "api-heavy",
+        "monorepo"
+      ])
+    );
+  });
+
+  it("renders the Phase 10 external repository coverage matrix", () => {
+    expect(renderExternalRepoCoverageMatrix()).toContain(
+      "| 1 | Tailnext | yes | app-router, javascript, static-content, marketing-site |"
+    );
+    expect(renderExternalRepoCoverageMatrix()).toContain("| 9 | Dub | optional |");
   });
 });
