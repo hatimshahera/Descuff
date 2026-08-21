@@ -14,6 +14,10 @@
     {
       "id": "capability:unknown:api_legacy",
       "risk": "PUBLIC_READ"
+    },
+    {
+      "id": "capability:action:app_actions_ts_addToCart",
+      "risk": "LOW_RISK_WRITE"
     }
   ],
   "standards": ["llms-txt", "openapi", "schema-org"]

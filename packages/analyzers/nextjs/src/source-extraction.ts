@@ -18,6 +18,7 @@ export function extractSymbols(
 ): StructuralSymbol[] {
   const symbols: StructuralSymbol[] = [];
   const evidence = sourceEvidence(rootDir, filePath, "Source symbol detected");
+  const fileHasUseServerDirective = hasFileUseServerDirective(source);
 
   for (const match of source.matchAll(/import\s+[^;]+?\s+from\s+["'][^"']+["']/g)) {
     symbols.push({
@@ -48,7 +49,7 @@ export function extractSymbols(
 
   for (const match of source.matchAll(/export\s+(?:async\s+)?function\s+([A-Za-z0-9_]+)/g)) {
     const name = match[1] ?? "anonymous";
-    if (hasUseServerDirective(source, match.index ?? 0)) {
+    if (fileHasUseServerDirective || hasFunctionUseServerDirective(source, match.index ?? 0)) {
       symbols.push(symbol(evidence.location, name, "server-action", evidence));
     }
   }
@@ -96,7 +97,11 @@ function symbol(
   };
 }
 
-function hasUseServerDirective(source: string, functionIndex: number): boolean {
+function hasFileUseServerDirective(source: string): boolean {
+  return /^\s*["']use server["']\s*;?/.test(source);
+}
+
+function hasFunctionUseServerDirective(source: string, functionIndex: number): boolean {
   const bodyStart = source.indexOf("{", functionIndex);
   if (bodyStart === -1) {
     return false;

@@ -57,7 +57,7 @@ export function structuralAnalysisToApplicationModel(
 }
 
 function inferCapabilities(analysis: StructuralAnalysis): Capability[] {
-  return analysis.apiOperations.map((operation) => {
+  const apiCapabilities: Capability[] = analysis.apiOperations.map((operation) => {
     const operationType = operation.method === "GET" ? "read" : "write";
     const risk = classifyCapabilityRisk(operation.method, operation.path);
     return {
@@ -74,6 +74,28 @@ function inferCapabilities(analysis: StructuralAnalysis): Capability[] {
       confidence: operation.method === "UNKNOWN" ? "low" : "high"
     };
   });
+
+  const serverActionCapabilities = analysis.symbols
+    .filter((symbol) => symbol.kind === "server-action")
+    .map((symbol): Capability => {
+      const operationType = serverActionOperationType(symbol.name);
+      const risk = serverActionRisk(symbol.name, operationType);
+      return {
+        id: capabilityId("ACTION", `${symbol.sourceFile}:${symbol.name}`),
+        name: symbol.name,
+        operationType,
+        risk,
+        visibility: operationType === "read" ? "public" : "unknown",
+        inputs: [],
+        outputs: [],
+        linkedRoutes: [],
+        linkedApis: [],
+        evidence: symbol.evidence,
+        confidence: "medium"
+      };
+    });
+
+  return [...apiCapabilities, ...serverActionCapabilities];
 }
 
 function inferEntities(analysis: StructuralAnalysis): Entity[] {
@@ -103,4 +125,31 @@ function capabilityId(method: string, path: string): string {
 
 function capabilityName(method: string, path: string): string {
   return `${method.toLowerCase()} ${path}`;
+}
+
+function serverActionOperationType(name: string): Capability["operationType"] {
+  return /^(get|fetch|list|read|search|view|find|load|lookup)/i.test(name) ? "read" : "write";
+}
+
+function serverActionRisk(
+  name: string,
+  operationType: Capability["operationType"]
+): Capability["risk"] {
+  if (operationType === "read") {
+    return /^(get|fetch|list|search|lookup).*(user|team|account|session|order|booking)/i.test(name)
+      ? "AUTHENTICATED_READ"
+      : "PUBLIC_READ";
+  }
+
+  if (
+    /(checkout|payment|billing|stripe|delete|cancel|reschedule|booking|order|account)/i.test(name)
+  ) {
+    return "HIGH_CONSEQUENCE";
+  }
+
+  if (/(invite|password|admin|token|secret|credential|profile|settings)/i.test(name)) {
+    return "SENSITIVE_WRITE";
+  }
+
+  return "LOW_RISK_WRITE";
 }

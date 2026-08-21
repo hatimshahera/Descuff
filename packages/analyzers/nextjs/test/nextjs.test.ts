@@ -42,6 +42,20 @@ describe("@descuff/analyzer-nextjs", () => {
     expect(
       analysis.apiOperations.map((operation) => `${operation.method} ${operation.path}`).sort()
     ).toEqual(["GET /api/availability", "UNKNOWN /api/legacy"]);
+    expect(analysis.symbols).toContainEqual(
+      expect.objectContaining({
+        kind: "server-action",
+        name: "fetchSlotsAction",
+        sourceFile: "src/app/actions.ts"
+      })
+    );
+    expect(analysis.symbols).toContainEqual(
+      expect.objectContaining({
+        kind: "server-action",
+        name: "createBookingAction",
+        sourceFile: "src/app/actions.ts"
+      })
+    );
     expect(analysis.authenticationBoundaries).toContainEqual(
       expect.objectContaining({
         kind: "proxy",

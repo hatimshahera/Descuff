@@ -100,6 +100,58 @@ describe("semantic ApplicationModel", () => {
     });
   });
 
+  it("models file-level server actions as conservative capabilities", () => {
+    const analysis = createEmptyStructuralAnalysis("/booking");
+    const evidence = {
+      id: "source:app/actions.ts",
+      kind: "source" as const,
+      location: "app/actions.ts",
+      confidence: "high" as const,
+      summary: "Source symbol detected"
+    };
+
+    analysis.symbols.push(
+      {
+        id: "symbol:app/actions.ts:server-action:fetchSlotsAction",
+        name: "fetchSlotsAction",
+        kind: "server-action",
+        sourceFile: "app/actions.ts",
+        evidence: [evidence]
+      },
+      {
+        id: "symbol:app/actions.ts:server-action:createBookingAction",
+        name: "createBookingAction",
+        kind: "server-action",
+        sourceFile: "app/actions.ts",
+        evidence: [evidence]
+      }
+    );
+    analysis.evidence.items.push(evidence);
+
+    const model = structuralAnalysisToApplicationModel(analysis);
+
+    expect(model.capabilities).toEqual([
+      expect.objectContaining({
+        id: "capability:action:app_actions_ts_fetchSlotsAction",
+        name: "fetchSlotsAction",
+        operationType: "read",
+        risk: "PUBLIC_READ",
+        visibility: "public",
+        linkedApis: [],
+        confidence: "medium"
+      }),
+      expect.objectContaining({
+        id: "capability:action:app_actions_ts_createBookingAction",
+        name: "createBookingAction",
+        operationType: "write",
+        risk: "HIGH_CONSEQUENCE",
+        visibility: "unknown",
+        linkedApis: [],
+        confidence: "medium"
+      })
+    ]);
+  });
+
   it("transforms ecommerce structural analysis into the golden semantic model", async () => {
     const analysis = await new NativeNextAnalyzer().analyze(
       createProjectContext("fixtures/ecommerce")
