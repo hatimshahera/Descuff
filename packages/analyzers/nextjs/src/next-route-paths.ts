@@ -8,7 +8,7 @@ export function isSourceFile(path: string): boolean {
 }
 
 export function getRouteKind(rootDir: string, filePath: string): RouterKind {
-  const segments = relative(rootDir, filePath).split(sep);
+  const segments = routeRootSegments(rootDir, filePath);
 
   if (segments[0] === "app") {
     return "next-app";
@@ -26,7 +26,7 @@ export function appPagePath(rootDir: string, filePath: string): string | undefin
     return undefined;
   }
 
-  const segments = relative(rootDir, dirname(filePath)).split(sep);
+  const segments = routeRootSegments(rootDir, dirname(filePath));
   if (segments[0] !== "app") {
     return undefined;
   }
@@ -39,7 +39,7 @@ export function appApiPath(rootDir: string, filePath: string): string | undefine
     return undefined;
   }
 
-  const segments = relative(rootDir, dirname(filePath)).split(sep);
+  const segments = routeRootSegments(rootDir, dirname(filePath));
   if (segments[0] !== "app") {
     return undefined;
   }
@@ -52,7 +52,7 @@ export function pagesRoutePath(rootDir: string, filePath: string): string | unde
     return undefined;
   }
 
-  const segments = relative(rootDir, filePath).split(sep);
+  const segments = routeRootSegments(rootDir, filePath);
   if (segments[0] !== "pages" || segments[1] === "api" || segments.at(-1)?.startsWith("_")) {
     return undefined;
   }
@@ -68,7 +68,7 @@ export function pagesApiPath(rootDir: string, filePath: string): string | undefi
     return undefined;
   }
 
-  const segments = relative(rootDir, filePath).split(sep);
+  const segments = routeRootSegments(rootDir, filePath);
   if (segments[0] !== "pages" || segments[1] !== "api") {
     return undefined;
   }
@@ -85,6 +85,11 @@ function routeSegmentsToPath(segments: string[]): string {
     .map((segment) => segment.replace(/^\[(.+)\]$/, "{$1}"));
 
   return normalized.length === 0 ? "/" : `/${normalized.join("/")}`;
+}
+
+function routeRootSegments(rootDir: string, filePath: string): string[] {
+  const segments = relative(rootDir, filePath).split(sep);
+  return segments[0] === "src" ? segments.slice(1) : segments;
 }
 
 function isRouteGroup(segment: string): boolean {

@@ -28,6 +28,23 @@ describe("@descuff/analyzer-nextjs", () => {
     expect(validateStructuralAnalysis(analysis).valid).toBe(true);
   });
 
+  it("discovers app and pages routes under src", async () => {
+    const analysis = await new NativeNextAnalyzer().analyze(
+      createProjectContext("fixtures/src-app")
+    );
+
+    expect(analysis.framework).toMatchObject({ kind: "nextjs", detected: true });
+    expect(analysis.routes.map((route) => `${route.routerKind} ${route.path}`).sort()).toEqual([
+      "next-app /",
+      "next-app /book/{username}/{eventSlug}",
+      "next-pages /about"
+    ]);
+    expect(
+      analysis.apiOperations.map((operation) => `${operation.method} ${operation.path}`).sort()
+    ).toEqual(["GET /api/availability", "UNKNOWN /api/legacy"]);
+    expect(validateStructuralAnalysis(analysis).valid).toBe(true);
+  });
+
   it("extracts symbols, server actions, forms, auth boundaries, and standards with evidence", async () => {
     const analysis = await new NativeNextAnalyzer().analyze(
       createProjectContext("fixtures/ecommerce")
