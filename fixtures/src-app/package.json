@@ -1,5 +1,9 @@
 {
-  "dependencies": {
-    "next": "latest"
+  "name": "@descuff/fixture-src-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "descuffFixtureDependencies": {
+    "next": "15.0.0"
   }
 }

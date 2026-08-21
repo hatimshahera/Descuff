@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@playwright/test": "^1.57.0",
-    "@descuff/core": "workspace:*",
-    "@descuff/ir": "workspace:*"
+    "@descuff/core": "workspace:^",
+    "@descuff/ir": "workspace:^"
   }
 }

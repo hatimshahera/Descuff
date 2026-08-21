@@ -32,8 +32,6 @@ importers:
         specifier: ^4.0.15
         version: 4.1.11(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3))
 
-  apps/docs: {}
-
   fixtures/booking: {}
 
   fixtures/broken-site: {}
@@ -44,40 +42,42 @@ importers:
 
   fixtures/saas: {}
 
+  fixtures/src-app: {}
+
   packages/agent-workflow:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../ir
       "@descuff/standard-core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../standards/core
 
   packages/analyzers/graphify:
     dependencies:
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../core
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
 
   packages/analyzers/nextjs:
     dependencies:
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../core
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
 
   packages/analyzers/runtime:
     dependencies:
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../core
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
       "@playwright/test":
         specifier: ^1.57.0
@@ -86,52 +86,52 @@ importers:
   packages/cli:
     dependencies:
       "@descuff/agent-workflow":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../agent-workflow
       "@descuff/analyzer-nextjs":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../analyzers/nextjs
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../ir
       "@descuff/reporter":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../reporter
       "@descuff/standard-api-catalog":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../standards/api-catalog
       "@descuff/standard-core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../standards/core
       "@descuff/standard-llms-txt":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../standards/llms-txt
       "@descuff/standard-openapi":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../standards/openapi
       "@descuff/standard-schema-org":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../standards/schema-org
       "@descuff/standard-webmcp":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../standards/webmcp
       "@descuff/validator":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../validator
 
   packages/config:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../ir
 
   packages/core:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../ir
 
   packages/ir: {}
@@ -139,102 +139,102 @@ importers:
   packages/reporter:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../ir
 
   packages/standards/api-catalog:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../core
 
   packages/standards/core:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
 
   packages/standards/llms-txt:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../core
 
   packages/standards/openapi:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../core
 
   packages/standards/schema-org:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../core
 
   packages/standards/webmcp:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../core
 
   packages/validator:
     dependencies:
       "@descuff/ir":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../ir
       "@descuff/standard-core":
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../standards/core
 
 packages:
