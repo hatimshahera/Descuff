@@ -171,4 +171,15 @@ describe("@descuff/analyzer-nextjs", () => {
       expect(validateStructuralAnalysis(analysis).valid).toBe(true);
     }
   );
+
+  it("detects route-handler auth and permission evidence", async () => {
+    const analysis = await new NativeNextAnalyzer().analyze(createProjectContext("fixtures/saas"));
+
+    expect(analysis.authenticationBoundaries).toContainEqual(
+      expect.objectContaining({
+        kind: "route-handler",
+        sourceFile: "app/api/team/invitations/route.ts"
+      })
+    );
+  });
 });

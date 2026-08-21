@@ -6,6 +6,8 @@ import {
   type ApiOperation,
   type ApplicationModel,
   type Capability,
+  type CapabilityRisk,
+  type CapabilityVisibility,
   type Entity
 } from "./semantic-model.js";
 import type { StructuralAnalysis } from "./structural-analysis.js";
@@ -61,12 +63,13 @@ function inferCapabilities(analysis: StructuralAnalysis): Capability[] {
   const apiCapabilities: Capability[] = analysis.apiOperations.map((operation) => {
     const operationType = operation.method === "GET" ? "read" : "write";
     const risk = classifyCapabilityRisk(operation.method, operation.path);
+    const visibility = inferApiCapabilityVisibility(analysis, operation, risk);
     return {
       id: capabilityId(operation.method, operation.path),
       name: capabilityName(operation.method, operation.path),
       operationType,
       risk,
-      visibility: risk === "AUTHENTICATED_READ" ? "authenticated" : "public",
+      visibility,
       inputs: [],
       outputs: [],
       linkedRoutes: [],
@@ -97,6 +100,26 @@ function inferCapabilities(analysis: StructuralAnalysis): Capability[] {
     });
 
   return [...apiCapabilities, ...serverActionCapabilities];
+}
+
+function inferApiCapabilityVisibility(
+  analysis: StructuralAnalysis,
+  operation: StructuralAnalysis["apiOperations"][number],
+  risk: CapabilityRisk
+): CapabilityVisibility {
+  const hasRouteHandlerAuthEvidence = analysis.authenticationBoundaries.some(
+    (boundary) => boundary.kind === "route-handler" && boundary.sourceFile === operation.sourceFile
+  );
+
+  if (hasRouteHandlerAuthEvidence) {
+    return isAdminCapabilityPath(operation.path) ? "admin" : "authenticated";
+  }
+
+  return risk === "AUTHENTICATED_READ" ? "authenticated" : "public";
+}
+
+function isAdminCapabilityPath(path: string): boolean {
+  return /(^|\/)(admin)(\/|$)/.test(path);
 }
 
 function inferEntities(analysis: StructuralAnalysis): Entity[] {

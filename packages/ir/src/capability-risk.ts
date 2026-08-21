@@ -6,16 +6,24 @@ export function classifyCapabilityRisk(
   path: string,
   visibility: CapabilityVisibility = "public"
 ): CapabilityRisk {
+  if (method === "HEAD" || method === "OPTIONS") {
+    return visibility === "authenticated" ? "AUTHENTICATED_READ" : "PUBLIC_READ";
+  }
+
+  if (method === "GET") {
+    if (isSensitivePath(path) || isHighConsequencePath(path)) {
+      return "AUTHENTICATED_READ";
+    }
+
+    return visibility === "authenticated" ? "AUTHENTICATED_READ" : "PUBLIC_READ";
+  }
+
   if (isHighConsequencePath(path)) {
     return "HIGH_CONSEQUENCE";
   }
 
   if (isSensitivePath(path)) {
-    return method === "GET" ? "AUTHENTICATED_READ" : "SENSITIVE_WRITE";
-  }
-
-  if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
-    return visibility === "authenticated" ? "AUTHENTICATED_READ" : "PUBLIC_READ";
+    return "SENSITIVE_WRITE";
   }
 
   if (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE") {
@@ -32,5 +40,7 @@ function isHighConsequencePath(path: string): boolean {
 }
 
 function isSensitivePath(path: string): boolean {
-  return /orders|account|profile|admin|billing|team|user|session/.test(path);
+  return /orders|account|profile|admin|billing|team|user|session|2fa|password|security|settings|website|report|board|link|pixel|replay|share/.test(
+    path
+  );
 }

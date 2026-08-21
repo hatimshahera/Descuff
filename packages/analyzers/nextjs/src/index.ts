@@ -53,6 +53,21 @@ export class NativeNextAnalyzer implements StructuralAnalyzer {
       const apiPath =
         appApiPath(project.rootDir, filePath) ?? pagesApiPath(project.rootDir, filePath);
       if (apiPath !== undefined) {
+        const routeHandlerAuthEvidence = inferRouteHandlerAuthEvidence(
+          project.rootDir,
+          filePath,
+          source
+        );
+        if (routeHandlerAuthEvidence !== undefined) {
+          analysis.authenticationBoundaries.push({
+            id: `auth:${sourceFile}`,
+            kind: "route-handler",
+            sourceFile,
+            evidence: [routeHandlerAuthEvidence]
+          });
+          analysis.evidence.items.push(routeHandlerAuthEvidence);
+        }
+
         const methods = getApiMethods(filePath, source);
         for (const method of methods) {
           const evidence = sourceEvidence(
@@ -232,6 +247,32 @@ function inferRouteVisibility(source: string): RouteVisibility {
   }
 
   return "public";
+}
+
+function inferRouteHandlerAuthEvidence(rootDir: string, filePath: string, source: string) {
+  if (!hasRouteHandlerAuthEvidence(source)) {
+    return undefined;
+  }
+
+  return sourceEvidence(rootDir, filePath, "Route handler auth or permission check detected");
+}
+
+function hasRouteHandlerAuthEvidence(source: string): boolean {
+  return (
+    hasAuthenticatedParseRequest(source) ||
+    /\b(checkAuth|getBearerToken|getServerSession|getToken|currentUser|auth)\s*\(/.test(source) ||
+    /\bcan(?:View|Update|Delete|Create|Manage|Enforce|Access)[A-Za-z0-9_]*\s*\(/.test(source) ||
+    /from\s+["']@clerk\/nextjs\/server["']/.test(source) ||
+    /from\s+["']next-auth/.test(source)
+  );
+}
+
+function hasAuthenticatedParseRequest(source: string): boolean {
+  return (
+    /\bparseRequest\s*\(/.test(source) &&
+    /\bauth\b/.test(source) &&
+    !/skipAuth\s*:\s*true/.test(source)
+  );
 }
 
 function dedupeEvidence(items: StructuralAnalysis["evidence"]["items"]) {

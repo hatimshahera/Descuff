@@ -17,6 +17,9 @@ describe("semantic ApplicationModel", () => {
     expect(classifyCapabilityRisk("GET", "/api/orders")).toBe("AUTHENTICATED_READ");
     expect(classifyCapabilityRisk("GET", "/api/team")).toBe("AUTHENTICATED_READ");
     expect(classifyCapabilityRisk("GET", "/api/user")).toBe("AUTHENTICATED_READ");
+    expect(classifyCapabilityRisk("OPTIONS", "/api/websites/{websiteId}/recorder")).toBe(
+      "PUBLIC_READ"
+    );
     expect(classifyCapabilityRisk("POST", "/api/cart")).toBe("LOW_RISK_WRITE");
     expect(classifyCapabilityRisk("DELETE", "/api/account")).toBe("SENSITIVE_WRITE");
     expect(classifyCapabilityRisk("POST", "/api/checkout")).toBe("HIGH_CONSEQUENCE");
@@ -148,6 +151,47 @@ describe("semantic ApplicationModel", () => {
         visibility: "unknown",
         linkedApis: [],
         confidence: "medium"
+      })
+    ]);
+  });
+
+  it("marks route-handler authenticated API capabilities from same-file auth evidence", () => {
+    const analysis = createEmptyStructuralAnalysis("/saas");
+    const evidence = {
+      id: "source:app/api/admin/users/[userId]/2fa/route.ts",
+      kind: "source" as const,
+      location: "app/api/admin/users/[userId]/2fa/route.ts",
+      confidence: "high" as const,
+      summary: "POST API operation discovered"
+    };
+
+    analysis.apiOperations.push({
+      id: "api:POST:/api/admin/users/{userId}/2fa",
+      path: "/api/admin/users/{userId}/2fa",
+      method: "POST",
+      sourceFile: "app/api/admin/users/[userId]/2fa/route.ts",
+      evidence: [evidence]
+    });
+    analysis.authenticationBoundaries.push({
+      id: "auth:app/api/admin/users/[userId]/2fa/route.ts",
+      kind: "route-handler",
+      sourceFile: "app/api/admin/users/[userId]/2fa/route.ts",
+      evidence: [
+        {
+          ...evidence,
+          summary: "Route handler auth or permission check detected"
+        }
+      ]
+    });
+    analysis.evidence.items.push(evidence);
+
+    const model = structuralAnalysisToApplicationModel(analysis);
+
+    expect(model.capabilities).toEqual([
+      expect.objectContaining({
+        id: "capability:post:api_admin_users_userId_2fa",
+        risk: "SENSITIVE_WRITE",
+        visibility: "admin"
       })
     ]);
   });

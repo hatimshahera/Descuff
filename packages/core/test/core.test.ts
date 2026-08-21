@@ -118,7 +118,8 @@ describe("@descuff/core", () => {
       "nextjs-commerce-app-router",
       "nextjs-saas-starter",
       "calcom-developer-starter-kit",
-      "clerk-nextjs-pages-quickstart"
+      "clerk-nextjs-pages-quickstart",
+      "umami"
     ]);
     expect(
       phase10CompletedExternalAuditResults.every(
@@ -133,6 +134,9 @@ describe("@descuff/core", () => {
     );
     expect(renderExternalRepoAuditMarkdown(phase10CompletedExternalAuditResults)).toContain(
       "Fixed by modelling proxy auth boundaries and filtering authenticated routes from public metadata."
+    );
+    expect(renderExternalRepoAuditMarkdown(phase10CompletedExternalAuditResults)).toContain(
+      "Fixed by detecting route-handler auth evidence and applying same-file authenticated/admin capability visibility."
     );
   });
 });

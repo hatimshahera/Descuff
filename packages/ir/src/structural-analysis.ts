@@ -54,7 +54,7 @@ export interface StructuralForm {
 
 export interface AuthenticationBoundary {
   id: string;
-  kind: "middleware" | "proxy";
+  kind: "middleware" | "proxy" | "route-handler";
   sourceFile: string;
   evidence: EvidenceRef[];
 }

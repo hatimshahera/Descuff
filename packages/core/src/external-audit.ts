@@ -349,6 +349,60 @@ export const phase10CompletedExternalAuditResults: ExternalRepoAuditResult[] = [
           "Fixed by modelling proxy auth boundaries and filtering authenticated routes from public metadata."
       }
     ]
+  }),
+  createExternalRepoAuditResult({
+    auditedAt: "2026-08-21T00:00:00.000Z",
+    target: {
+      ...auditTargetFromCandidate("umami"),
+      commitSha: "ca661c7057984aa98ed4f7083d84dae2f65bfcb0"
+    },
+    descuffVersion: "0.0.2",
+    commandsRun: ["descuff start", "pnpm run ci"],
+    expectedCapabilities: [
+      "post /api/send",
+      "post /api/record",
+      "post /api/2fa/verify",
+      "post /api/admin/users/{userId}/2fa",
+      "post /api/teams/{teamId}",
+      "delete /api/teams/{teamId}"
+    ],
+    detectedCapabilities: [
+      "post /api/send",
+      "post /api/record",
+      "post /api/2fa/verify",
+      "post /api/admin/users/{userId}/2fa",
+      "post /api/teams/{teamId}",
+      "delete /api/teams/{teamId}"
+    ],
+    missedCapabilities: [],
+    inventedCapabilities: [],
+    findings: [
+      {
+        kind: "validation-false-positive",
+        severity: "major",
+        summary:
+          "Permission-checked route handlers were initially treated as public sensitive writes.",
+        evidence: [
+          "src/app/api/admin/users/[userId]/2fa/route.ts",
+          "src/app/api/teams/[teamId]/route.ts",
+          ".descuff/baseline.json"
+        ],
+        followUp:
+          "Fixed by detecting route-handler auth evidence and applying same-file authenticated/admin capability visibility."
+      },
+      {
+        kind: "validation-false-positive",
+        severity: "minor",
+        summary:
+          "Generated llms.txt route validation still rejects intercepted/parallel App Router route syntax.",
+        evidence: [
+          "src/app/(main)/websites/[websiteId]/@modal/(.)sessions/[sessionId]/page.tsx",
+          ".descuff/validation-repair.md"
+        ],
+        followUp:
+          "Pending: normalize or omit intercepted and parallel route markers in public llms.txt route references."
+      }
+    ]
   })
 ];
 

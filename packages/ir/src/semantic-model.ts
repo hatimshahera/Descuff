@@ -96,7 +96,7 @@ export interface AuthenticationModel {
 
 export interface AuthenticationBoundaryModel {
   id: string;
-  kind: "middleware" | "proxy";
+  kind: "middleware" | "proxy" | "route-handler";
   sourceFile: string;
   evidence: EvidenceRef[];
 }
