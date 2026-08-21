@@ -8,7 +8,7 @@ Turn your existing website into an interface AI agents can understand and use.
 
 Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser-registered WebMCP planning.
 
-Current release: `descuff@0.0.2` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases.
+Current release: `descuff@0.0.2` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
 ## Quick Start
 
@@ -46,7 +46,7 @@ Descuff rescans, validates, and writes:
 
 ## What Descuff Does
 
-- Detects Next.js routes, API operations, forms, middleware/proxy auth boundaries, Server Actions, route visibility, and existing standards.
+- Detects Next.js routes, API operations, forms, middleware/proxy/route-handler auth boundaries, Server Actions, route visibility, and existing standards.
 - Builds an evidence-backed semantic model of application type, capabilities, risks, routes, APIs, standards, and readiness.
 - Recommends agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP implementation plans for browser-registered public read tools.
 - Generates a conservative implementation plan for a developer-owned coding agent.
@@ -121,12 +121,18 @@ Descuff does not directly call an LLM. It writes a plan and prompt for the codin
 
 - Next.js App Router
 - Next.js Pages Router
+- nested Next.js apps in common monorepo layouts, such as `apps/web/app`
 - API routes
 - basic form evidence
 - conservative Server Action capability modelling
 - middleware and `proxy.ts` auth-boundary detection
+- route-handler auth evidence for common session, API-key, permission, and wrapper patterns
 - authenticated route filtering for public metadata
 - existing `llms.txt`, OpenAPI, Schema.org JSON-LD, API Catalog, and WebMCP detection
+
+## External Hardening
+
+Descuff has been tested against unrelated public Next.js repositories covering static sites, content sites, commerce, SaaS dashboards, booking flows, Pages Router auth, analytics apps, and forms-heavy monorepos. Those audits turned into regression tests for route discovery, Server Actions, auth boundaries, monorepo route roots, and safety classification.
 
 Not yet supported as a general-purpose website crawler:
 

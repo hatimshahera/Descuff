@@ -7,15 +7,18 @@ All notable changes to Descuff will be documented in this file.
 ### Added
 
 - Added route discovery support for Next.js projects that use `src/app` and `src/pages`.
+- Added route discovery support for nested Next.js apps in common monorepo layouts, such as `apps/web/app`.
 - Added Next.js `proxy.ts` authentication-boundary detection.
+- Added route-handler authentication-boundary detection for common session, API-key, permission, and wrapper patterns.
 - Added route-level visibility so authenticated pages are filtered out of public `llms.txt` and Schema.org output.
 - Added conservative Server Action capability modelling for file-level `"use server"` exports.
-- Added structured Phase 10 external audit benchmark records for six completed public repository audits.
+- Added structured Phase 10 external audit benchmark records for eight completed public repository audits.
 
 ### Fixed
 
 - Avoid generating non-applicable standards for apps with no APIs or capabilities.
 - Improved content, SaaS, sensitive-read, and high-consequence capability classification from external audit findings.
+- Fixed validation false positives where protected route-handler mutations were treated as public sensitive capabilities.
 
 ## 0.0.2 - 2026-08-20
 
