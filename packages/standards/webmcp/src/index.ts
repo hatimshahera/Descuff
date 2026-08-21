@@ -99,7 +99,7 @@ export class WebMcpAdapter implements StandardAdapter {
         id: "webmcp:implementation-plan",
         kind: "companion-file",
         path: implementationPlanPath,
-        content: renderWebMcpImplementationPlan(publicReadTools),
+        content: renderWebMcpImplementationPlan(model, publicReadTools),
         deterministic: true,
         safety: generatedChangeSafetyForApprovalGates(approvalGates),
         conflictPolicy: "companion-file",
@@ -184,13 +184,18 @@ function renderWebMcpManifest(candidates: WebMcpToolCandidate[]): WebMcpManifest
   };
 }
 
-function renderWebMcpImplementationPlan(candidates: WebMcpToolCandidate[]): string {
+function renderWebMcpImplementationPlan(
+  model: ApplicationModel,
+  candidates: WebMcpToolCandidate[]
+): string {
   const lines = [
     "# WebMCP Implementation Plan",
     "",
     "This file is a coding-agent implementation aid. It is not proof of WebMCP support.",
     "",
     "Real WebMCP support requires browser tool registration through `document.modelContext.registerTool(...)` and runtime discovery through Descuff's WebMCP compatibility layer.",
+    "",
+    ...renderFrameworkGuidance(model),
     "",
     "## Tools",
     ""
@@ -222,6 +227,57 @@ function renderWebMcpImplementationPlan(candidates: WebMcpToolCandidate[]): stri
   }
 
   return lines.join("\n");
+}
+
+function renderFrameworkGuidance(model: ApplicationModel): string[] {
+  if (model.project.framework !== "nextjs") {
+    return [
+      "## Framework Guidance",
+      "",
+      "Descuff did not detect a supported framework-specific integration path.",
+      "",
+      "- Register WebMCP tools from browser-executed code only.",
+      "- Feature-detect `document.modelContext` before registering tools.",
+      "- Keep route handlers, server-rendered code, and build-time code free of direct browser global access.",
+      "- Preserve existing UI and behavior; the integration should be non-visual unless the application already exposes agent settings."
+    ];
+  }
+
+  const routerKinds = new Set(model.routes.map((route) => route.routerKind));
+  const hasAppRouter = routerKinds.has("next-app");
+  const hasPagesRouter = routerKinds.has("next-pages");
+  const lines = [
+    "## Framework Guidance",
+    "",
+    "Detected framework: Next.js.",
+    "",
+    "- Register WebMCP tools from browser-executed client code only.",
+    "- Feature-detect `document.modelContext` before calling `registerTool(...)`.",
+    "- Do not call `document.modelContext` from route handlers, Server Components, metadata functions, or build-time code.",
+    "- Keep the registration component non-visual unless the application already has an agent settings surface.",
+    "- Keep each `execute` function read-only and backed by the existing public GET endpoint listed below.",
+    "- Preserve existing auth, caching, rate-limit, and data exposure boundaries."
+  ];
+
+  if (hasAppRouter) {
+    lines.push(
+      "- App Router: add a small `'use client'` component, for example `app/_agent/WebMcpTools.tsx`, and mount it from the narrowest relevant layout or page."
+    );
+  }
+
+  if (hasPagesRouter) {
+    lines.push(
+      "- Pages Router: add a browser-only component and mount it from the relevant page or `pages/_app.tsx` only if the tools should be globally available."
+    );
+  }
+
+  if (!hasAppRouter && !hasPagesRouter) {
+    lines.push(
+      "- Router kind was not detected. Locate the browser-rendered entry point first, then mount a small client-side registration component there."
+    );
+  }
+
+  return lines;
 }
 
 interface WebMcpToolCandidate {

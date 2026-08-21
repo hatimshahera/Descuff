@@ -69,6 +69,9 @@ describe("@descuff/standard-webmcp", () => {
       conflictPolicy: "companion-file"
     });
     expect(changes[1]?.content).toContain("document.modelContext.registerTool");
+    expect(changes[1]?.content).toContain("Detected framework: Next.js.");
+    expect(changes[1]?.content).toContain("App Router");
+    expect(changes[1]?.content).toContain("'use client'");
     expect(changes[1]?.content).toContain("get_api_search");
   });
 
@@ -256,7 +259,16 @@ function model(
           ]
         : [])
     ],
-    routes: [],
+    routes: [
+      {
+        id: "route:home",
+        path: "/",
+        routerKind: "next-app",
+        sourceFile: "app/page.tsx",
+        runtimeObserved: false,
+        evidence: [evidence]
+      }
+    ],
     apis: [
       {
         id: "api:search:get",
