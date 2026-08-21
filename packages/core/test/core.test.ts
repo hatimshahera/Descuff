@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createProjectContext, descuffCommands, isDescuffCommand } from "../src/index.js";
+import {
+  createExternalRepoAuditResult,
+  createProjectContext,
+  descuffCommands,
+  externalRepoAuditSchemaVersion,
+  isDescuffCommand,
+  renderExternalRepoAuditMarkdown
+} from "../src/index.js";
 
 describe("@descuff/core", () => {
   it("defines the Phase 1 CLI command set", () => {
@@ -19,5 +26,44 @@ describe("@descuff/core", () => {
 
   it("creates explicit project contexts", () => {
     expect(createProjectContext("/repo")).toEqual({ rootDir: "/repo", cwd: "/repo" });
+  });
+
+  it("records external repository audit results with stable benchmark fields", () => {
+    const audit = createExternalRepoAuditResult({
+      auditedAt: "2026-08-21T00:00:00.000Z",
+      target: {
+        id: "catalog-app",
+        name: "Catalog App",
+        repositoryUrl: "https://github.com/example/catalog-app",
+        commitSha: "abc123",
+        framework: "nextjs",
+        routerKinds: ["app-router"],
+        coverageTags: ["public-read-api", "dynamic-routes"],
+        selectionRationale: "Exercises public product APIs and App Router dynamic pages."
+      },
+      descuffVersion: "0.0.2",
+      commandsRun: ["npx descuff start .", "npx descuff finish ."],
+      expectedCapabilities: ["search catalog", "view product"],
+      detectedCapabilities: ["view product"],
+      missedCapabilities: ["search catalog"],
+      inventedCapabilities: ["delete product"],
+      findings: [
+        {
+          kind: "bad-plan",
+          severity: "major",
+          summary: "Plan proposed an OpenAPI operation for an endpoint not present in source.",
+          evidence: [".descuff/generated-changes.json"],
+          followUp: "Add a fixture for invented OpenAPI operations."
+        }
+      ]
+    });
+
+    expect(audit.schemaVersion).toBe(externalRepoAuditSchemaVersion);
+    expect(renderExternalRepoAuditMarkdown([audit])).toContain(
+      "| Catalog App | abc123 | 1 | 1 | 1 |"
+    );
+    expect(renderExternalRepoAuditMarkdown([audit])).toContain(
+      "- bad-plan (major): Plan proposed an OpenAPI operation for an endpoint not present in source."
+    );
   });
 });
