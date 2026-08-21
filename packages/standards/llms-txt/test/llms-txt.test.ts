@@ -69,6 +69,27 @@ describe("@descuff/standard-llms-txt", () => {
     );
   });
 
+  it("does not advertise authenticated routes as public routes", async () => {
+    const appModel = model();
+    const changes = await new LlmsTxtAdapter().generate({
+      ...appModel,
+      routes: [
+        ...appModel.routes,
+        {
+          id: "route:account",
+          path: "/account",
+          routerKind: "next-pages",
+          sourceFile: "pages/account.tsx",
+          visibility: "authenticated",
+          runtimeObserved: false,
+          evidence: [evidence]
+        }
+      ]
+    });
+
+    expect(changes[0]?.content).not.toContain("(/account)");
+  });
+
   it("passes shared idempotency checks across generation passes", async () => {
     const adapter = new LlmsTxtAdapter();
     const appModel = model();

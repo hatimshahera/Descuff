@@ -11,6 +11,8 @@ export type FrameworkKind = "nextjs" | "unknown";
 
 export type StandardKind = "llms-txt" | "webmcp" | "schema-org" | "openapi" | "api-catalog";
 
+export type RouteVisibility = "public" | "authenticated" | "unknown";
+
 export interface FrameworkDetection {
   kind: FrameworkKind;
   detected: boolean;
@@ -22,6 +24,7 @@ export interface StructuralRoute {
   path: string;
   routerKind: RouterKind;
   sourceFile: string;
+  visibility?: RouteVisibility;
   evidence: EvidenceRef[];
 }
 

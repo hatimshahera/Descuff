@@ -212,7 +212,7 @@ function parseSchemaOrgDocument(
 
 function publicPageRoutes(routes: Route[]): Route[] {
   return routes
-    .filter((route) => !route.path.startsWith("/api"))
+    .filter((route) => !route.path.startsWith("/api") && route.visibility !== "authenticated")
     .sort((a, b) => a.path.localeCompare(b.path));
 }
 

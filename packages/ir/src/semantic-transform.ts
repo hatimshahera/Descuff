@@ -42,6 +42,7 @@ export function structuralAnalysisToApplicationModel(
       path: route.path,
       routerKind: route.routerKind,
       sourceFile: route.sourceFile,
+      visibility: route.visibility ?? "public",
       runtimeObserved: analysis.runtimeRoutes.some((runtime) => runtime.path === route.path),
       evidence: route.evidence
     })),

@@ -1,5 +1,10 @@
 import type { Confidence, EvidenceIndex, EvidenceRef } from "./evidence.js";
-import type { HttpMethod, RouterKind, StandardKind } from "./structural-analysis.js";
+import type {
+  HttpMethod,
+  RouterKind,
+  RouteVisibility,
+  StandardKind
+} from "./structural-analysis.js";
 
 export const applicationModelSchemaVersion = "0.1.0";
 
@@ -69,6 +74,7 @@ export interface Route {
   path: string;
   routerKind: RouterKind;
   sourceFile: string;
+  visibility?: RouteVisibility;
   runtimeObserved: boolean;
   evidence: EvidenceRef[];
 }

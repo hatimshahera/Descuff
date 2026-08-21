@@ -77,6 +77,30 @@ describe("@descuff/standard-schema-org", () => {
     });
   });
 
+  it("does not publish authenticated routes as public WebPage nodes", async () => {
+    const appModel = model();
+    const changes = await new SchemaOrgAdapter().generate({
+      ...appModel,
+      routes: [
+        ...appModel.routes,
+        {
+          id: "route:account",
+          path: "/account",
+          routerKind: "next-pages",
+          sourceFile: "pages/account.tsx",
+          visibility: "authenticated",
+          runtimeObserved: false,
+          evidence: [evidence]
+        }
+      ]
+    });
+    const document = JSON.parse(changes[0]?.content ?? "{}") as {
+      "@graph": Array<{ url?: string }>;
+    };
+
+    expect(document["@graph"].some((node) => node.url === "/account")).toBe(false);
+  });
+
   it("validates generated JSON-LD against semantic routes and entities", async () => {
     const adapter = new SchemaOrgAdapter();
     const appModel = model();

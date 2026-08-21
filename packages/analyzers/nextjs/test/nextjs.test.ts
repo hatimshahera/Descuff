@@ -37,8 +37,15 @@ describe("@descuff/analyzer-nextjs", () => {
     expect(analysis.routes.map((route) => `${route.routerKind} ${route.path}`).sort()).toEqual([
       "next-app /",
       "next-app /book/{username}/{eventSlug}",
-      "next-pages /about"
+      "next-pages /about",
+      "next-pages /protected"
     ]);
+    expect(analysis.routes).toContainEqual(
+      expect.objectContaining({
+        path: "/protected",
+        visibility: "authenticated"
+      })
+    );
     expect(
       analysis.apiOperations.map((operation) => `${operation.method} ${operation.path}`).sort()
     ).toEqual(["GET /api/availability", "UNKNOWN /api/legacy"]);

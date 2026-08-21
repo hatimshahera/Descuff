@@ -4,6 +4,7 @@ import {
   createEmptyStructuralAnalysis,
   type ExistingStandard,
   type HttpMethod,
+  type RouteVisibility,
   type StructuralAnalysis
 } from "@descuff/ir";
 import type { ProjectContext, StructuralAnalyzer } from "@descuff/core";
@@ -43,6 +44,7 @@ export class NativeNextAnalyzer implements StructuralAnalyzer {
           path: pagePath,
           routerKind: routeKind,
           sourceFile,
+          visibility: inferRouteVisibility(source),
           evidence: [evidence]
         });
         analysis.evidence.items.push(evidence);
@@ -215,6 +217,21 @@ function getAuthenticationBoundaryKind(
     return "proxy";
   }
   return undefined;
+}
+
+function inferRouteVisibility(source: string): RouteVisibility {
+  if (
+    /from\s+["']@clerk\/nextjs\/server["']/.test(source) &&
+    /\b(getAuth|auth|currentUser)\s*\(/.test(source)
+  ) {
+    return "authenticated";
+  }
+
+  if (/\b(getServerSession|getToken|withPageAuthRequired)\s*\(/.test(source)) {
+    return "authenticated";
+  }
+
+  return "public";
 }
 
 function dedupeEvidence(items: StructuralAnalysis["evidence"]["items"]) {
