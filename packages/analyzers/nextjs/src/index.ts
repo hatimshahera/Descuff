@@ -81,11 +81,16 @@ export class NativeNextAnalyzer implements StructuralAnalyzer {
       analysis.forms.push(...forms);
       analysis.evidence.items.push(...forms.flatMap((form) => form.evidence));
 
-      if (basename(filePath).startsWith("middleware.")) {
-        const evidence = sourceEvidence(project.rootDir, filePath, "Next.js middleware detected");
+      const authBoundaryKind = getAuthenticationBoundaryKind(filePath);
+      if (authBoundaryKind !== undefined) {
+        const evidence = sourceEvidence(
+          project.rootDir,
+          filePath,
+          authBoundaryKind === "proxy" ? "Next.js proxy detected" : "Next.js middleware detected"
+        );
         analysis.authenticationBoundaries.push({
           id: `auth:${sourceFile}`,
-          kind: "middleware",
+          kind: authBoundaryKind,
           sourceFile,
           evidence: [evidence]
         });
@@ -197,6 +202,19 @@ function getApiMethods(filePath: string, source: string): HttpMethod[] {
   }
 
   return basename(filePath).startsWith("route.") ? [] : ["UNKNOWN"];
+}
+
+function getAuthenticationBoundaryKind(
+  filePath: string
+): StructuralAnalysis["authenticationBoundaries"][number]["kind"] | undefined {
+  const fileName = basename(filePath);
+  if (fileName.startsWith("middleware.")) {
+    return "middleware";
+  }
+  if (fileName.startsWith("proxy.")) {
+    return "proxy";
+  }
+  return undefined;
 }
 
 function dedupeEvidence(items: StructuralAnalysis["evidence"]["items"]) {

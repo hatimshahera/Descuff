@@ -42,6 +42,12 @@ describe("@descuff/analyzer-nextjs", () => {
     expect(
       analysis.apiOperations.map((operation) => `${operation.method} ${operation.path}`).sort()
     ).toEqual(["GET /api/availability", "UNKNOWN /api/legacy"]);
+    expect(analysis.authenticationBoundaries).toContainEqual(
+      expect.objectContaining({
+        kind: "proxy",
+        sourceFile: "proxy.ts"
+      })
+    );
     expect(validateStructuralAnalysis(analysis).valid).toBe(true);
   });
 
