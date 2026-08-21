@@ -2,7 +2,7 @@
 
 All notable changes to Descuff will be documented in this file.
 
-## Unreleased
+## 0.1.0 - 2026-08-21
 
 ### Added
 
@@ -19,6 +19,12 @@ All notable changes to Descuff will be documented in this file.
 - Avoid generating non-applicable standards for apps with no APIs or capabilities.
 - Improved content, SaaS, sensitive-read, and high-consequence capability classification from external audit findings.
 - Fixed validation false positives where protected route-handler mutations were treated as public sensitive capabilities.
+
+### Release Notes
+
+- Audited against eight unrelated public Next.js repositories covering static sites, content sites, commerce, SaaS, booking, Pages Router auth, analytics, and forms-heavy monorepos.
+- The audit intentionally used `descuff start`, model/plan inspection, and validation results as the benchmark loop. Implementing standards inside every external repository was skipped because it would be expensive and would mainly test coding-agent behavior, not Descuff's analysis and validation engine.
+- Remaining known limitation: generated `llms.txt` validation can reject intercepted/parallel App Router route markers until those route references are normalized or omitted.
 
 ## 0.0.2 - 2026-08-20
 

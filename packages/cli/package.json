@@ -1,6 +1,6 @@
 {
   "name": "descuff",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Turn local Next.js websites into interfaces AI agents can understand and use.",
   "license": "MIT",
   "type": "module",

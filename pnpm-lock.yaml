@@ -40,6 +40,8 @@ importers:
 
   fixtures/ecommerce: {}
 
+  fixtures/monorepo-next: {}
+
   fixtures/saas: {}
 
   fixtures/src-app: {}
