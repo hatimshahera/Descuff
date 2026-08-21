@@ -15,6 +15,7 @@ import {
   renderValidationRepairGuide,
   runValidationCommands,
   runStandardValidation,
+  validateCapabilityConfidence,
   validateCommandResults,
   validateRuntimeConfig,
   validateRuntimeObservations,
@@ -1116,6 +1117,112 @@ describe("@descuff/validator", () => {
 
     expect(
       validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
+    ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
+  it("blocks low-confidence capabilities from implementation recommendations", () => {
+    expect(
+      validateCapabilityConfidence({
+        ...createApplicationModel(),
+        capabilities: [
+          {
+            id: "capability:unknown",
+            name: "unknown /api/maybe",
+            operationType: "read",
+            risk: "PUBLIC_READ",
+            visibility: "public",
+            inputs: [],
+            outputs: [],
+            linkedRoutes: [],
+            linkedApis: ["api:UNKNOWN:/api/maybe"],
+            evidence: [{ ...evidence, confidence: "low" }],
+            confidence: "low"
+          }
+        ]
+      })
+    ).toEqual({
+      passed: false,
+      failures: [
+        {
+          code: "CAPABILITY_CONFIDENCE_TOO_LOW",
+          level: "static",
+          severity: "error",
+          message:
+            "unknown /api/maybe has low-confidence evidence and cannot be promoted into implementation recommendations.",
+          source: "capability:unknown",
+          evidence: [{ ...evidence, confidence: "low" }],
+          suggestedAction:
+            "Confirm the capability with stronger source or runtime evidence before generating agent-facing standards from it."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("accepts high and medium confidence capabilities", () => {
+    expect(
+      validateCapabilityConfidence({
+        ...createApplicationModel(),
+        capabilities: [
+          {
+            id: "capability:high",
+            name: "Search products",
+            operationType: "read",
+            risk: "PUBLIC_READ",
+            visibility: "public",
+            inputs: [],
+            outputs: [],
+            linkedRoutes: [],
+            linkedApis: [],
+            evidence: [evidence],
+            confidence: "high"
+          },
+          {
+            id: "capability:medium",
+            name: "View content",
+            operationType: "read",
+            risk: "PUBLIC_READ",
+            visibility: "public",
+            inputs: [],
+            outputs: [],
+            linkedRoutes: [],
+            linkedApis: [],
+            evidence: [{ ...evidence, confidence: "medium" }],
+            confidence: "medium"
+          }
+        ]
+      })
+    ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
+  it("does not block low-confidence capabilities that are not public read recommendations", () => {
+    expect(
+      validateCapabilityConfidence({
+        ...createApplicationModel(),
+        capabilities: [
+          {
+            id: "capability:unknown-write",
+            name: "unknown /api/legacy",
+            operationType: "write",
+            risk: "LOW_RISK_WRITE",
+            visibility: "public",
+            inputs: [],
+            outputs: [],
+            linkedRoutes: [],
+            linkedApis: ["api:UNKNOWN:/api/legacy"],
+            evidence: [{ ...evidence, confidence: "low" }],
+            confidence: "low"
+          }
+        ]
+      })
     ).toEqual({
       passed: true,
       failures: [],

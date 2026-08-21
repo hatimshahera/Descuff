@@ -31,6 +31,7 @@ import {
   runStandardValidation,
   type ValidationReadinessReport,
   type ValidationSummary,
+  validateCapabilityConfidence,
   validateRuntimeObservations,
   validateSecurityModel,
   validateStaticGeneratedChanges
@@ -244,7 +245,8 @@ async function validateArtifacts(
       generatedChanges: artifacts.generatedChanges
     }),
     validateRuntimeObservations(artifacts.model, artifacts.analysis),
-    validateSecurityModel(artifacts.model)
+    validateSecurityModel(artifacts.model),
+    validateCapabilityConfidence(artifacts.model)
   ]);
   const report = createValidationReadinessReport(artifacts.model, [summary]);
   await writeJson(projectRoot, "validation.json", report);

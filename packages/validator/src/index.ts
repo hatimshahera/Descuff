@@ -20,6 +20,7 @@ export {
   runValidationCommands,
   validateCommandResults
 } from "./command-validator.js";
+export { validateCapabilityConfidence } from "./confidence-validator.js";
 export {
   createEmptyValidationSummary,
   createValidationSummary,
