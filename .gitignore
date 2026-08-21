@@ -9,3 +9,8 @@ graphify-out/
 playwright-report/
 test-results/
 .DS_Store
+
+# Local/private planning docs. These are kept out of the public repository.
+AGENTS.md
+apps/docs/
+docs/
