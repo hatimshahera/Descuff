@@ -1055,6 +1055,77 @@ describe("@descuff/validator", () => {
     });
   });
 
+  it("validates browser page status, headings, JSON-LD, and network capture", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.runtimePages.push({
+      ...runtimePage(),
+      status: 500,
+      headings: [],
+      jsonLdCount: 0,
+      truncatedNetworkRequestCount: 2
+    });
+
+    expect(validateRuntimeObservations(createReadyApplicationModel(), analysis)).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "RUNTIME_BROWSER_PAGE_STATUS_FAILED",
+          level: "runtime",
+          severity: "error",
+          source: "runtime-page:/"
+        },
+        {
+          code: "RUNTIME_JSONLD_NOT_OBSERVED",
+          level: "runtime",
+          severity: "error",
+          source: "schema-org"
+        }
+      ],
+      warnings: [
+        {
+          code: "RUNTIME_PAGE_HEADINGS_MISSING",
+          level: "runtime",
+          severity: "warning",
+          source: "runtime-page:/"
+        },
+        {
+          code: "RUNTIME_NETWORK_OBSERVATION_TRUNCATED",
+          level: "runtime",
+          severity: "warning",
+          source: "runtime-page:/"
+        }
+      ]
+    });
+  });
+
+  it("warns when static forms are not observed in browser evidence", () => {
+    const analysis = createEmptyStructuralAnalysis("/repo");
+    analysis.forms.push({
+      id: "form:search",
+      sourceFile: "app/page.tsx",
+      action: "/api/products",
+      method: "get",
+      evidence: [evidence]
+    });
+    analysis.runtimePages.push({
+      ...runtimePage(),
+      formCount: 0
+    });
+
+    expect(validateRuntimeObservations(createApplicationModel(), analysis)).toMatchObject({
+      passed: true,
+      failures: [],
+      warnings: [
+        {
+          code: "RUNTIME_FORMS_NOT_OBSERVED",
+          level: "runtime",
+          severity: "warning",
+          source: "forms"
+        }
+      ]
+    });
+  });
+
   it("fails WebMCP runtime validation when metadata exists but no browser tool is registered", () => {
     const analysis = createSuccessfulRuntimeAnalysis();
     analysis.runtimePages.push({

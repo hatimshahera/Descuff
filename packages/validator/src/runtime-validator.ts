@@ -4,6 +4,7 @@ import {
   type HttpMethod,
   type StructuralAnalysis
 } from "@descuff/ir";
+import { validateBrowserEvidence } from "./browser-evidence-validator.js";
 import { createValidationSummary } from "./summary.js";
 import type {
   RuntimeValidationConfig,
@@ -124,9 +125,16 @@ export function validateRuntimeObservations(
     }
   }
 
+  const browserSummary = validateBrowserEvidence(model, analysis);
   const webMcpSummary = validateWebMcpBehavior(model, analysis);
 
-  return createValidationSummary([...issues, ...webMcpSummary.failures, ...webMcpSummary.warnings]);
+  return createValidationSummary([
+    ...issues,
+    ...browserSummary.failures,
+    ...browserSummary.warnings,
+    ...webMcpSummary.failures,
+    ...webMcpSummary.warnings
+  ]);
 }
 
 function validateRuntimeOperationAuthorization(
