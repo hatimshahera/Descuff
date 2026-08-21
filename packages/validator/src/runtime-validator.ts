@@ -11,6 +11,7 @@ import type {
   ValidationFailure,
   ValidationSummary
 } from "./types.js";
+import { validateWebMcpBehavior } from "./webmcp-validator.js";
 
 export function validateRuntimeConfig(config: RuntimeValidationConfig): ValidationSummary {
   const issues: ValidationFailure[] = [];
@@ -123,7 +124,9 @@ export function validateRuntimeObservations(
     }
   }
 
-  return createValidationSummary(issues);
+  const webMcpSummary = validateWebMcpBehavior(model, analysis);
+
+  return createValidationSummary([...issues, ...webMcpSummary.failures, ...webMcpSummary.warnings]);
 }
 
 function validateRuntimeOperationAuthorization(

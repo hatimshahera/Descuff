@@ -32,3 +32,4 @@ export { validateRuntimeConfig, validateRuntimeObservations } from "./runtime-va
 export { validateSecurityModel } from "./security-validator.js";
 export { validateStaticGeneratedChanges } from "./static-validator.js";
 export { runStandardValidation, validateStaticStandardResults } from "./standard-validators.js";
+export { validateWebMcpBehavior } from "./webmcp-validator.js";

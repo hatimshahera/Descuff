@@ -1007,6 +1007,122 @@ describe("@descuff/validator", () => {
     });
   });
 
+  it("fails WebMCP runtime validation when metadata exists but no browser tool is registered", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.runtimePages.push({
+      id: "runtime-page:/",
+      path: "/",
+      url: "https://example.test/",
+      status: 200,
+      headings: ["Products"],
+      formCount: 0,
+      jsonLdCount: 1,
+      networkRequestCount: 0,
+      truncatedNetworkRequestCount: 0,
+      origin: "https://example.test",
+      evidence: [evidence]
+    });
+
+    expect(
+      validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "WEBMCP_TOOL_NOT_REGISTERED",
+          level: "runtime",
+          severity: "error",
+          source: "webmcp"
+        },
+        {
+          code: "WEBMCP_EXPECTED_TOOL_MISSING",
+          level: "runtime",
+          severity: "error",
+          source: "capability:search"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("warns when WebMCP is claimed but browser observations are unavailable", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+
+    expect(
+      validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
+    ).toMatchObject({
+      passed: true,
+      failures: [],
+      warnings: [
+        {
+          code: "RUNTIME_BROWSER_OBSERVATION_MISSING",
+          level: "runtime",
+          severity: "warning",
+          source: "webmcp"
+        }
+      ]
+    });
+  });
+
+  it("fails WebMCP runtime validation for invalid schemas and unsafe annotations", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.runtimePages.push(runtimePage());
+    analysis.runtimeWebMcpTools.push({
+      id: "runtime-webmcp:https://example.test:search",
+      name: "search",
+      description: "Search products",
+      inputSchema: { type: "string" },
+      annotations: { readOnlyHint: false },
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      evidence: [evidence]
+    });
+
+    expect(
+      validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
+    ).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "WEBMCP_TOOL_SCHEMA_INVALID",
+          level: "runtime",
+          severity: "error",
+          source: "capability:search"
+        },
+        {
+          code: "WEBMCP_TOOL_UNSAFE_TO_EXECUTE",
+          level: "runtime",
+          severity: "error",
+          source: "capability:search"
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("passes WebMCP runtime validation for a browser-registered read-only tool", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.runtimePages.push(runtimePage());
+    analysis.runtimeWebMcpTools.push({
+      id: "runtime-webmcp:https://example.test:search",
+      name: "search",
+      description: "Search products",
+      inputSchema: { type: "object" },
+      annotations: { readOnlyHint: true },
+      origin: "https://example.test",
+      frameUrl: "https://example.test/",
+      evidence: [evidence]
+    });
+
+    expect(
+      validateRuntimeObservations(withWebMcpStandard(createReadyApplicationModel()), analysis)
+    ).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
   it("fails security validation when authenticated capabilities have no auth boundary", () => {
     expect(
       validateSecurityModel({
@@ -1322,6 +1438,55 @@ function createApplicationModel(): ApplicationModel {
     evidence: {
       items: [evidence]
     }
+  };
+}
+
+function withWebMcpStandard(model: ApplicationModel): ApplicationModel {
+  return {
+    ...model,
+    standards: [
+      ...model.standards,
+      {
+        id: "standard:webmcp",
+        kind: "webmcp",
+        sourceFile: "public/webmcp.json",
+        evidence: [evidence]
+      }
+    ]
+  };
+}
+
+function createSuccessfulRuntimeAnalysis() {
+  const analysis = createEmptyStructuralAnalysis("/repo");
+  analysis.runtimeRoutes.push({
+    id: "runtime-route:/",
+    path: "/",
+    status: 200,
+    evidence: [evidence]
+  });
+  analysis.runtimeApiOperations.push({
+    id: "runtime-api:GET:/api/products",
+    method: "GET",
+    path: "/api/products",
+    status: 200,
+    evidence: [evidence]
+  });
+  return analysis;
+}
+
+function runtimePage() {
+  return {
+    id: "runtime-page:/",
+    path: "/",
+    url: "https://example.test/",
+    status: 200,
+    headings: ["Products"],
+    formCount: 0,
+    jsonLdCount: 1,
+    networkRequestCount: 0,
+    truncatedNetworkRequestCount: 0,
+    origin: "https://example.test",
+    evidence: [evidence]
   };
 }
 
