@@ -103,3 +103,16 @@ export interface ValidationReadinessReport {
   ready: boolean;
   blockers: ValidationFailure[];
 }
+
+export interface SourceFileFingerprint {
+  path: string;
+  sha256: string | null;
+  missing: boolean;
+  evidence: EvidenceRef[];
+}
+
+export interface SourceFingerprintManifest {
+  schemaVersion: string;
+  generatedAt: string;
+  files: SourceFileFingerprint[];
+}

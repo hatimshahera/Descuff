@@ -3,6 +3,8 @@ export type {
   ExistingTestBaselineEntry,
   RuntimeValidationConfig,
   RuntimeValidationScenario,
+  SourceFileFingerprint,
+  SourceFingerprintManifest,
   UiRegressionBaseline,
   UiRouteInvariant,
   ValidationCommand,
@@ -31,6 +33,7 @@ export { renderValidationRepairGuide } from "./repair-guide.js";
 export { validateUiRegression } from "./regression-validator.js";
 export { validateRuntimeConfig, validateRuntimeObservations } from "./runtime-validator.js";
 export { validateSecurityModel } from "./security-validator.js";
+export { validateSourceFingerprints } from "./staleness-validator.js";
 export { validateStaticGeneratedChanges } from "./static-validator.js";
 export { runStandardValidation, validateStaticStandardResults } from "./standard-validators.js";
 export { validateWebMcpBehavior } from "./webmcp-validator.js";

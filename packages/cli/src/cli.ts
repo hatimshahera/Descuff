@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import {
@@ -15,6 +16,7 @@ import {
 import {
   structuralAnalysisToApplicationModel,
   type ApplicationModel,
+  type EvidenceRef,
   type StructuralAnalysis
 } from "@descuff/ir";
 import { renderStructuralSummary } from "@descuff/reporter";
@@ -31,9 +33,12 @@ import {
   runStandardValidation,
   type ValidationReadinessReport,
   type ValidationSummary,
+  type SourceFileFingerprint,
+  type SourceFingerprintManifest,
   validateCapabilityConfidence,
   validateRuntimeObservations,
   validateSecurityModel,
+  validateSourceFingerprints,
   validateStaticGeneratedChanges
 } from "@descuff/validator";
 
@@ -51,6 +56,7 @@ interface ScanArtifacts {
   model: ApplicationModel;
   assessments: StandardAssessment[];
   generatedChanges: GeneratedChange[];
+  sourceFingerprints: SourceFingerprintManifest;
 }
 
 interface BaselineSnapshot {
@@ -246,7 +252,11 @@ async function validateArtifacts(
     }),
     validateRuntimeObservations(artifacts.model, artifacts.analysis),
     validateSecurityModel(artifacts.model),
-    validateCapabilityConfidence(artifacts.model)
+    validateCapabilityConfidence(artifacts.model),
+    validateSourceFingerprints(
+      artifacts.sourceFingerprints,
+      await createSourceFingerprintManifest(projectRoot, artifacts.analysis)
+    )
   ]);
   const report = createValidationReadinessReport(artifacts.model, [summary]);
   await writeJson(projectRoot, "validation.json", report);
@@ -257,14 +267,29 @@ async function validateArtifacts(
 
 async function readOrBuildArtifacts(projectRoot: string): Promise<ScanArtifacts> {
   try {
-    return {
+    const artifacts = {
       analysis: await readJson<StructuralAnalysis>(projectRoot, "analysis.json"),
       model: await readJson<ApplicationModel>(projectRoot, "model.json"),
       assessments: await readJson<StandardAssessment[]>(projectRoot, "assessments.json"),
-      generatedChanges: await readJson<GeneratedChange[]>(projectRoot, "generated-changes.json")
+      generatedChanges: await readJson<GeneratedChange[]>(projectRoot, "generated-changes.json"),
+      sourceFingerprints: await readJson<SourceFingerprintManifest>(
+        projectRoot,
+        "source-fingerprints.json"
+      )
     };
+    const currentFingerprints = await createSourceFingerprintManifest(
+      projectRoot,
+      artifacts.analysis
+    );
+    const freshness = validateSourceFingerprints(artifacts.sourceFingerprints, currentFingerprints);
+    if (!freshness.passed) {
+      throw new Error("Cached Descuff artifacts are stale.");
+    }
+    return artifacts;
   } catch {
-    return buildScanArtifacts(projectRoot);
+    const artifacts = await buildScanArtifacts(projectRoot);
+    await writeScanArtifacts(projectRoot, artifacts);
+    return artifacts;
   }
 }
 
@@ -280,7 +305,8 @@ async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
     analysis: analysisWithRuntime,
     model,
     assessments,
-    generatedChanges: generated.flat()
+    generatedChanges: generated.flat(),
+    sourceFingerprints: await createSourceFingerprintManifest(projectRoot, analysisWithRuntime)
   };
 }
 
@@ -289,6 +315,7 @@ async function writeScanArtifacts(projectRoot: string, artifacts: ScanArtifacts)
   await writeJson(projectRoot, "model.json", artifacts.model);
   await writeJson(projectRoot, "assessments.json", artifacts.assessments);
   await writeJson(projectRoot, "generated-changes.json", artifacts.generatedChanges);
+  await writeJson(projectRoot, "source-fingerprints.json", artifacts.sourceFingerprints);
 }
 
 async function writePlanArtifacts(projectRoot: string, artifacts: ScanArtifacts): Promise<void> {
@@ -406,6 +433,59 @@ function withSyntheticReadOnlyRuntime(analysis: StructuralAnalysis): StructuralA
               evidence: operation.evidence
             }))
   };
+}
+
+async function createSourceFingerprintManifest(
+  projectRoot: string,
+  analysis: StructuralAnalysis
+): Promise<SourceFingerprintManifest> {
+  const evidenceByPath = new Map<string, EvidenceRef[]>();
+
+  for (const ref of analysis.evidence.items) {
+    if (ref.kind !== "source" || ref.location.trim().length === 0) {
+      continue;
+    }
+
+    const evidence = evidenceByPath.get(ref.location) ?? [];
+    evidence.push(ref);
+    evidenceByPath.set(ref.location, evidence);
+  }
+
+  const files: SourceFileFingerprint[] = [];
+  for (const [path, evidence] of [...evidenceByPath.entries()].sort(([a], [b]) =>
+    a.localeCompare(b)
+  )) {
+    files.push(await fingerprintSourceFile(projectRoot, path, evidence));
+  }
+
+  return {
+    schemaVersion: "0.1.0",
+    generatedAt: new Date(0).toISOString(),
+    files
+  };
+}
+
+async function fingerprintSourceFile(
+  projectRoot: string,
+  path: string,
+  evidence: EvidenceRef[]
+): Promise<SourceFileFingerprint> {
+  try {
+    const content = await readFile(join(projectRoot, path));
+    return {
+      path,
+      sha256: createHash("sha256").update(content).digest("hex"),
+      missing: false,
+      evidence
+    };
+  } catch {
+    return {
+      path,
+      sha256: null,
+      missing: true,
+      evidence
+    };
+  }
 }
 
 async function readJson<T>(projectRoot: string, name: string): Promise<T> {

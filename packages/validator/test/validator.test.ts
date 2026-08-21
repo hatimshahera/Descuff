@@ -20,6 +20,7 @@ import {
   validateRuntimeConfig,
   validateRuntimeObservations,
   validateSecurityModel,
+  validateSourceFingerprints,
   validateStaticGeneratedChanges,
   validateStaticStandardResults,
   validateUiRegression
@@ -414,6 +415,52 @@ describe("@descuff/validator", () => {
           path: "",
           evidence: [],
           suggestedAction: "Mark the change approval-required or make generation deterministic."
+        }
+      ],
+      warnings: []
+    });
+  });
+
+  it("fails when source fingerprints changed after artifacts were generated", () => {
+    expect(
+      validateSourceFingerprints(
+        {
+          schemaVersion: "0.1.0",
+          generatedAt: "2026-08-20T00:00:00.000Z",
+          files: [
+            {
+              path: "app/page.tsx",
+              sha256: "before",
+              missing: false,
+              evidence: [evidence]
+            }
+          ]
+        },
+        {
+          schemaVersion: "0.1.0",
+          generatedAt: "2026-08-21T00:00:00.000Z",
+          files: [
+            {
+              path: "app/page.tsx",
+              sha256: "after",
+              missing: false,
+              evidence: [evidence]
+            }
+          ]
+        }
+      )
+    ).toEqual({
+      passed: false,
+      failures: [
+        {
+          code: "EVIDENCE_STALE",
+          level: "static",
+          severity: "error",
+          message: "Source evidence file app/page.tsx changed after artifacts were generated.",
+          source: "app/page.tsx",
+          path: "app/page.tsx",
+          evidence: [evidence],
+          suggestedAction: "Rerun descuff scan or descuff validate to refresh generated artifacts."
         }
       ],
       warnings: []

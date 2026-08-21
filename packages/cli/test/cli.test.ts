@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { appendFile, cp, mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { descuffCommands } from "@descuff/core";
 import { runCli } from "../src/cli.js";
 
@@ -28,6 +31,28 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("Descuff Report");
     expect(result.stdout).toContain("Application type: ecommerce");
     expect(result.stdout).toContain("llms-txt:");
+  });
+
+  it("refreshes stale cached artifacts before rendering a report", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+
+      await runCli(["node", "descuff", "scan", projectRoot]);
+      const before = await sourceHash(projectRoot, "app/page.tsx");
+
+      await appendFile(join(projectRoot, "app/page.tsx"), "\n// Descuff stale artifact test\n");
+      const result = await runCli(["node", "descuff", "report", projectRoot]);
+      const after = await sourceHash(projectRoot, "app/page.tsx");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Descuff Report");
+      expect(after).not.toBe(before);
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("writes an agent plan for a Next.js fixture", async () => {
@@ -101,3 +126,10 @@ describe("descuff CLI", () => {
     expect(result.stderr).toContain("Unknown command: unknown");
   });
 });
+
+async function sourceHash(projectRoot: string, path: string): Promise<string | null> {
+  const manifest = JSON.parse(
+    await readFile(join(projectRoot, ".descuff", "source-fingerprints.json"), "utf8")
+  ) as { files: Array<{ path: string; sha256: string | null }> };
+  return manifest.files.find((file) => file.path === path)?.sha256 ?? null;
+}
