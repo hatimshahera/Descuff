@@ -63,6 +63,6 @@ pnpm run ci
 
 - Explain the user-facing change.
 - Include tests for behavior changes.
-- Call out safety implications, especially for generated standards, WebMCP metadata, or mutating APIs.
+- Call out safety implications, especially for generated standards, WebMCP browser-tool registration, authenticated routes, Server Actions, or mutating APIs.
 - Include before/after CLI output when changing command behavior.
 - Keep unrelated formatting churn out of the diff.

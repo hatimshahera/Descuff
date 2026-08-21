@@ -139,7 +139,7 @@ Commit source and standards files that the coding agent added, such as:
 - `openapi.json`
 - `public/openapi.json`
 - `public/.well-known/api-catalog`
-- safe WebMCP metadata, if generated
+- browser WebMCP registration code and `.descuff/webmcp-implementation-plan.md`, only when Descuff recommends safe public read tools
 
 Usually do not commit `.descuff/`, because it contains local absolute paths and generated working artifacts. Add it to `.gitignore` unless you intentionally want to keep project-local reports.
 
@@ -148,4 +148,5 @@ Usually do not commit `.descuff/`, because it contains local absolute paths and 
 - The current public preview supports local Next.js codebases, not arbitrary deployed URLs.
 - `apply-safe` does not write application source automatically yet.
 - Descuff guides your coding agent; it does not directly call an LLM.
+- WebMCP support is implementation-plan and validation oriented; static `webmcp.json` metadata alone is not treated as proof.
 - Readiness scoring is useful for comparison, not a universal quality grade for every kind of app.

@@ -6,7 +6,7 @@
 
 Turn your existing website into an interface AI agents can understand and use.
 
-Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe WebMCP metadata.
+Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser-registered WebMCP planning.
 
 Current release: `descuff@0.0.2` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases.
 
@@ -46,9 +46,9 @@ Descuff rescans, validates, and writes:
 
 ## What Descuff Does
 
-- Detects Next.js routes, API operations, forms, middleware, server-action evidence, and existing standards.
+- Detects Next.js routes, API operations, forms, middleware/proxy auth boundaries, Server Actions, route visibility, and existing standards.
 - Builds an evidence-backed semantic model of application type, capabilities, risks, routes, APIs, standards, and readiness.
-- Recommends agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP.
+- Recommends agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP implementation plans for browser-registered public read tools.
 - Generates a conservative implementation plan for a developer-owned coding agent.
 - Validates standards, security boundaries, runtime evidence, and readiness.
 - Reports before/after improvement so teams can see what changed.
@@ -122,7 +122,10 @@ Descuff does not directly call an LLM. It writes a plan and prompt for the codin
 - Next.js App Router
 - Next.js Pages Router
 - API routes
-- basic form and server-action evidence
+- basic form evidence
+- conservative Server Action capability modelling
+- middleware and `proxy.ts` auth-boundary detection
+- authenticated route filtering for public metadata
 - existing `llms.txt`, OpenAPI, Schema.org JSON-LD, API Catalog, and WebMCP detection
 
 Not yet supported as a general-purpose website crawler:

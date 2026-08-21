@@ -9,4 +9,4 @@ npx descuff finish .
 
 `start` creates a baseline, plan, and coding-agent prompt in `.descuff/`. `finish` rescans after implementation and writes the before/after validation report.
 
-The current public preview targets local Next.js applications and keeps automatic source writes disabled.
+The current public preview targets local Next.js applications and keeps automatic source writes disabled. It detects App Router and Pages Router projects, API routes, Server Actions, auth boundaries, route visibility, and common agent-facing standards.
