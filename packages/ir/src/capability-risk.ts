@@ -26,9 +26,11 @@ export function classifyCapabilityRisk(
 }
 
 function isHighConsequencePath(path: string): boolean {
-  return /checkout|payment|delete-account|account\/delete|billing\/cancel/.test(path);
+  return /checkout|payment|stripe|webhook|subscription|delete-account|account\/delete|billing\/cancel/.test(
+    path
+  );
 }
 
 function isSensitivePath(path: string): boolean {
-  return /orders|account|profile|admin|billing/.test(path);
+  return /orders|account|profile|admin|billing|team|user|session/.test(path);
 }

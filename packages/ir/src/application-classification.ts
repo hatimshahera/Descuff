@@ -15,21 +15,40 @@ export function assessApplicationType(analysis: StructuralAnalysis): Application
     .join(" ")
     .toLowerCase();
 
-  if (/product|cart|inventory|checkout/.test(vocabulary)) {
+  const scores = {
+    ecommerce: signalScore(vocabulary, ["product", "cart", "inventory", "checkout"]),
+    booking: signalScore(vocabulary, ["booking", "reservation", "appointment"]),
+    content: signalScore(vocabulary, ["\\bposts\\b", "article", "blog", "content", "newsletter"]),
+    saas: signalScore(vocabulary, [
+      "subscription",
+      "workspace",
+      "team",
+      "invoice",
+      "dashboard",
+      "billing",
+      "stripe"
+    ])
+  };
+
+  if (scores.ecommerce >= 2 && scores.ecommerce > scores.saas) {
     return { type: "ecommerce", confidence: "high", evidence };
   }
 
-  if (/booking|reservation|appointment/.test(vocabulary)) {
+  if (scores.booking > 0) {
     return { type: "booking", confidence: "medium", evidence };
   }
 
-  if (/\bposts\b|article|blog|content|newsletter/.test(vocabulary)) {
+  if (scores.content > 0 && scores.content >= scores.saas) {
     return { type: "content", confidence: "medium", evidence };
   }
 
-  if (/subscription|workspace|team|invoice/.test(vocabulary)) {
+  if (scores.saas > 0) {
     return { type: "saas", confidence: "medium", evidence };
   }
 
   return { type: "unknown", confidence: "low", evidence: [] };
+}
+
+function signalScore(vocabulary: string, signals: string[]): number {
+  return signals.filter((signal) => new RegExp(signal).test(vocabulary)).length;
 }

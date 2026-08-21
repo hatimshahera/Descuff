@@ -15,9 +15,12 @@ describe("semantic ApplicationModel", () => {
   it("classifies capability risk deterministically", () => {
     expect(classifyCapabilityRisk("GET", "/api/products")).toBe("PUBLIC_READ");
     expect(classifyCapabilityRisk("GET", "/api/orders")).toBe("AUTHENTICATED_READ");
+    expect(classifyCapabilityRisk("GET", "/api/team")).toBe("AUTHENTICATED_READ");
+    expect(classifyCapabilityRisk("GET", "/api/user")).toBe("AUTHENTICATED_READ");
     expect(classifyCapabilityRisk("POST", "/api/cart")).toBe("LOW_RISK_WRITE");
     expect(classifyCapabilityRisk("DELETE", "/api/account")).toBe("SENSITIVE_WRITE");
     expect(classifyCapabilityRisk("POST", "/api/checkout")).toBe("HIGH_CONSEQUENCE");
+    expect(classifyCapabilityRisk("POST", "/api/stripe/webhook")).toBe("HIGH_CONSEQUENCE");
   });
 
   it("assesses application type from structural evidence", async () => {
@@ -52,6 +55,47 @@ describe("semantic ApplicationModel", () => {
 
     expect(assessApplicationType(analysis)).toMatchObject({
       type: "content",
+      confidence: "medium"
+    });
+  });
+
+  it("classifies SaaS applications ahead of isolated checkout signals", () => {
+    const analysis = createEmptyStructuralAnalysis("/saas");
+    const evidence = {
+      id: "source:app/api/team/route.ts",
+      kind: "source" as const,
+      location: "app/api/team/route.ts",
+      confidence: "high" as const,
+      summary: "GET API operation discovered"
+    };
+
+    analysis.routes.push({
+      id: "route:pricing",
+      path: "/pricing",
+      routerKind: "next-app",
+      sourceFile: "app/(dashboard)/pricing/page.tsx",
+      evidence: [evidence]
+    });
+    analysis.apiOperations.push(
+      {
+        id: "api:GET:/api/team",
+        path: "/api/team",
+        method: "GET",
+        sourceFile: "app/api/team/route.ts",
+        evidence: [evidence]
+      },
+      {
+        id: "api:GET:/api/stripe/checkout",
+        path: "/api/stripe/checkout",
+        method: "GET",
+        sourceFile: "app/api/stripe/checkout/route.ts",
+        evidence: [evidence]
+      }
+    );
+    analysis.evidence.items.push(evidence);
+
+    expect(assessApplicationType(analysis)).toMatchObject({
+      type: "saas",
       confidence: "medium"
     });
   });
