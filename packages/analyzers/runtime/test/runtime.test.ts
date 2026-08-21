@@ -274,17 +274,9 @@ describe("@descuff/analyzer-runtime", () => {
   });
 
   it("wraps document.modelContext behind the WebMCP runtime abstraction", async () => {
-    const calls: Array<{ fn: string; arg?: unknown }> = [];
-    const runtime = createDocumentModelContextRuntime({
-      url() {
-        return "https://example.test/";
-      },
-      async evaluate(pageFunction, arg) {
-        calls.push({ fn: pageFunction.toString(), arg });
-        if (pageFunction.toString().includes("executeTool")) {
-          return "done";
-        }
-        if (pageFunction.toString().includes("getTools")) {
+    await withModelContext(
+      {
+        async getTools() {
           return [
             {
               name: "search_products",
@@ -292,23 +284,88 @@ describe("@descuff/analyzer-runtime", () => {
               inputSchema: { type: "object" },
               annotations: { readOnlyHint: true },
               origin: "https://example.test",
-              frameUrl: "https://example.test/"
+              execute(input: unknown) {
+                return { searched: (input as { q?: string }).q };
+              }
             }
           ];
+        },
+        async executeTool(tool, input) {
+          return tool.execute(JSON.parse(input));
         }
-        return true;
-      }
-    });
+      },
+      async () => {
+        const runtime = createDocumentModelContextRuntime(createEvaluatingPage());
 
-    await expect(runtime.isSupported()).resolves.toBe(true);
-    await expect(runtime.listTools()).resolves.toEqual([
-      expect.objectContaining({ name: "search_products" })
-    ]);
-    await expect(runtime.executeSafeTool("search_products", { q: "desk" })).resolves.toEqual({
-      toolName: "search_products",
-      result: "done"
-    });
-    expect(calls).toHaveLength(3);
+        await expect(runtime.isSupported()).resolves.toBe(true);
+        await expect(runtime.listTools()).resolves.toEqual([
+          expect.objectContaining({ name: "search_products" })
+        ]);
+        await expect(runtime.executeSafeTool("search_products", { q: "desk" })).resolves.toEqual({
+          toolName: "search_products",
+          result: { searched: "desk" }
+        });
+      }
+    );
+  });
+
+  it("refuses to execute WebMCP tools that are not explicitly read-only", async () => {
+    await withModelContext(
+      {
+        async getTools() {
+          return [
+            {
+              name: "delete_product",
+              description: "Delete product",
+              inputSchema: { type: "object" },
+              annotations: { readOnlyHint: false },
+              execute() {
+                return "deleted";
+              }
+            }
+          ];
+        },
+        async executeTool(tool, input) {
+          return tool.execute(JSON.parse(input));
+        }
+      },
+      async () => {
+        const runtime = createDocumentModelContextRuntime(createEvaluatingPage());
+
+        await expect(runtime.executeSafeTool("delete_product", { id: "desk" })).rejects.toThrow(
+          "not marked read-only"
+        );
+      }
+    );
+  });
+
+  it("refuses to execute WebMCP tools with missing safety annotations", async () => {
+    await withModelContext(
+      {
+        async getTools() {
+          return [
+            {
+              name: "ambiguous_tool",
+              description: "Ambiguous",
+              inputSchema: { type: "object" },
+              execute() {
+                return "done";
+              }
+            }
+          ];
+        },
+        async executeTool(tool, input) {
+          return tool.execute(JSON.parse(input));
+        }
+      },
+      async () => {
+        const runtime = createDocumentModelContextRuntime(createEvaluatingPage());
+
+        await expect(runtime.executeSafeTool("ambiguous_tool", {})).rejects.toThrow(
+          "not marked read-only"
+        );
+      }
+    );
   });
 
   browserIt("observes rendered page evidence and WebMCP tools with Playwright", async () => {
@@ -426,6 +483,64 @@ describe("@descuff/analyzer-runtime", () => {
     ]);
   });
 });
+
+interface TestWebMcpTool {
+  name: string;
+  description: string;
+  inputSchema: unknown;
+  annotations?: Record<string, unknown>;
+  origin?: string;
+  execute(input: unknown): unknown;
+}
+
+interface TestModelContext {
+  getTools(): Promise<TestWebMcpTool[]>;
+  executeTool(tool: TestWebMcpTool, input: string): Promise<unknown>;
+}
+
+function createEvaluatingPage() {
+  return {
+    url() {
+      return "https://example.test/";
+    },
+    async evaluate<T, A = unknown>(pageFunction: (arg: A) => T | Promise<T>, arg?: A): Promise<T> {
+      return pageFunction(arg as A);
+    }
+  };
+}
+
+async function withModelContext<T>(
+  modelContext: TestModelContext,
+  callback: () => Promise<T>
+): Promise<T> {
+  const globalRecord = globalThis as Record<string, unknown>;
+  const hadDocument = Object.prototype.hasOwnProperty.call(globalRecord, "document");
+  const hadLocation = Object.prototype.hasOwnProperty.call(globalRecord, "location");
+  const previousDocument = globalRecord.document;
+  const previousLocation = globalRecord.location;
+
+  globalRecord.document = { modelContext };
+  globalRecord.location = {
+    origin: "https://example.test",
+    href: "https://example.test/"
+  };
+
+  try {
+    return await callback();
+  } finally {
+    if (hadDocument) {
+      globalRecord.document = previousDocument;
+    } else {
+      delete globalRecord.document;
+    }
+
+    if (hadLocation) {
+      globalRecord.location = previousLocation;
+    } else {
+      delete globalRecord.location;
+    }
+  }
+}
 
 interface FixtureServer {
   port: number;

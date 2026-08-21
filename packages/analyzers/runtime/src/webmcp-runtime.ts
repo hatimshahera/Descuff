@@ -90,6 +90,10 @@ export function createDocumentModelContextRuntime(page: BrowserLikePage): WebMcp
         .evaluate(
           ({ name, jsonInput }) => {
             const doc = (globalThis as BrowserGlobal).document;
+            const isRecord = (value: unknown): value is Record<string, unknown> =>
+              typeof value === "object" && value !== null && !Array.isArray(value);
+            const isExplicitlyReadOnly = (tool: RawWebMcpTool): boolean =>
+              isRecord(tool.annotations) && tool.annotations.readOnlyHint === true;
 
             if (
               typeof doc?.modelContext?.getTools !== "function" ||
@@ -102,6 +106,11 @@ export function createDocumentModelContextRuntime(page: BrowserLikePage): WebMcp
               const tool = tools.find((candidate) => candidate.name === name);
               if (tool === undefined) {
                 throw new Error(`WebMCP tool not found: ${name}`);
+              }
+              if (!isExplicitlyReadOnly(tool)) {
+                throw new Error(
+                  `WebMCP tool ${name} is not marked read-only and cannot be executed safely.`
+                );
               }
 
               return doc.modelContext?.executeTool?.(tool, jsonInput);
