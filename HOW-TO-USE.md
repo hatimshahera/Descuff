@@ -1,6 +1,6 @@
 # How To Use Descuff
 
-Descuff v1 works on local Next.js codebases. Run it from the root of the app you want to improve.
+Descuff is an early public preview for local Next.js codebases. Run it from the root of the app you want to improve.
 
 Install is optional. The easiest path is:
 
@@ -145,7 +145,7 @@ Usually do not commit `.descuff/`, because it contains local absolute paths and 
 
 ## Current Limitations
 
-- v1 supports local Next.js codebases, not arbitrary deployed URLs.
+- The current public preview supports local Next.js codebases, not arbitrary deployed URLs.
 - `apply-safe` does not write application source automatically yet.
 - Descuff guides your coding agent; it does not directly call an LLM.
 - Readiness scoring is useful for comparison, not a universal quality grade for every kind of app.

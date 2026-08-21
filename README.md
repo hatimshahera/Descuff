@@ -8,7 +8,7 @@ Turn your existing website into an interface AI agents can understand and use.
 
 Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe WebMCP metadata.
 
-Current release: `descuff@0.0.2` on npm. Descuff v1 supports local Next.js App Router and Pages Router codebases.
+Current release: `descuff@0.0.2` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases.
 
 ## Quick Start
 
@@ -131,7 +131,7 @@ Not yet supported as a general-purpose website crawler:
 npx descuff scan https://example.com
 ```
 
-Descuff v1 expects a local Next.js codebase:
+Descuff currently expects a local Next.js codebase:
 
 ```bash
 cd my-nextjs-app
