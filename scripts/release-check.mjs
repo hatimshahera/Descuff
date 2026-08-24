@@ -31,14 +31,17 @@ try {
     const packagePackDir = join(packRoot, manifest.name.replaceAll("/", "__"));
     mkdirSync(packagePackDir, { recursive: true });
 
-    const pack = spawnSync(
-      "pnpm",
-      ["--dir", packageDir, "pack", "--pack-destination", packagePackDir, "--json"],
-      { encoding: "utf8" }
-    );
+    const pack = spawnSync("npm", ["pack", "--pack-destination", packagePackDir, "--json"], {
+      cwd: packageDir,
+      env: {
+        ...process.env,
+        npm_config_cache: join(packRoot, "npm-cache")
+      },
+      encoding: "utf8"
+    });
 
     if (pack.status !== 0) {
-      throw new Error(`pnpm pack failed for ${manifest.name}\n${pack.stderr}`);
+      throw new Error(`npm pack failed for ${manifest.name}\n${pack.stderr}`);
     }
 
     const tarball = readdirSync(packagePackDir).find((file) => file.endsWith(".tgz"));

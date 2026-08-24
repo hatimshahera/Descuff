@@ -1,6 +1,6 @@
 {
   "name": "@descuff/analyzer-nextjs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "type": "module",
   "files": [
@@ -18,7 +18,7 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/core": "workspace:^",
-    "@descuff/ir": "workspace:^"
+    "@descuff/core": "^0.1.1",
+    "@descuff/ir": "^0.1.1"
   }
 }

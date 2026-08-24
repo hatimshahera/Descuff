@@ -2,6 +2,12 @@
 
 All notable changes to Descuff will be documented in this file.
 
+## 0.1.1 - 2026-08-24
+
+### Fixed
+
+- Replaced publish-time `workspace:` dependency ranges with concrete `^0.1.1` internal package ranges so `npx descuff@0.1.1` installs correctly from npm.
+
 ## 0.1.0 - 2026-08-21
 
 ### Added
