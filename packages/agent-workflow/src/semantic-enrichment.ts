@@ -124,6 +124,7 @@ export function renderSemanticEnrichmentPrompt(packet: SkillEvidencePacket): str
     "- Keep new entities or capabilities as `candidateConcepts` unless Descuff deterministic evidence already models them.",
     "- Do not set readiness scores, validation status, safety approval, or generated file contents.",
     "- Do not expose sensitive, private, mutating, or high-consequence capabilities.",
+    "- Use the exact field names from the JSON shape. Do not rename `description`, `rationale`, or `message`.",
     "",
     "Current deterministic summary:",
     "",
@@ -145,31 +146,77 @@ export function renderSemanticEnrichmentPrompt(packet: SkillEvidencePacket): str
 
 export function validateSemanticEnrichment(
   packet: SkillEvidencePacket,
-  enrichment: SemanticEnrichment
+  enrichment: unknown
 ): SemanticEnrichmentValidationResult {
   const knownEvidenceIds = evidenceIdSet(packet);
   const issues: SemanticEnrichmentIssue[] = [];
+  const candidate = asRecord(enrichment);
 
-  if (enrichment.schemaVersion !== semanticEnrichmentSchemaVersion) {
+  if (candidate === undefined) {
+    issues.push({
+      code: "SEMANTIC_ENRICHMENT_SHAPE_INVALID",
+      message: "Semantic enrichment must be a JSON object.",
+      path: "$",
+      disposition: "rejected",
+      evidenceIds: []
+    });
+
+    return {
+      accepted: createEmptySemanticEnrichment(),
+      candidateConceptsAccepted: [],
+      issues,
+      valid: false
+    };
+  }
+
+  if (candidate.schemaVersion !== semanticEnrichmentSchemaVersion) {
     issues.push({
       code: "SEMANTIC_ENRICHMENT_SCHEMA_VERSION_UNSUPPORTED",
-      message: `Unsupported semantic enrichment schema version: ${enrichment.schemaVersion}`,
+      message: `Unsupported semantic enrichment schema version: ${String(candidate.schemaVersion)}`,
       path: "schemaVersion",
       disposition: "rejected",
       evidenceIds: []
     });
   }
 
+  const domainProfile = readDomainProfile(candidate.domainProfile, issues);
+  const entityMeanings = readSemanticMeaningArray(
+    candidate.entityMeanings,
+    issues,
+    "entityMeanings"
+  );
+  const capabilityMeanings = readSemanticMeaningArray(
+    candidate.capabilityMeanings,
+    issues,
+    "capabilityMeanings"
+  );
+  const candidateConcepts = readCandidateConceptArray(
+    candidate.candidateConcepts,
+    issues,
+    "candidateConcepts"
+  );
+  const standardSuitability = readStandardSuitabilityArray(
+    candidate.standardSuitability,
+    issues,
+    "standardSuitability"
+  );
+  const uncertaintyNotes = readUncertaintyNoteArray(
+    candidate.uncertaintyNotes,
+    issues,
+    "uncertaintyNotes"
+  );
+
   checkEvidenceRefs(
     issues,
     knownEvidenceIds,
     "domainProfile.evidenceIds",
-    enrichment.domainProfile.evidenceIds,
+    domainProfile.evidenceIds,
     "SEMANTIC_DOMAIN_PROFILE_EVIDENCE_UNKNOWN"
   );
 
   const accepted: SemanticEnrichment = {
-    ...enrichment,
+    schemaVersion: semanticEnrichmentSchemaVersion,
+    domainProfile,
     entityMeanings: [],
     capabilityMeanings: [],
     candidateConcepts: [],
@@ -178,7 +225,7 @@ export function validateSemanticEnrichment(
   };
 
   accepted.entityMeanings = filterEvidenceBackedItems(
-    enrichment.entityMeanings,
+    entityMeanings,
     knownEvidenceIds,
     issues,
     "entityMeanings",
@@ -186,7 +233,7 @@ export function validateSemanticEnrichment(
   );
 
   accepted.capabilityMeanings = filterEvidenceBackedItems(
-    enrichment.capabilityMeanings,
+    capabilityMeanings,
     knownEvidenceIds,
     issues,
     "capabilityMeanings",
@@ -194,7 +241,7 @@ export function validateSemanticEnrichment(
   );
 
   accepted.candidateConcepts = filterEvidenceBackedItems(
-    enrichment.candidateConcepts,
+    candidateConcepts,
     knownEvidenceIds,
     issues,
     "candidateConcepts",
@@ -202,7 +249,7 @@ export function validateSemanticEnrichment(
   );
 
   accepted.standardSuitability = filterEvidenceBackedItems(
-    enrichment.standardSuitability,
+    standardSuitability,
     knownEvidenceIds,
     issues,
     "standardSuitability",
@@ -210,21 +257,21 @@ export function validateSemanticEnrichment(
   );
 
   accepted.uncertaintyNotes = filterEvidenceBackedItems(
-    enrichment.uncertaintyNotes,
+    uncertaintyNotes,
     knownEvidenceIds,
     issues,
     "uncertaintyNotes",
     "SEMANTIC_UNCERTAINTY_EVIDENCE_UNKNOWN"
   );
 
-  if (enrichment.domainProfile.primaryDomain.length > 0) {
+  if (domainProfile.primaryDomain.length > 0) {
     issues.push({
       code: "SEMANTIC_DOMAIN_LABEL_DESCRIPTIVE_ONLY",
       message:
         "Domain labels are descriptive and must not independently trigger standards selection or safety behavior.",
       path: "domainProfile.primaryDomain",
       disposition: "investigation",
-      evidenceIds: enrichment.domainProfile.evidenceIds
+      evidenceIds: domainProfile.evidenceIds
     });
   }
 
@@ -298,6 +345,192 @@ export function renderSemanticEnrichmentDiff(
   );
 
   return lines.join("\n");
+}
+
+function readDomainProfile(value: unknown, issues: SemanticEnrichmentIssue[]): DomainProfile {
+  const item = asRecord(value);
+  if (item === undefined) {
+    addShapeIssue(issues, "domainProfile", "Domain profile must be an object.");
+    return createEmptySemanticEnrichment().domainProfile;
+  }
+
+  return {
+    summary: readString(item.summary, issues, "domainProfile.summary"),
+    primaryDomain: readString(item.primaryDomain, issues, "domainProfile.primaryDomain"),
+    domains: readStringArray(item.domains, issues, "domainProfile.domains"),
+    confidence: readConfidence(item.confidence, issues, "domainProfile.confidence"),
+    evidenceIds: readStringArray(item.evidenceIds, issues, "domainProfile.evidenceIds")
+  };
+}
+
+function readSemanticMeaningArray(
+  value: unknown,
+  issues: SemanticEnrichmentIssue[],
+  path: string
+): SemanticMeaning[] {
+  return readArray(value, issues, path).flatMap((entry, index) => {
+    const item = asRecord(entry);
+    const itemPath = `${path}[${index}]`;
+    if (item === undefined) {
+      addShapeIssue(issues, itemPath, "Semantic meaning must be an object.");
+      return [];
+    }
+
+    const parsed: SemanticMeaning = {
+      targetId: readString(item.targetId, issues, `${itemPath}.targetId`),
+      meaning: readString(item.meaning, issues, `${itemPath}.meaning`),
+      confidence: readConfidence(item.confidence, issues, `${itemPath}.confidence`),
+      evidenceIds: readStringArray(item.evidenceIds, issues, `${itemPath}.evidenceIds`)
+    };
+
+    return hasRejectedIssueAt(issues, itemPath) ? [] : [parsed];
+  });
+}
+
+function readCandidateConceptArray(
+  value: unknown,
+  issues: SemanticEnrichmentIssue[],
+  path: string
+): CandidateSemanticConcept[] {
+  return readArray(value, issues, path).flatMap((entry, index) => {
+    const item = asRecord(entry);
+    const itemPath = `${path}[${index}]`;
+    if (item === undefined) {
+      addShapeIssue(issues, itemPath, "Candidate concept must be an object.");
+      return [];
+    }
+
+    const parsed: CandidateSemanticConcept = {
+      id: readString(item.id, issues, `${itemPath}.id`),
+      kind: readConceptKind(item.kind, issues, `${itemPath}.kind`),
+      name: readString(item.name, issues, `${itemPath}.name`),
+      description: readString(item.description, issues, `${itemPath}.description`),
+      confidence: readConfidence(item.confidence, issues, `${itemPath}.confidence`),
+      evidenceIds: readStringArray(item.evidenceIds, issues, `${itemPath}.evidenceIds`)
+    };
+
+    return hasRejectedIssueAt(issues, itemPath) ? [] : [parsed];
+  });
+}
+
+function readStandardSuitabilityArray(
+  value: unknown,
+  issues: SemanticEnrichmentIssue[],
+  path: string
+): StandardSuitabilityRationale[] {
+  return readArray(value, issues, path).flatMap((entry, index) => {
+    const item = asRecord(entry);
+    const itemPath = `${path}[${index}]`;
+    if (item === undefined) {
+      addShapeIssue(issues, itemPath, "Standard suitability rationale must be an object.");
+      return [];
+    }
+
+    const parsed: StandardSuitabilityRationale = {
+      standardId: readString(item.standardId, issues, `${itemPath}.standardId`),
+      rationale: readString(item.rationale, issues, `${itemPath}.rationale`),
+      evidenceIds: readStringArray(item.evidenceIds, issues, `${itemPath}.evidenceIds`)
+    };
+
+    return hasRejectedIssueAt(issues, itemPath) ? [] : [parsed];
+  });
+}
+
+function readUncertaintyNoteArray(
+  value: unknown,
+  issues: SemanticEnrichmentIssue[],
+  path: string
+): SemanticUncertaintyNote[] {
+  return readArray(value, issues, path).flatMap((entry, index) => {
+    const item = asRecord(entry);
+    const itemPath = `${path}[${index}]`;
+    if (item === undefined) {
+      addShapeIssue(issues, itemPath, "Uncertainty note must be an object.");
+      return [];
+    }
+
+    const parsed: SemanticUncertaintyNote = {
+      message: readString(item.message, issues, `${itemPath}.message`),
+      evidenceIds: readStringArray(item.evidenceIds, issues, `${itemPath}.evidenceIds`)
+    };
+
+    return hasRejectedIssueAt(issues, itemPath) ? [] : [parsed];
+  });
+}
+
+function readArray(value: unknown, issues: SemanticEnrichmentIssue[], path: string): unknown[] {
+  if (!Array.isArray(value)) {
+    addShapeIssue(issues, path, "Semantic enrichment field must be an array.");
+    return [];
+  }
+  return value;
+}
+
+function readString(value: unknown, issues: SemanticEnrichmentIssue[], path: string): string {
+  if (typeof value !== "string") {
+    addShapeIssue(issues, path, "Semantic enrichment field must be a string.");
+    return "";
+  }
+  return value;
+}
+
+function readStringArray(
+  value: unknown,
+  issues: SemanticEnrichmentIssue[],
+  path: string
+): string[] {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    addShapeIssue(issues, path, "Semantic enrichment field must be an array of strings.");
+    return [];
+  }
+  return value;
+}
+
+function readConfidence(
+  value: unknown,
+  issues: SemanticEnrichmentIssue[],
+  path: string
+): Confidence {
+  if (value === "high" || value === "medium" || value === "low") {
+    return value;
+  }
+  addShapeIssue(issues, path, "Semantic enrichment confidence must be high, medium, or low.");
+  return "low";
+}
+
+function readConceptKind(
+  value: unknown,
+  issues: SemanticEnrichmentIssue[],
+  path: string
+): SemanticConceptKind {
+  if (value === "entity" || value === "capability") {
+    return value;
+  }
+  addShapeIssue(issues, path, "Candidate concept kind must be entity or capability.");
+  return "entity";
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+  return value as Record<string, unknown>;
+}
+
+function addShapeIssue(issues: SemanticEnrichmentIssue[], path: string, message: string): void {
+  issues.push({
+    code: "SEMANTIC_ENRICHMENT_SHAPE_INVALID",
+    message,
+    path,
+    disposition: "rejected",
+    evidenceIds: []
+  });
+}
+
+function hasRejectedIssueAt(issues: SemanticEnrichmentIssue[], path: string): boolean {
+  return issues.some(
+    (issue) => issue.disposition === "rejected" && issue.path.startsWith(`${path}.`)
+  );
 }
 
 function filterEvidenceBackedItems<T extends { evidenceIds: string[] }>(

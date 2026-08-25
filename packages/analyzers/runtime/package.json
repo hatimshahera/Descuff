@@ -1,6 +1,6 @@
 {
   "name": "@descuff/analyzer-runtime",
-  "version": "0.1.1",
+  "version": "0.1.11",
   "license": "MIT",
   "type": "module",
   "files": [
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@playwright/test": "^1.57.0",
-    "@descuff/core": "^0.1.1",
-    "@descuff/ir": "^0.1.1"
+    "@descuff/core": "^0.1.11",
+    "@descuff/ir": "^0.1.11"
   }
 }

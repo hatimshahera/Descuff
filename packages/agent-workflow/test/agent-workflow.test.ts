@@ -334,6 +334,57 @@ describe("@descuff/agent-workflow", () => {
     expect(renderSemanticEnrichmentDiff(packet, result)).toContain("Needs investigation: 1");
   });
 
+  it("rejects host-agent semantic enrichment that renames required schema fields", () => {
+    const packet = buildSkillEvidencePacket({ model: createFixtureApplicationModel() });
+    const result = validateSemanticEnrichment(packet, {
+      schemaVersion: semanticEnrichmentSchemaVersion,
+      domainProfile: {
+        summary: "Team workspace application.",
+        primaryDomain: "",
+        domains: ["team-management", "saas"],
+        confidence: "high",
+        evidenceIds: ["source:llms"]
+      },
+      entityMeanings: [],
+      capabilityMeanings: [],
+      candidateConcepts: [
+        {
+          name: "Team",
+          kind: "entity",
+          meaning: "Team represented by the page evidence.",
+          confidence: "medium",
+          evidenceIds: ["source:llms"]
+        }
+      ],
+      standardSuitability: [
+        {
+          standardId: "schema-org",
+          suitability: "suitable",
+          reason: "The app has public structured page evidence.",
+          evidenceIds: ["source:llms"]
+        }
+      ],
+      uncertaintyNotes: [
+        {
+          note: "No user management route is present.",
+          evidenceIds: ["source:llms"]
+        }
+      ]
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.accepted.candidateConcepts).toEqual([]);
+    expect(result.accepted.standardSuitability).toEqual([]);
+    expect(result.accepted.uncertaintyNotes).toEqual([]);
+    expect(result.issues.map((issue) => [issue.code, issue.path])).toEqual([
+      ["SEMANTIC_ENRICHMENT_SHAPE_INVALID", "candidateConcepts[0].id"],
+      ["SEMANTIC_ENRICHMENT_SHAPE_INVALID", "candidateConcepts[0].description"],
+      ["SEMANTIC_ENRICHMENT_SHAPE_INVALID", "standardSuitability[0].rationale"],
+      ["SEMANTIC_ENRICHMENT_SHAPE_INVALID", "uncertaintyNotes[0].message"]
+    ]);
+    expect(renderSemanticEnrichmentDiff(packet, result)).toContain("Candidates:\n  none");
+  });
+
   it("renders a semantic enrichment prompt and template for host agents", () => {
     const packet = buildSkillEvidencePacket({ model: createFixtureApplicationModel() });
     const template = createSemanticEnrichmentTemplate(packet);
@@ -350,6 +401,7 @@ describe("@descuff/agent-workflow", () => {
     ]);
     expect(prompt).toContain("Return JSON only");
     expect(prompt).toContain("Use only evidence IDs");
+    expect(prompt).toContain("Use the exact field names");
     expect(prompt).toContain("Domain profile: saas (medium)");
     expect(prompt).toContain("Compatibility application type: saas (medium)");
     expect(prompt).toContain('"schemaVersion": "0.1.0"');

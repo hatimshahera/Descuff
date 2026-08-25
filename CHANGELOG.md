@@ -4,6 +4,8 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased
 
+## 0.1.11 - 2026-08-25
+
 ### Added
 
 - Added shared host-agent skill groundwork: compact skill evidence packets, semantic enrichment validation, semantic diff rendering, Graphify/native correlation contracts, and Codex/Claude Code/Cursor instruction rendering.
@@ -16,6 +18,10 @@ All notable changes to Descuff will be documented in this file.
 - Added an evidence-backed domain profile to the semantic model and skill evidence packet while preserving `applicationType` as a compatibility field.
 - Added optional Graphify/native enrichment artifacts to scan output and the skill evidence packet without making Graphify required.
 - `descuff scan` now writes `.descuff/graphify-enrichment.json`, `.descuff/graphify-enrichment.md`, `.descuff/skill-evidence-packet.json`, `.descuff/skill-evidence-packet.md`, `.descuff/semantic-enrichment-prompt.md`, and `.descuff/semantic-enrichment-template.json`.
+
+### Fixed
+
+- Tightened host-agent semantic-enrichment validation so malformed JSON with renamed or missing required fields is rejected before it can appear in accepted enrichment output.
 
 ## 0.1.1 - 2026-08-24
 
