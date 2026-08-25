@@ -39,10 +39,21 @@ Read:
 - .descuff/model.json
 - .descuff/assessments.json
 - .descuff/generated-changes.json
+- .descuff/skill-evidence-packet.json
+- .descuff/semantic-enrichment-prompt.md
+- .descuff/semantic-enrichment-template.json
 - .descuff/plan.md
 - .descuff/codex-prompt.md
 
-Implement the plan conservatively. Preserve existing UI, routes, behavior, styling, and visible copy unless the plan requires a metadata-only standards change.
+Write evidence-backed semantic enrichment to .descuff/semantic-enrichment.json using only evidence IDs from the packet.
+
+Run:
+
+  npx descuff enrich .
+
+Inspect .descuff/semantic-enrichment-diff.md before implementation.
+
+Implement the accepted plan items conservatively. Preserve existing UI, routes, behavior, styling, and visible copy unless the plan requires a metadata-only standards change.
 
 Do not expose private, sensitive, mutating, or high-consequence actions without explicit approval.
 

@@ -542,12 +542,14 @@ function renderCodexPrompt(): string {
     "",
     "Use Descuff to implement agent-facing standards for this Next.js app.",
     "",
-    "1. Read `.descuff/baseline.json`, `.descuff/plan.md`, `.descuff/model.json`, `.descuff/assessments.json`, and `.descuff/generated-changes.json`.",
-    "2. Implement the plan conservatively.",
-    "3. Preserve existing UI and behavior.",
-    "4. Do not expose private, sensitive, mutating, or high-consequence actions without explicit approval.",
-    "5. Run the existing project tests.",
-    "6. Run `npx descuff finish .` and include `.descuff/before-after.md` in the final report.",
+    "1. Read `.descuff/baseline.json`, `.descuff/plan.md`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/skill-evidence-packet.json`, and `.descuff/semantic-enrichment-prompt.md`.",
+    "2. Write evidence-backed semantic enrichment to `.descuff/semantic-enrichment.json` using only evidence IDs from the packet.",
+    "3. Run `npx descuff enrich .` and inspect `.descuff/semantic-enrichment-diff.md` before implementation.",
+    "4. Implement the plan conservatively.",
+    "5. Preserve existing UI and behavior.",
+    "6. Do not expose private, sensitive, mutating, or high-consequence actions without explicit approval.",
+    "7. Run the existing project tests.",
+    "8. Run `npx descuff finish .` and include `.descuff/before-after.md` in the final report.",
     ""
   ].join("\n");
 }

@@ -244,6 +244,38 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("runs the skill-style semantic enrichment dry run through finish", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-skill-dry-run-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+
+      const start = await runCli(["node", "descuff", "start", projectRoot]);
+      const template = await readFile(
+        join(projectRoot, ".descuff", "semantic-enrichment-template.json"),
+        "utf8"
+      );
+      await writeFile(join(projectRoot, ".descuff", "semantic-enrichment.json"), template);
+      const enrich = await runCli(["node", "descuff", "enrich", projectRoot]);
+      const finish = await runCli(["node", "descuff", "finish", projectRoot]);
+      const accepted = await readFile(
+        join(projectRoot, ".descuff", "semantic-enrichment-accepted.json"),
+        "utf8"
+      );
+      const beforeAfter = await readFile(join(projectRoot, ".descuff", "before-after.md"), "utf8");
+
+      expect(start.exitCode).toBe(0);
+      expect(enrich.exitCode).toBe(0);
+      expect(finish.exitCode).toBe(0);
+      expect(accepted).toContain('"schemaVersion": "0.1.0"');
+      expect(beforeAfter).toContain("Descuff Before/After Report");
+      expect(finish.stdout).toContain("descuff finish passed");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("rejects semantic enrichment with unknown evidence IDs", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-enrich-bad-"));
     const projectRoot = join(tempRoot, "ecommerce");

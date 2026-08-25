@@ -551,8 +551,10 @@ describe("@descuff/agent-workflow", () => {
       expect(instructions).toContain("Use the compact evidence packet as the primary context");
       expect(instructions).toContain(".descuff/semantic-enrichment-prompt.md");
       expect(instructions).toContain(".descuff/semantic-enrichment-template.json");
-      expect(instructions).toContain("semantic-enrichment diff");
+      expect(instructions).toContain(".descuff/semantic-enrichment.json");
+      expect(instructions).toContain(".descuff/semantic-enrichment-diff.md");
       expect(instructions).toContain("npx descuff start .");
+      expect(instructions).toContain("npx descuff enrich .");
       expect(instructions).toContain("npx descuff finish .");
     }
 

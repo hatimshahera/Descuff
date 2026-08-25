@@ -33,7 +33,7 @@ Descuff writes:
 .descuff/codex-prompt.md
 ```
 
-Give `.descuff/codex-prompt.md` and `.descuff/plan.md` to Codex, Cursor, Claude Code, or another coding agent. The agent implements the standards in your app while preserving the existing UI and behavior.
+Give `.descuff/codex-prompt.md`, `.descuff/plan.md`, and the semantic enrichment artifacts to Codex, Cursor, Claude Code, or another coding agent. The agent writes `.descuff/semantic-enrichment.json`, runs `npx descuff enrich .`, reviews `.descuff/semantic-enrichment-diff.md`, then implements the accepted standards while preserving the existing UI and behavior.
 
 After implementation:
 
@@ -65,7 +65,7 @@ Most websites were designed for humans and browsers. AI agents need clearer entr
 Descuff gives developers a repeatable workflow:
 
 ```text
-baseline -> plan -> implement with your coding agent -> validate -> compare
+baseline -> semantic enrichment review -> plan -> implement with your coding agent -> validate -> compare
 ```
 
 ## Commands
@@ -87,7 +87,7 @@ npx descuff apply-safe [project-root]
 Recommended first-time flow:
 
 ```text
-start -> coding agent implements plan -> finish
+start -> enrich -> coding agent implements accepted plan -> finish
 ```
 
 Lower-level commands:
