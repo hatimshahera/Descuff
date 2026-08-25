@@ -176,6 +176,30 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("installs the Codex skill into CODEX_HOME when requested globally", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-codex-home-"));
+    const previousCodexHome = process.env.CODEX_HOME;
+
+    try {
+      process.env.CODEX_HOME = tempRoot;
+      const result = await runCli(["node", "descuff", "install", "codex", "--global"]);
+      const skill = await readFile(join(tempRoot, "skills", "descuff", "SKILL.md"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Mode: global");
+      expect(result.stdout).toContain("skills/descuff/SKILL.md");
+      expect(skill).toContain("name: descuff");
+      expect(skill).toContain("npx descuff enrich .");
+    } finally {
+      if (previousCodexHome === undefined) {
+        delete process.env.CODEX_HOME;
+      } else {
+        process.env.CODEX_HOME = previousCodexHome;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("reviews host-agent semantic enrichment and writes a diff", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-enrich-"));
     const projectRoot = join(tempRoot, "ecommerce");

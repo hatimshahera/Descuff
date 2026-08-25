@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
   buildAgentPlan,
@@ -7,6 +8,7 @@ import {
   createSemanticEnrichmentTemplate,
   getSkillHostAdapter,
   renderAgentPlanMarkdown,
+  renderCodexSkillFile,
   renderFixCommandInstructions,
   renderSemanticEnrichmentDiff,
   renderSemanticEnrichmentPrompt,
@@ -60,6 +62,7 @@ const helpText = `Descuff
 Usage:
   descuff <command> [project-root]
   descuff install [codex|claude-code|cursor|all] [project-root]
+  descuff install codex --global
 
 Commands:
   ${descuffCommands.join("\n  ")}
@@ -85,10 +88,19 @@ interface BaselineSnapshot {
   capabilities: string[];
 }
 
+interface InstallArgs {
+  target: "all" | SkillHostTarget;
+  projectRoot: string;
+  global: boolean;
+}
+
 export async function runCli(argv: string[]): Promise<CommandResult> {
   const command = argv[2];
+  const installArgs = command === "install" ? parseInstallArgs(argv.slice(3)) : undefined;
   const projectRoot =
-    command === "install" ? resolve(argv[4] ?? process.cwd()) : resolve(argv[3] ?? process.cwd());
+    command === "install"
+      ? (installArgs?.projectRoot ?? process.cwd())
+      : resolve(argv[3] ?? process.cwd());
 
   if (command === undefined || command === "--help" || command === "-h") {
     return { exitCode: 0, stdout: helpText, stderr: "" };
@@ -121,7 +133,7 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
           stderr: ""
         };
       case "install":
-        return ok(await installCommand(projectRoot, argv[3]));
+        return ok(await installCommand(projectRoot, installArgs ?? parseInstallArgs([])));
       case "enrich":
         return await enrichCommand(projectRoot);
       case "apply-safe":
@@ -168,12 +180,14 @@ async function enrichCommand(projectRoot: string): Promise<CommandResult> {
   };
 }
 
-async function installCommand(projectRoot: string, targetArg: string | undefined): Promise<string> {
-  const target = targetArg ?? "all";
-  const adapters =
-    target === "all"
-      ? supportedSkillHostAdapters
-      : [getSkillHostAdapter(parseSkillHostTarget(target))];
+async function installCommand(projectRoot: string, args: InstallArgs): Promise<string> {
+  const target = args.target;
+  const adapters = target === "all" ? supportedSkillHostAdapters : [getSkillHostAdapter(target)];
+
+  if (args.global) {
+    return installGlobalSkill(args);
+  }
+
   const written: string[] = [];
 
   for (const adapter of adapters) {
@@ -194,13 +208,50 @@ async function installCommand(projectRoot: string, targetArg: string | undefined
   ].join("\n");
 }
 
-function parseSkillHostTarget(value: string): SkillHostTarget {
-  if (value === "codex" || value === "claude-code" || value === "cursor") {
-    return value;
+async function installGlobalSkill(args: InstallArgs): Promise<string> {
+  if (args.target !== "codex") {
+    throw new Error("Global install currently supports only the codex target.");
   }
-  throw new Error(
-    `Unsupported install target: ${value}. Expected codex, claude-code, cursor, or all.`
-  );
+
+  const skillPath = join(resolveCodexHome(), "skills", "descuff", "SKILL.md");
+  await mkdir(dirname(skillPath), { recursive: true });
+  await writeFile(skillPath, renderCodexSkillFile(), "utf8");
+
+  return [
+    "descuff install completed",
+    "Target: codex",
+    "Mode: global",
+    "",
+    "Installed Codex skill:",
+    `  ${skillPath}`,
+    "",
+    "Invoke it in Codex with: $descuff .",
+    ""
+  ].join("\n");
+}
+
+function parseInstallArgs(args: string[]): InstallArgs {
+  const global = args.includes("--global");
+  const positionals = args.filter((arg) => !arg.startsWith("--"));
+  const first = positionals[0];
+  const target =
+    first === "all" || first === "codex" || first === "claude-code" || first === "cursor"
+      ? first
+      : "all";
+  const targetWasProvided = target === first;
+  const projectRootArg = targetWasProvided ? positionals[1] : positionals[0];
+
+  return {
+    target,
+    projectRoot: resolve(projectRootArg ?? process.cwd()),
+    global
+  };
+}
+
+function resolveCodexHome(): string {
+  return process.env.CODEX_HOME !== undefined && process.env.CODEX_HOME.length > 0
+    ? process.env.CODEX_HOME
+    : join(homedir(), ".codex");
 }
 
 async function scanCommand(projectRoot: string): Promise<string> {

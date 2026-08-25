@@ -9,6 +9,7 @@ import {
   createSemanticEnrichmentTemplate,
   evaluateAgentWorkflowDryRun,
   getFixCommandSummary,
+  renderCodexSkillFile,
   renderSemanticEnrichmentDiff,
   renderSemanticEnrichmentPrompt,
   renderSharedSkillCoreInstructions,
@@ -469,6 +470,17 @@ describe("@descuff/agent-workflow", () => {
       "# Descuff Skill For Codex"
     );
     expect(renderSharedSkillCoreInstructions()).toContain("Domain labels are descriptive");
+  });
+
+  it("renders an installable Codex SKILL.md file", () => {
+    const skill = renderCodexSkillFile();
+
+    expect(skill).toContain("name: descuff");
+    expect(skill).toContain("description:");
+    expect(skill).toContain("$descuff .");
+    expect(skill).toContain("npx descuff enrich .");
+    expect(skill).toContain("semantic-enrichment.json");
+    expect(skill).toContain("Do not treat domain labels as safety approval");
   });
 });
 

@@ -93,3 +93,34 @@ export function renderSkillHostInstructions(input: RenderSkillHostInstructionsIn
 
   return lines.join("\n");
 }
+
+export function renderCodexSkillFile(packageName = "descuff"): string {
+  return [
+    "---",
+    "name: descuff",
+    'description: "Use when a developer asks Codex to Descuff a local Next.js app: run Descuff analysis, perform evidence-backed semantic enrichment, implement accepted agent-facing standards, and validate the before/after result."',
+    "---",
+    "",
+    "# Descuff",
+    "",
+    "Use this skill when the user asks to run Descuff, make a local Next.js app more usable by AI agents, or explicitly invokes `$descuff`.",
+    "",
+    renderSkillHostInstructions({
+      adapter: codexSkillAdapter,
+      packageName
+    }),
+    "",
+    "## Codex-Specific Loop",
+    "",
+    `1. Run \`npx ${packageName} start .\`.`,
+    "2. Read `.descuff/skill-evidence-packet.json` and `.descuff/semantic-enrichment-prompt.md`.",
+    "3. Write strict JSON semantic enrichment to `.descuff/semantic-enrichment.json`.",
+    `4. Run \`npx ${packageName} enrich .\` and inspect \`.descuff/semantic-enrichment-diff.md\`.`,
+    "5. Implement only accepted plan items. Preserve UI and behavior unless explicitly approved.",
+    `6. Run \`npx ${packageName} finish .\`.`,
+    "7. Report baseline, enrichment result, files changed, final validation, and remaining blockers.",
+    "",
+    "Do not treat domain labels as safety approval. Do not expose sensitive or high-consequence capabilities without explicit developer approval.",
+    ""
+  ].join("\n");
+}

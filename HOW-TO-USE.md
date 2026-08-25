@@ -133,6 +133,12 @@ npx descuff install all .
 Write local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`. These are inspectable artifacts; they do not yet modify your global coding-agent configuration.
 
 ```bash
+npx descuff install codex --global
+```
+
+Install the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`. Claude Code and Cursor global install paths are still preview-only until their host paths are confirmed.
+
+```bash
 npx descuff enrich .
 ```
 
