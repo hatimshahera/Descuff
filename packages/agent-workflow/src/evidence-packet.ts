@@ -24,10 +24,20 @@ export interface SkillEvidencePacket {
 export interface SkillDeterministicSummary {
   applicationType: string;
   applicationTypeConfidence: string;
+  domainProfile: SkillDomainProfileSummary;
   routeCount: number;
   apiCount: number;
   capabilityCount: number;
   standardCount: number;
+}
+
+export interface SkillDomainProfileSummary {
+  summary: string;
+  primaryDomain: string;
+  domains: string[];
+  confidence: string;
+  evidenceIds: string[];
+  migrationSource: string;
 }
 
 export interface SkillRouteEvidence {
@@ -101,6 +111,14 @@ export function buildSkillEvidencePacket(
     deterministicSummary: {
       applicationType: model.applicationType.type,
       applicationTypeConfidence: model.applicationType.confidence,
+      domainProfile: {
+        summary: model.domainProfile.summary,
+        primaryDomain: model.domainProfile.primaryDomain,
+        domains: model.domainProfile.domains,
+        confidence: model.domainProfile.confidence,
+        evidenceIds: evidenceIds(model.domainProfile.evidence),
+        migrationSource: model.domainProfile.migrationSource
+      },
       routeCount: model.routes.length,
       apiCount: model.apis.length,
       capabilityCount: model.capabilities.length,
@@ -162,7 +180,8 @@ export function renderSkillEvidencePacket(packet: SkillEvidencePacket): string {
     "",
     "## Deterministic Summary",
     "",
-    `- Application type: ${packet.deterministicSummary.applicationType} (${packet.deterministicSummary.applicationTypeConfidence})`,
+    `- Domain profile: ${formatDomainProfile(packet.deterministicSummary.domainProfile)}`,
+    `- Compatibility application type: ${packet.deterministicSummary.applicationType} (${packet.deterministicSummary.applicationTypeConfidence})`,
     `- Routes: ${packet.deterministicSummary.routeCount}`,
     `- APIs: ${packet.deterministicSummary.apiCount}`,
     `- Capabilities: ${packet.deterministicSummary.capabilityCount}`,
@@ -221,4 +240,10 @@ export function evidenceIdSet(packet: SkillEvidencePacket): Set<string> {
 
 function evidenceIds(evidence: EvidenceRef[]): string[] {
   return evidence.map((ref) => ref.id);
+}
+
+function formatDomainProfile(profile: SkillDomainProfileSummary): string {
+  const primaryDomain = profile.primaryDomain.length > 0 ? profile.primaryDomain : "unknown";
+  const domains = profile.domains.length > 0 ? profile.domains.join(", ") : "none";
+  return `${primaryDomain} (${profile.confidence}; domains: ${domains}; source: ${profile.migrationSource})`;
 }

@@ -19,7 +19,9 @@ describe("descuff CLI", () => {
     const result = await runCli(["node", "descuff", "scan", fixtureRoot]);
     const packet = JSON.parse(
       await readFile(join(fixtureRoot, ".descuff", "skill-evidence-packet.json"), "utf8")
-    ) as { deterministicSummary: { applicationType: string } };
+    ) as {
+      deterministicSummary: { applicationType: string; domainProfile: { primaryDomain: string } };
+    };
     const packetMarkdown = await readFile(
       join(fixtureRoot, ".descuff", "skill-evidence-packet.md"),
       "utf8"
@@ -37,6 +39,7 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("Routes:");
     expect(result.stdout).toContain("Generated changes:");
     expect(packet.deterministicSummary.applicationType).toBe("ecommerce");
+    expect(packet.deterministicSummary.domainProfile.primaryDomain).toBe("ecommerce");
     expect(packetMarkdown).toContain("Descuff Skill Evidence Packet");
     expect(enrichmentTemplate.schemaVersion).toBe("0.1.0");
     expect(enrichmentPrompt).toContain("Descuff Semantic Enrichment Request");
@@ -47,7 +50,8 @@ describe("descuff CLI", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Descuff Report");
-    expect(result.stdout).toContain("Application type: ecommerce");
+    expect(result.stdout).toContain("Domain profile: ecommerce");
+    expect(result.stdout).toContain("Compatibility application type: ecommerce");
     expect(result.stdout).toContain("llms-txt:");
   });
 

@@ -1,4 +1,7 @@
-import { assessApplicationType } from "./application-classification.js";
+import {
+  assessApplicationType,
+  createDomainProfileFromApplicationType
+} from "./application-classification.js";
 import { classifyCapabilityRisk } from "./capability-risk.js";
 import { createEvidenceIndex } from "./evidence.js";
 import {
@@ -16,6 +19,7 @@ export function structuralAnalysisToApplicationModel(
   analysis: StructuralAnalysis
 ): ApplicationModel {
   const entities = inferEntities(analysis);
+  const applicationType = assessApplicationType(analysis);
   const apis = analysis.apiOperations.map((operation): ApiOperation => ({
     id: operation.id,
     path: operation.path,
@@ -36,7 +40,8 @@ export function structuralAnalysisToApplicationModel(
       framework: analysis.framework.kind,
       evidence: analysis.framework.evidence
     },
-    applicationType: assessApplicationType(analysis),
+    applicationType,
+    domainProfile: createDomainProfileFromApplicationType(applicationType),
     entities,
     capabilities: inferCapabilities(analysis),
     routes: analysis.routes.map((route) => ({

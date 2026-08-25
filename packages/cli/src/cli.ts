@@ -277,7 +277,8 @@ async function reportCommand(projectRoot: string): Promise<string> {
   return [
     "Descuff Report",
     "",
-    `Application type: ${artifacts.model.applicationType.type}`,
+    `Domain profile: ${artifacts.model.domainProfile.primaryDomain || "unknown"}`,
+    `Compatibility application type: ${artifacts.model.applicationType.type}`,
     `Capabilities: ${artifacts.model.capabilities.length}`,
     `Routes: ${artifacts.model.routes.length}`,
     `API operations: ${artifacts.model.apis.length}`,

@@ -28,6 +28,13 @@ export function validateApplicationModel(model: ApplicationModel): SemanticValid
     model.applicationType.evidence,
     model.applicationType.type === "unknown"
   );
+  requireEvidence(
+    issues,
+    "DOMAIN_PROFILE_EVIDENCE_MISSING",
+    "Domain profile",
+    model.domainProfile.evidence,
+    model.domainProfile.primaryDomain.length === 0
+  );
 
   for (const entity of model.entities) {
     requireEvidence(issues, "ENTITY_EVIDENCE_MISSING", `Entity ${entity.id}`, entity.evidence);

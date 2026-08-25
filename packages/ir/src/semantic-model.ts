@@ -27,6 +27,15 @@ export interface ApplicationTypeAssessment {
   evidence: EvidenceRef[];
 }
 
+export interface DomainProfile {
+  summary: string;
+  primaryDomain: string;
+  domains: string[];
+  confidence: Confidence;
+  evidence: EvidenceRef[];
+  migrationSource: "applicationType" | "semantic-enrichment";
+}
+
 export interface EntityProperty {
   name: string;
   type: string;
@@ -118,6 +127,7 @@ export interface ApplicationModel {
   schemaVersion: string;
   project: ProjectMetadata;
   applicationType: ApplicationTypeAssessment;
+  domainProfile: DomainProfile;
   entities: Entity[];
   capabilities: Capability[];
   routes: Route[];

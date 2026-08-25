@@ -268,6 +268,10 @@ describe("@descuff/agent-workflow", () => {
 
     expect(packet.deterministicSummary).toMatchObject({
       applicationType: "saas",
+      domainProfile: {
+        primaryDomain: "saas",
+        migrationSource: "applicationType"
+      },
       routeCount: 1,
       apiCount: 1,
       capabilityCount: 1
@@ -279,7 +283,8 @@ describe("@descuff/agent-workflow", () => {
       visibility: "authenticated",
       evidenceIds: ["source:llms"]
     });
-    expect(renderSkillEvidencePacket(packet)).toContain("Application type: saas (medium)");
+    expect(renderSkillEvidencePacket(packet)).toContain("Domain profile: saas");
+    expect(renderSkillEvidencePacket(packet)).toContain("Compatibility application type: saas");
     expect(renderSkillEvidencePacket(packet)).toContain("cap:team: get_team");
   });
 
@@ -343,7 +348,8 @@ describe("@descuff/agent-workflow", () => {
     ]);
     expect(prompt).toContain("Return JSON only");
     expect(prompt).toContain("Use only evidence IDs");
-    expect(prompt).toContain("Application type: saas (medium)");
+    expect(prompt).toContain("Domain profile: saas (medium)");
+    expect(prompt).toContain("Compatibility application type: saas (medium)");
     expect(prompt).toContain('"schemaVersion": "0.1.0"');
   });
 
@@ -386,7 +392,8 @@ describe("@descuff/agent-workflow", () => {
       "# Semantic Enrichment
 
       Current:
-        Application type: saas
+        Domain profile: saas
+        Compatibility application type: saas
 
       Proposed:
         Summary: Team workspace application.
@@ -533,6 +540,14 @@ function createFixtureApplicationModel(): ApplicationModel {
       type: "saas",
       confidence: "medium",
       evidence: [evidence]
+    },
+    domainProfile: {
+      summary: "SaaS application with team workspace evidence.",
+      primaryDomain: "saas",
+      domains: ["saas"],
+      confidence: "medium",
+      evidence: [evidence],
+      migrationSource: "applicationType"
     },
     entities: [],
     capabilities: [
