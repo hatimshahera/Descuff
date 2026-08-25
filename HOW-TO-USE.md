@@ -133,6 +133,12 @@ npx descuff install all .
 Write local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`. These are inspectable artifacts; they do not yet modify your global coding-agent configuration.
 
 ```bash
+npx descuff enrich .
+```
+
+Validate `.descuff/semantic-enrichment.json` after a host agent fills it, then write `.descuff/semantic-enrichment-diff.md`.
+
+```bash
 npx descuff validate .
 ```
 

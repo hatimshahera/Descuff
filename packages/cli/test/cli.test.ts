@@ -176,6 +176,71 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("reviews host-agent semantic enrichment and writes a diff", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-enrich-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "scan", projectRoot]);
+      const template = await readFile(
+        join(projectRoot, ".descuff", "semantic-enrichment-template.json"),
+        "utf8"
+      );
+      await writeFile(join(projectRoot, ".descuff", "semantic-enrichment.json"), template);
+
+      const result = await runCli(["node", "descuff", "enrich", projectRoot]);
+      const diff = await readFile(
+        join(projectRoot, ".descuff", "semantic-enrichment-diff.md"),
+        "utf8"
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff enrich passed");
+      expect(result.stdout).toContain("Diff:");
+      expect(diff).toContain("Semantic Enrichment");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects semantic enrichment with unknown evidence IDs", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-enrich-bad-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "scan", projectRoot]);
+      const badEnrichment = {
+        schemaVersion: "0.1.0",
+        domainProfile: {
+          summary: "Bad enrichment.",
+          primaryDomain: "",
+          domains: ["unknown"],
+          confidence: "high",
+          evidenceIds: ["missing:evidence"]
+        },
+        entityMeanings: [],
+        capabilityMeanings: [],
+        candidateConcepts: [],
+        standardSuitability: [],
+        uncertaintyNotes: []
+      };
+      await writeFile(
+        join(projectRoot, ".descuff", "semantic-enrichment.json"),
+        `${JSON.stringify(badEnrichment, null, 2)}\n`
+      );
+
+      const result = await runCli(["node", "descuff", "enrich", projectRoot]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff enrich failed");
+      expect(result.stderr).toContain("SEMANTIC_DOMAIN_PROFILE_EVIDENCE_UNKNOWN");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("keeps every command represented in tests", () => {
     expect(descuffCommands).toEqual([
       "scan",
@@ -185,6 +250,7 @@ describe("descuff CLI", () => {
       "finish",
       "fix",
       "install",
+      "enrich",
       "apply-safe",
       "validate"
     ]);

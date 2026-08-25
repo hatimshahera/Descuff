@@ -21,6 +21,7 @@ describe("@descuff/core", () => {
       "finish",
       "fix",
       "install",
+      "enrich",
       "apply-safe",
       "validate"
     ]);

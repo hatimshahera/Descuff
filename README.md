@@ -75,6 +75,7 @@ npx descuff scan [project-root]
 npx descuff report [project-root]
 npx descuff plan [project-root]
 npx descuff install [codex|claude-code|cursor|all] [project-root]
+npx descuff enrich [project-root]
 npx descuff validate [project-root]
 npx descuff fix
 npx descuff apply-safe [project-root]
@@ -92,6 +93,7 @@ Lower-level commands:
 - `report` prints application type, capability count, route/API counts, and standard status.
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `install` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
+- `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
 - `fix` prints agent workflow instructions. It does not invoke an LLM and does not edit source directly.
 - `apply-safe` is intentionally disabled for automatic source writes in this release.

@@ -8,10 +8,14 @@ import {
   getSkillHostAdapter,
   renderAgentPlanMarkdown,
   renderFixCommandInstructions,
+  renderSemanticEnrichmentDiff,
   renderSemanticEnrichmentPrompt,
   renderSkillEvidencePacket,
   renderSkillHostInstructions,
   supportedSkillHostAdapters,
+  validateSemanticEnrichment,
+  type SemanticEnrichment,
+  type SkillEvidencePacket,
   type SkillHostTarget
 } from "@descuff/agent-workflow";
 import { NativeNextAnalyzer } from "@descuff/analyzer-nextjs";
@@ -118,6 +122,8 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
         };
       case "install":
         return ok(await installCommand(projectRoot, argv[3]));
+      case "enrich":
+        return await enrichCommand(projectRoot);
       case "apply-safe":
         return ok("apply-safe: no automatic file writes are enabled in this release.\n");
       case "validate":
@@ -130,6 +136,36 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
       stderr: `${errorMessage(error)}\n`
     };
   }
+}
+
+async function enrichCommand(projectRoot: string): Promise<CommandResult> {
+  const packet = await readJson<SkillEvidencePacket>(projectRoot, "skill-evidence-packet.json");
+  const enrichment = await readJson<SemanticEnrichment>(projectRoot, "semantic-enrichment.json");
+  const result = validateSemanticEnrichment(packet, enrichment);
+  const diff = renderSemanticEnrichmentDiff(packet, result);
+
+  await writeJson(projectRoot, "semantic-enrichment-accepted.json", result.accepted);
+  await writeJson(projectRoot, "semantic-enrichment-validation.json", result);
+  await writeArtifact(projectRoot, "semantic-enrichment-diff.md", diff);
+
+  const rejected = result.issues.filter((issue) => issue.disposition === "rejected");
+  const investigation = result.issues.filter((issue) => issue.disposition === "investigation");
+
+  return {
+    exitCode: rejected.length === 0 ? 0 : 1,
+    stdout: [
+      `descuff enrich ${rejected.length === 0 ? "passed" : "failed"}`,
+      `Accepted candidate concepts: ${result.candidateConceptsAccepted.length}`,
+      `Rejected: ${rejected.length}`,
+      `Needs investigation: ${investigation.length}`,
+      `Diff: ${join(artifactDir(projectRoot), "semantic-enrichment-diff.md")}`,
+      ""
+    ].join("\n"),
+    stderr:
+      rejected.length === 0
+        ? ""
+        : `${rejected.map((issue) => `${issue.code}: ${issue.message}`).join("\n")}\n`
+  };
 }
 
 async function installCommand(projectRoot: string, targetArg: string | undefined): Promise<string> {

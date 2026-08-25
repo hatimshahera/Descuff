@@ -1,8 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { copyFileSync, existsSync } from "node:fs";
 const cliPath = "packages/cli/dist/index.js";
 const commands = [
   "scan",
+  "enrich",
   "report",
   "plan",
   "start",
@@ -20,6 +21,13 @@ if (!existsSync(cliPath)) {
 }
 
 for (const command of commands) {
+  if (command === "enrich") {
+    copyFileSync(
+      "fixtures/ecommerce/.descuff/semantic-enrichment-template.json",
+      "fixtures/ecommerce/.descuff/semantic-enrichment.json"
+    );
+  }
+
   const args =
     command === "fix"
       ? [cliPath, command]
@@ -51,9 +59,11 @@ for (const command of commands) {
                 ? "descuff finish passed"
                 : command === "install"
                   ? "descuff install completed"
-                  : command === "validate"
-                    ? "descuff validate passed"
-                    : "no automatic file writes are enabled";
+                  : command === "enrich"
+                    ? "descuff enrich passed"
+                    : command === "validate"
+                      ? "descuff validate passed"
+                      : "no automatic file writes are enabled";
 
   if (!result.stdout.includes(expectedOutput)) {
     console.error(`descuff ${command} produced unexpected output`);
