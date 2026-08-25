@@ -77,6 +77,8 @@ npx descuff scan [project-root]
 npx descuff report [project-root]
 npx descuff plan [project-root]
 npx descuff install [codex|claude-code|cursor|all] [project-root]
+npx descuff install --platform codex
+npx descuff install --platform claude-code [project-root]
 npx descuff install codex --global
 npx descuff enrich [project-root]
 npx descuff validate [project-root]
@@ -95,7 +97,9 @@ Lower-level commands:
 - `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/graphify-enrichment.*`, `.descuff/skill-evidence-packet.*`, and semantic-enrichment prompt/template artifacts.
 - `report` prints domain profile, compatibility application type, capability count, route/API counts, and standard status.
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
-- `install` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`. `install codex --global` installs the tested Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`.
+- `install --platform codex` installs the tested Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`; invoke it with `$descuff .`.
+- `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`; invoke it with `/descuff .`.
+- `install all` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
 - `fix` prints agent workflow instructions. It does not invoke an LLM and does not edit source directly.

@@ -65,6 +65,7 @@ const helpText = `Descuff
 Usage:
   descuff <command> [project-root]
   descuff install [codex|claude-code|cursor|all] [project-root]
+  descuff install --platform [codex|claude-code] [project-root]
   descuff install codex --global
 
 Commands:
@@ -96,6 +97,7 @@ interface InstallArgs {
   target: "all" | SkillHostTarget;
   projectRoot: string;
   global: boolean;
+  platform: boolean;
 }
 
 export async function runCli(argv: string[]): Promise<CommandResult> {
@@ -188,6 +190,14 @@ async function installCommand(projectRoot: string, args: InstallArgs): Promise<s
   const target = args.target;
   const adapters = target === "all" ? supportedSkillHostAdapters : [getSkillHostAdapter(target)];
 
+  if (args.platform && target === "claude-code") {
+    return installClaudeCodeProjectCommand(projectRoot);
+  }
+
+  if (args.platform && target !== "codex") {
+    throw new Error("Platform install currently supports codex and claude-code.");
+  }
+
   if (args.global) {
     return installGlobalSkill(args);
   }
@@ -208,6 +218,28 @@ async function installCommand(projectRoot: string, args: InstallArgs): Promise<s
     ...written.map((path) => `  ${path}`),
     "",
     "These files are local preview artifacts. Manually inspect them before copying into host-specific Codex, Claude Code, or Cursor directories.",
+    ""
+  ].join("\n");
+}
+
+async function installClaudeCodeProjectCommand(projectRoot: string): Promise<string> {
+  const commandPath = join(projectRoot, ".claude", "commands", "descuff.md");
+  await mkdir(dirname(commandPath), { recursive: true });
+  await writeFile(
+    commandPath,
+    renderSkillHostInstructions({ adapter: getSkillHostAdapter("claude-code") }),
+    "utf8"
+  );
+
+  return [
+    "descuff install completed",
+    "Target: claude-code",
+    "Mode: project",
+    "",
+    "Installed Claude Code command:",
+    `  ${commandPath}`,
+    "",
+    "Invoke it in Claude Code with: /descuff .",
     ""
   ].join("\n");
 }
@@ -236,20 +268,52 @@ async function installGlobalSkill(args: InstallArgs): Promise<string> {
 
 function parseInstallArgs(args: string[]): InstallArgs {
   const global = args.includes("--global");
-  const positionals = args.filter((arg) => !arg.startsWith("--"));
+  let platformTarget: SkillHostTarget | undefined;
+  const positionals: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === undefined) {
+      continue;
+    }
+    if (arg === "--platform") {
+      platformTarget = parseInstallPlatform(args[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--platform=")) {
+      platformTarget = parseInstallPlatform(arg.slice("--platform=".length));
+      continue;
+    }
+    if (arg.startsWith("--")) {
+      continue;
+    }
+    positionals.push(arg);
+  }
+
   const first = positionals[0];
   const target =
-    first === "all" || first === "codex" || first === "claude-code" || first === "cursor"
+    platformTarget ??
+    (first === "all" || first === "codex" || first === "claude-code" || first === "cursor"
       ? first
-      : "all";
-  const targetWasProvided = target === first;
+      : "all");
+  const targetWasProvided = platformTarget === undefined && target === first;
   const projectRootArg = targetWasProvided ? positionals[1] : positionals[0];
 
   return {
     target,
     projectRoot: resolve(projectRootArg ?? process.cwd()),
-    global
+    global: global || platformTarget === "codex",
+    platform: platformTarget !== undefined
   };
+}
+
+function parseInstallPlatform(value: string | undefined): SkillHostTarget {
+  if (value === "codex" || value === "claude-code" || value === "cursor") {
+    return value;
+  }
+
+  throw new Error("Unsupported install platform. Expected codex or claude-code.");
 }
 
 function resolveCodexHome(): string {

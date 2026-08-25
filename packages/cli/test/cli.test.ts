@@ -13,6 +13,7 @@ describe("descuff CLI", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Usage:");
+    expect(result.stdout).toContain("descuff install --platform [codex|claude-code]");
   });
 
   it("runs scan on a Next.js fixture and writes artifacts", async () => {
@@ -212,6 +213,56 @@ describe("descuff CLI", () => {
       } else {
         process.env.CODEX_HOME = previousCodexHome;
       }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("installs the Codex skill with platform syntax", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-codex-platform-"));
+    const previousCodexHome = process.env.CODEX_HOME;
+
+    try {
+      process.env.CODEX_HOME = tempRoot;
+      const result = await runCli(["node", "descuff", "install", "--platform", "codex"]);
+      const skill = await readFile(join(tempRoot, "skills", "descuff", "SKILL.md"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Mode: global");
+      expect(result.stdout).toContain("Invoke it in Codex with: $descuff .");
+      expect(skill).toContain("name: descuff");
+      expect(skill).toContain("npx descuff enrich .");
+    } finally {
+      if (previousCodexHome === undefined) {
+        delete process.env.CODEX_HOME;
+      } else {
+        process.env.CODEX_HOME = previousCodexHome;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("installs a Claude Code project slash command with platform syntax", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-claude-platform-"));
+
+    try {
+      const result = await runCli([
+        "node",
+        "descuff",
+        "install",
+        "--platform",
+        "claude-code",
+        tempRoot
+      ]);
+      const command = await readFile(join(tempRoot, ".claude", "commands", "descuff.md"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Mode: project");
+      expect(result.stdout).toContain("Invoke it in Claude Code with: /descuff .");
+      expect(command).toContain("# Descuff Skill For Claude Code");
+      expect(command).toContain("npx descuff start .");
+      expect(command).toContain("npx descuff enrich .");
+      expect(command).toContain("npx descuff finish .");
+    } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }
   });

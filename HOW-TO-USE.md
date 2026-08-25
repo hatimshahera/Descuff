@@ -29,16 +29,28 @@ This creates `.descuff/` with:
 
 ## 2. Give The Plan To Your Coding Agent
 
-For Codex, you can install the tested skill once:
+For Codex, install the tested skill once:
 
 ```bash
-npx descuff install codex --global
+npx descuff install --platform codex
 ```
 
 Then invoke it in Codex with:
 
 ```text
 $descuff .
+```
+
+For Claude Code, install the project command from the app root:
+
+```bash
+npx descuff install --platform claude-code .
+```
+
+Then invoke it in Claude Code with:
+
+```text
+/descuff .
 ```
 
 Paste this into Codex, Cursor, Claude Code, or another coding agent:
@@ -154,13 +166,25 @@ Write only the implementation plan files.
 npx descuff install all .
 ```
 
-Write local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`. These are inspectable artifacts; they do not yet modify your global coding-agent configuration.
+Write local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
+
+```bash
+npx descuff install --platform codex
+```
+
+Install the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`.
+
+```bash
+npx descuff install --platform claude-code .
+```
+
+Install a Claude Code project slash command at `.claude/commands/descuff.md`.
 
 ```bash
 npx descuff install codex --global
 ```
 
-Install the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`. Claude Code and Cursor global install paths are still preview-only until their host paths are confirmed.
+Legacy alias for the Codex platform install.
 
 ```bash
 npx descuff enrich .

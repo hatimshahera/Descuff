@@ -7,6 +7,7 @@ All notable changes to Descuff will be documented in this file.
 ### Added
 
 - Added shared host-agent skill groundwork: compact skill evidence packets, semantic enrichment validation, semantic diff rendering, Graphify/native correlation contracts, and Codex/Claude Code/Cursor instruction rendering.
+- Added `descuff install --platform codex` and `descuff install --platform claude-code` for short assistant-specific setup.
 - Added `descuff install [codex|claude-code|cursor|all]` to write local preview skill instructions under `.descuff/skills/`.
 - Added `descuff install codex --global` to install a real Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`.
 - Added fixture coverage proving the installed Codex skill contract can run `start -> enrich -> finish`.
