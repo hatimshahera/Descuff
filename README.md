@@ -25,6 +25,7 @@ Descuff writes:
 .descuff/model.json
 .descuff/assessments.json
 .descuff/generated-changes.json
+.descuff/graphify-enrichment.json
 .descuff/skill-evidence-packet.json
 .descuff/semantic-enrichment-prompt.md
 .descuff/semantic-enrichment-template.json
@@ -51,6 +52,7 @@ Descuff rescans, validates, and writes:
 
 - Detects Next.js routes, API operations, forms, middleware/proxy/route-handler auth boundaries, Server Actions, route visibility, and existing standards.
 - Builds an evidence-backed semantic model of domain profile, compatibility application type, capabilities, risks, routes, APIs, standards, and readiness.
+- Records optional Graphify/native structural correlation when `graphify-out/graph.json` is present, and continues with native analysis when it is absent or invalid.
 - Recommends agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP implementation plans for browser-registered public read tools.
 - Generates a conservative implementation plan for a developer-owned coding agent.
 - Validates standards, security boundaries, runtime evidence, and readiness.
@@ -90,7 +92,7 @@ start -> coding agent implements plan -> finish
 
 Lower-level commands:
 
-- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/skill-evidence-packet.*`, and semantic-enrichment prompt/template artifacts.
+- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/graphify-enrichment.*`, `.descuff/skill-evidence-packet.*`, and semantic-enrichment prompt/template artifacts.
 - `report` prints domain profile, compatibility application type, capability count, route/API counts, and standard status.
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `install` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`. `install codex --global` installs the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`.

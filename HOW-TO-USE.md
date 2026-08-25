@@ -21,6 +21,7 @@ This creates `.descuff/` with:
 - `model.json`: semantic model of the app
 - `assessments.json`: standard recommendations
 - `generated-changes.json`: proposed standards work
+- `graphify-enrichment.json` and `graphify-enrichment.md`: optional Graphify/native correlation summary
 - `skill-evidence-packet.json` and `skill-evidence-packet.md`: compact evidence for host-agent skill workflows
 - `semantic-enrichment-prompt.md` and `semantic-enrichment-template.json`: strict host-agent semantic enrichment handoff artifacts
 - `plan.md`: implementation plan

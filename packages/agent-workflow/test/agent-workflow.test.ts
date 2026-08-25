@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { ApplicationModel, EvidenceRef } from "@descuff/ir";
+import type { ApplicationModel, EvidenceRef, StructuralAnalysis } from "@descuff/ir";
 import {
   agentPlanSchemaVersion,
   buildAgentPlan,
+  buildGraphifyEnrichmentSummary,
   buildSkillEvidencePacket,
   codexSkillAdapter,
   correlateNativeAndGraphifyEvidence,
@@ -10,6 +11,7 @@ import {
   evaluateAgentWorkflowDryRun,
   getFixCommandSummary,
   renderCodexSkillFile,
+  renderGraphifyEnrichmentSummary,
   renderSemanticEnrichmentDiff,
   renderSemanticEnrichmentPrompt,
   renderSharedSkillCoreInstructions,
@@ -456,6 +458,87 @@ describe("@descuff/agent-workflow", () => {
     expect(correlations[0]?.investigationNote).toContain("differently");
   });
 
+  it("summarizes absent Graphify output without blocking native analysis", () => {
+    const summary = buildGraphifyEnrichmentSummary({
+      native: createFixtureStructuralAnalysis({
+        symbols: [{ id: "native:getTeam", name: "getTeam", sourceFile: "app/team.ts" }]
+      }),
+      graphify: createFixtureStructuralAnalysis({
+        warnings: [
+          {
+            code: "GRAPHIFY_GRAPH_MISSING",
+            message:
+              "Graphify graph.json was not found; run graphify before enabling GraphifyAnalyzer.",
+            evidence: []
+          }
+        ]
+      })
+    });
+
+    expect(summary.status).toBe("unavailable");
+    expect(summary.correlations).toEqual([]);
+    expect(renderGraphifyEnrichmentSummary(summary)).toContain("Status: unavailable");
+  });
+
+  it("summarizes invalid Graphify output as investigation-only", () => {
+    const summary = buildGraphifyEnrichmentSummary({
+      native: createFixtureStructuralAnalysis(),
+      graphify: createFixtureStructuralAnalysis({
+        warnings: [
+          {
+            code: "GRAPHIFY_GRAPH_MISSING",
+            message: "Graphify graph.json could not be parsed.",
+            evidence: []
+          }
+        ]
+      })
+    });
+
+    expect(summary.status).toBe("invalid");
+    expect(summary.message).toContain("could not be parsed");
+  });
+
+  it("summarizes Graphify/native symbol correlation", () => {
+    const graphifyEvidence = { ...evidence, id: "source:graphify" };
+    const summary = buildGraphifyEnrichmentSummary({
+      native: createFixtureStructuralAnalysis({
+        symbols: [
+          { id: "native:getTeam", name: "getTeam", sourceFile: "app/team.ts" },
+          { id: "native:getUser", name: "getUser", sourceFile: "app/user.ts" }
+        ]
+      }),
+      graphify: createFixtureStructuralAnalysis({
+        evidence: [graphifyEvidence],
+        symbols: [
+          {
+            id: "graphify:getTeam",
+            name: "getTeam",
+            sourceFile: "app/team.ts",
+            evidence: [graphifyEvidence]
+          },
+          {
+            id: "graphify:getInvoice",
+            name: "getInvoice",
+            sourceFile: "app/invoice.ts",
+            evidence: [graphifyEvidence]
+          }
+        ]
+      })
+    });
+
+    expect(summary.status).toBe("available");
+    expect(summary.counts).toMatchObject({
+      agree: 1,
+      graphifyOnly: 1,
+      nativeOnly: 1
+    });
+    expect(summary.correlations.map((correlation) => correlation.status).sort()).toEqual([
+      "agree",
+      "graphify-only",
+      "native-only"
+    ]);
+  });
+
   it("renders shared skill instructions for Codex, Claude Code, and Cursor adapters", () => {
     expect(supportedSkillHostAdapters.map((adapter) => adapter.target)).toEqual([
       "codex",
@@ -604,5 +687,46 @@ function createFixtureApplicationModel(): ApplicationModel {
       schemaVersion: "0.1.0",
       items: [evidence]
     }
+  };
+}
+
+function createFixtureStructuralAnalysis(input?: {
+  evidence?: EvidenceRef[];
+  symbols?: Array<{
+    id: string;
+    name: string;
+    sourceFile: string;
+    evidence?: EvidenceRef[];
+  }>;
+  warnings?: StructuralAnalysis["warnings"];
+}): StructuralAnalysis {
+  return {
+    schemaVersion: "0.1.0",
+    projectRoot: "fixtures/saas",
+    framework: {
+      kind: "nextjs",
+      version: "14.0.0",
+      evidence: [evidence]
+    },
+    routes: [],
+    apiOperations: [],
+    forms: [],
+    authenticationBoundaries: [],
+    symbols: (input?.symbols ?? []).map((symbol) => ({
+      id: symbol.id,
+      name: symbol.name,
+      kind: "function",
+      sourceFile: symbol.sourceFile,
+      evidence: symbol.evidence ?? [evidence]
+    })),
+    existingStandards: [],
+    runtimeRoutes: [],
+    runtimeApiOperations: [],
+    runtimePages: [],
+    evidence: {
+      schemaVersion: "0.1.0",
+      items: input?.evidence ?? [evidence]
+    },
+    warnings: input?.warnings ?? []
   };
 }

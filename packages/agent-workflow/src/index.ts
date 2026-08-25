@@ -8,6 +8,7 @@ import type {
 
 export * from "./evidence-packet.js";
 export * from "./graphify-correlation.js";
+export * from "./graphify-enrichment.js";
 export * from "./semantic-enrichment.js";
 export * from "./skill-host-adapters.js";
 

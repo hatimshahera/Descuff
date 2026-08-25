@@ -4,6 +4,7 @@ import type {
   CapabilityVisibility,
   EvidenceRef
 } from "@descuff/ir";
+import type { GraphifyEnrichmentSummary } from "./graphify-enrichment.js";
 
 export const skillEvidencePacketSchemaVersion = "0.1.0";
 
@@ -17,6 +18,7 @@ export interface SkillEvidencePacket {
   capabilities: SkillCapabilityEvidence[];
   authBoundaries: SkillAuthBoundaryEvidence[];
   standards: SkillStandardEvidence[];
+  graphify?: SkillGraphifyEvidenceSummary;
   validationIssues: SkillValidationIssueEvidence[];
   evidence: EvidenceRef[];
 }
@@ -86,6 +88,13 @@ export interface SkillStandardEvidence {
   evidenceIds: string[];
 }
 
+export interface SkillGraphifyEvidenceSummary {
+  status: GraphifyEnrichmentSummary["status"];
+  message: string;
+  counts: GraphifyEnrichmentSummary["counts"];
+  investigationNotes: string[];
+}
+
 export interface SkillValidationIssueEvidence {
   code: string;
   severity: string;
@@ -95,6 +104,7 @@ export interface SkillValidationIssueEvidence {
 
 export interface BuildSkillEvidencePacketInput {
   model: ApplicationModel;
+  graphifyEnrichment?: GraphifyEnrichmentSummary;
   generatedAt?: string;
   validationIssues?: SkillValidationIssueEvidence[];
 }
@@ -103,8 +113,7 @@ export function buildSkillEvidencePacket(
   input: BuildSkillEvidencePacketInput
 ): SkillEvidencePacket {
   const { model } = input;
-
-  return {
+  const packet: SkillEvidencePacket = {
     schemaVersion: skillEvidencePacketSchemaVersion,
     projectRoot: model.project.rootDir,
     generatedAt: input.generatedAt ?? "1970-01-01T00:00:00.000Z",
@@ -168,6 +177,19 @@ export function buildSkillEvidencePacket(
     validationIssues: input.validationIssues ?? [],
     evidence: model.evidence.items
   };
+
+  if (input.graphifyEnrichment !== undefined) {
+    packet.graphify = {
+      status: input.graphifyEnrichment.status,
+      message: input.graphifyEnrichment.message,
+      counts: input.graphifyEnrichment.counts,
+      investigationNotes: input.graphifyEnrichment.correlations
+        .map((correlation) => correlation.investigationNote)
+        .filter((note): note is string => note !== undefined)
+    };
+  }
+
+  return packet;
 }
 
 export function renderSkillEvidencePacket(packet: SkillEvidencePacket): string {
@@ -220,6 +242,25 @@ export function renderSkillEvidencePacket(packet: SkillEvidencePacket): string {
     lines.push("No APIs detected.");
   }
   lines.push("");
+
+  lines.push("## Graphify", "");
+  if (packet.graphify === undefined) {
+    lines.push("No Graphify enrichment summary supplied.", "");
+  } else {
+    lines.push(`Status: ${packet.graphify.status}`);
+    lines.push(`Message: ${packet.graphify.message}`);
+    lines.push(`Agree: ${packet.graphify.counts.agree}`);
+    lines.push(`Conflict: ${packet.graphify.counts.conflict}`);
+    lines.push(`Graphify only: ${packet.graphify.counts.graphifyOnly}`);
+    lines.push(`Native only: ${packet.graphify.counts.nativeOnly}`);
+    if (packet.graphify.investigationNotes.length > 0) {
+      lines.push("Investigation notes:");
+      for (const note of packet.graphify.investigationNotes) {
+        lines.push(`- ${note}`);
+      }
+    }
+    lines.push("");
+  }
 
   lines.push("## Validation Issues", "");
   if (packet.validationIssues.length === 0) {

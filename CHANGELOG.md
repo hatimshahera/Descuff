@@ -11,7 +11,8 @@ All notable changes to Descuff will be documented in this file.
 - Added `descuff install codex --global` to install a real Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`.
 - Added `descuff enrich` to deterministically validate `.descuff/semantic-enrichment.json` and write semantic enrichment review artifacts.
 - Added an evidence-backed domain profile to the semantic model and skill evidence packet while preserving `applicationType` as a compatibility field.
-- `descuff scan` now writes `.descuff/skill-evidence-packet.json`, `.descuff/skill-evidence-packet.md`, `.descuff/semantic-enrichment-prompt.md`, and `.descuff/semantic-enrichment-template.json`.
+- Added optional Graphify/native enrichment artifacts to scan output and the skill evidence packet without making Graphify required.
+- `descuff scan` now writes `.descuff/graphify-enrichment.json`, `.descuff/graphify-enrichment.md`, `.descuff/skill-evidence-packet.json`, `.descuff/skill-evidence-packet.md`, `.descuff/semantic-enrichment-prompt.md`, and `.descuff/semantic-enrichment-template.json`.
 
 ## 0.1.1 - 2026-08-24
 

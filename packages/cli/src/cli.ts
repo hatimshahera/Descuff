@@ -4,12 +4,14 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
   buildAgentPlan,
+  buildGraphifyEnrichmentSummary,
   buildSkillEvidencePacket,
   createSemanticEnrichmentTemplate,
   getSkillHostAdapter,
   renderAgentPlanMarkdown,
   renderCodexSkillFile,
   renderFixCommandInstructions,
+  renderGraphifyEnrichmentSummary,
   renderSemanticEnrichmentDiff,
   renderSemanticEnrichmentPrompt,
   renderSkillEvidencePacket,
@@ -20,6 +22,7 @@ import {
   type SkillEvidencePacket,
   type SkillHostTarget
 } from "@descuff/agent-workflow";
+import { GraphifyAnalyzer } from "@descuff/analyzer-graphify";
 import { NativeNextAnalyzer } from "@descuff/analyzer-nextjs";
 import {
   createProjectContext,
@@ -70,6 +73,7 @@ Commands:
 
 interface ScanArtifacts {
   analysis: StructuralAnalysis;
+  graphifyEnrichment: ReturnType<typeof buildGraphifyEnrichmentSummary>;
   model: ApplicationModel;
   assessments: StandardAssessment[];
   generatedChanges: GeneratedChange[];
@@ -412,6 +416,10 @@ async function readOrBuildArtifacts(projectRoot: string): Promise<ScanArtifacts>
   try {
     const artifacts = {
       analysis: await readJson<StructuralAnalysis>(projectRoot, "analysis.json"),
+      graphifyEnrichment: await readJson<ReturnType<typeof buildGraphifyEnrichmentSummary>>(
+        projectRoot,
+        "graphify-enrichment.json"
+      ),
       model: await readJson<ApplicationModel>(projectRoot, "model.json"),
       assessments: await readJson<StandardAssessment[]>(projectRoot, "assessments.json"),
       generatedChanges: await readJson<GeneratedChange[]>(projectRoot, "generated-changes.json"),
@@ -439,6 +447,11 @@ async function readOrBuildArtifacts(projectRoot: string): Promise<ScanArtifacts>
 async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
   const analysis = await new NativeNextAnalyzer().analyze(createProjectContext(projectRoot));
   const analysisWithRuntime = withSyntheticReadOnlyRuntime(analysis);
+  const graphifyAnalysis = await new GraphifyAnalyzer().analyze(createProjectContext(projectRoot));
+  const graphifyEnrichment = buildGraphifyEnrichmentSummary({
+    native: analysisWithRuntime,
+    graphify: graphifyAnalysis
+  });
   const model = structuralAnalysisToApplicationModel(analysisWithRuntime);
   const adapters = standardAdapters();
   const assessments = await Promise.all(adapters.map((adapter) => adapter.assess(model)));
@@ -448,6 +461,7 @@ async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
 
   return {
     analysis: analysisWithRuntime,
+    graphifyEnrichment,
     model,
     assessments,
     generatedChanges: generated.flat(),
@@ -456,8 +470,17 @@ async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
 }
 
 async function writeScanArtifacts(projectRoot: string, artifacts: ScanArtifacts): Promise<void> {
-  const skillEvidencePacket = buildSkillEvidencePacket({ model: artifacts.model });
+  const skillEvidencePacket = buildSkillEvidencePacket({
+    model: artifacts.model,
+    graphifyEnrichment: artifacts.graphifyEnrichment
+  });
   await writeJson(projectRoot, "analysis.json", artifacts.analysis);
+  await writeJson(projectRoot, "graphify-enrichment.json", artifacts.graphifyEnrichment);
+  await writeArtifact(
+    projectRoot,
+    "graphify-enrichment.md",
+    renderGraphifyEnrichmentSummary(artifacts.graphifyEnrichment)
+  );
   await writeJson(projectRoot, "model.json", artifacts.model);
   await writeJson(projectRoot, "assessments.json", artifacts.assessments);
   await writeJson(projectRoot, "generated-changes.json", artifacts.generatedChanges);

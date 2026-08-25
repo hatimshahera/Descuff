@@ -21,6 +21,7 @@ describe("descuff CLI", () => {
       await readFile(join(fixtureRoot, ".descuff", "skill-evidence-packet.json"), "utf8")
     ) as {
       deterministicSummary: { applicationType: string; domainProfile: { primaryDomain: string } };
+      graphify: { status: string };
     };
     const packetMarkdown = await readFile(
       join(fixtureRoot, ".descuff", "skill-evidence-packet.md"),
@@ -33,6 +34,13 @@ describe("descuff CLI", () => {
       join(fixtureRoot, ".descuff", "semantic-enrichment-prompt.md"),
       "utf8"
     );
+    const graphifyEnrichment = JSON.parse(
+      await readFile(join(fixtureRoot, ".descuff", "graphify-enrichment.json"), "utf8")
+    ) as { status: string };
+    const graphifyEnrichmentMarkdown = await readFile(
+      join(fixtureRoot, ".descuff", "graphify-enrichment.md"),
+      "utf8"
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("descuff scan completed");
@@ -40,7 +48,11 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("Generated changes:");
     expect(packet.deterministicSummary.applicationType).toBe("ecommerce");
     expect(packet.deterministicSummary.domainProfile.primaryDomain).toBe("ecommerce");
+    expect(packet.graphify.status).toBe("unavailable");
     expect(packetMarkdown).toContain("Descuff Skill Evidence Packet");
+    expect(packetMarkdown).toContain("## Graphify");
+    expect(graphifyEnrichment.status).toBe("unavailable");
+    expect(graphifyEnrichmentMarkdown).toContain("Graphify Enrichment");
     expect(enrichmentTemplate.schemaVersion).toBe("0.1.0");
     expect(enrichmentPrompt).toContain("Descuff Semantic Enrichment Request");
   });

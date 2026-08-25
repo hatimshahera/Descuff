@@ -90,6 +90,9 @@ importers:
       "@descuff/agent-workflow":
         specifier: ^0.1.1
         version: link:../agent-workflow
+      "@descuff/analyzer-graphify":
+        specifier: ^0.1.1
+        version: link:../analyzers/graphify
       "@descuff/analyzer-nextjs":
         specifier: ^0.1.1
         version: link:../analyzers/nextjs
