@@ -12,7 +12,7 @@ import {
 } from "../src/index.js";
 
 describe("@descuff/core", () => {
-  it("defines the Phase 1 CLI command set", () => {
+  it("defines the CLI command set", () => {
     expect(descuffCommands).toEqual([
       "scan",
       "report",
@@ -20,6 +20,7 @@ describe("@descuff/core", () => {
       "start",
       "finish",
       "fix",
+      "install",
       "apply-safe",
       "validate"
     ]);

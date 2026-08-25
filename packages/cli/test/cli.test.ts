@@ -17,11 +17,20 @@ describe("descuff CLI", () => {
 
   it("runs scan on a Next.js fixture and writes artifacts", async () => {
     const result = await runCli(["node", "descuff", "scan", fixtureRoot]);
+    const packet = JSON.parse(
+      await readFile(join(fixtureRoot, ".descuff", "skill-evidence-packet.json"), "utf8")
+    ) as { deterministicSummary: { applicationType: string } };
+    const packetMarkdown = await readFile(
+      join(fixtureRoot, ".descuff", "skill-evidence-packet.md"),
+      "utf8"
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("descuff scan completed");
     expect(result.stdout).toContain("Routes:");
     expect(result.stdout).toContain("Generated changes:");
+    expect(packet.deterministicSummary.applicationType).toBe("ecommerce");
+    expect(packetMarkdown).toContain("Descuff Skill Evidence Packet");
   });
 
   it("renders a report from a Next.js fixture", async () => {
@@ -134,6 +143,30 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("Run existing tests and descuff validate");
   });
 
+  it("generates local skill instruction artifacts for Codex, Claude Code, and Cursor", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-install-"));
+
+    try {
+      const result = await runCli(["node", "descuff", "install", "all", tempRoot]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff install completed");
+      expect(result.stdout).toContain("skills/codex/SKILL.md");
+      expect(result.stdout).toContain("skills/claude-code/.claude/commands/descuff.md");
+      expect(result.stdout).toContain("skills/cursor/.cursor/rules/descuff.mdc");
+
+      const codexInstructions = await readFile(
+        join(tempRoot, ".descuff", "skills", "codex", "SKILL.md"),
+        "utf8"
+      );
+      expect(codexInstructions).toContain("Use the compact evidence packet as the primary context");
+      expect(codexInstructions).toContain("npx descuff start .");
+      expect(codexInstructions).toContain("npx descuff finish .");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("keeps every command represented in tests", () => {
     expect(descuffCommands).toEqual([
       "scan",
@@ -142,6 +175,7 @@ describe("descuff CLI", () => {
       "start",
       "finish",
       "fix",
+      "install",
       "apply-safe",
       "validate"
     ]);

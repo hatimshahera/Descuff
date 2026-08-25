@@ -8,7 +8,7 @@ Turn your existing website into an interface AI agents can understand and use.
 
 Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser-registered WebMCP planning.
 
-Current release: `descuff@0.0.2` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
+Current release: `descuff@0.1.1` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
 ## Quick Start
 
@@ -25,6 +25,7 @@ Descuff writes:
 .descuff/model.json
 .descuff/assessments.json
 .descuff/generated-changes.json
+.descuff/skill-evidence-packet.json
 .descuff/plan.md
 .descuff/codex-prompt.md
 ```
@@ -71,6 +72,7 @@ npx descuff finish [project-root]
 npx descuff scan [project-root]
 npx descuff report [project-root]
 npx descuff plan [project-root]
+npx descuff install [codex|claude-code|cursor|all] [project-root]
 npx descuff validate [project-root]
 npx descuff fix
 npx descuff apply-safe [project-root]
@@ -84,9 +86,10 @@ start -> coding agent implements plan -> finish
 
 Lower-level commands:
 
-- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, and `.descuff/generated-changes.json`.
+- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, and `.descuff/skill-evidence-packet.*`.
 - `report` prints application type, capability count, route/API counts, and standard status.
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
+- `install` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
 - `fix` prints agent workflow instructions. It does not invoke an LLM and does not edit source directly.
 - `apply-safe` is intentionally disabled for automatic source writes in this release.

@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
-import type { EvidenceRef } from "@descuff/ir";
+import type { ApplicationModel, EvidenceRef } from "@descuff/ir";
 import {
   agentPlanSchemaVersion,
   buildAgentPlan,
+  buildSkillEvidencePacket,
+  codexSkillAdapter,
+  correlateNativeAndGraphifyEvidence,
   evaluateAgentWorkflowDryRun,
   getFixCommandSummary,
+  renderSemanticEnrichmentDiff,
+  renderSharedSkillCoreInstructions,
+  renderSkillEvidencePacket,
+  renderSkillHostInstructions,
   renderFixCommandInstructions,
   renderAgentPlanMarkdown,
+  semanticEnrichmentSchemaVersion,
+  supportedSkillHostAdapters,
+  validateSemanticEnrichment,
   validateAgentPlan
 } from "../src/index.js";
 
@@ -246,6 +256,196 @@ describe("@descuff/agent-workflow", () => {
       ]
     });
   });
+
+  it("builds a compact evidence packet from the deterministic application model", () => {
+    const packet = buildSkillEvidencePacket({
+      model: createFixtureApplicationModel(),
+      generatedAt: "2026-08-25T00:00:00.000Z"
+    });
+
+    expect(packet.deterministicSummary).toMatchObject({
+      applicationType: "saas",
+      routeCount: 1,
+      apiCount: 1,
+      capabilityCount: 1
+    });
+    expect(packet.capabilities[0]).toMatchObject({
+      id: "cap:team",
+      name: "get_team",
+      risk: "AUTHENTICATED_READ",
+      visibility: "authenticated",
+      evidenceIds: ["source:llms"]
+    });
+    expect(renderSkillEvidencePacket(packet)).toContain("Application type: saas (medium)");
+    expect(renderSkillEvidencePacket(packet)).toContain("cap:team: get_team");
+  });
+
+  it("validates semantic enrichment and rejects evidence-free candidate concepts", () => {
+    const packet = buildSkillEvidencePacket({ model: createFixtureApplicationModel() });
+    const result = validateSemanticEnrichment(packet, {
+      schemaVersion: semanticEnrichmentSchemaVersion,
+      domainProfile: {
+        summary: "Team workspace application.",
+        primaryDomain: "team-management",
+        domains: ["team-management", "saas"],
+        confidence: "high",
+        evidenceIds: ["source:llms"]
+      },
+      entityMeanings: [],
+      capabilityMeanings: [
+        {
+          targetId: "cap:team",
+          meaning: "read_team_profile",
+          confidence: "high",
+          evidenceIds: ["source:llms"]
+        }
+      ],
+      candidateConcepts: [
+        {
+          id: "candidate:dashboard",
+          kind: "capability",
+          name: "create_dashboard",
+          description: "May represent dashboard creation.",
+          confidence: "medium",
+          evidenceIds: ["missing:evidence"]
+        }
+      ],
+      standardSuitability: [],
+      uncertaintyNotes: []
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.candidateConceptsAccepted).toEqual([]);
+    expect(result.issues.map((issue) => issue.code)).toEqual([
+      "SEMANTIC_CANDIDATE_CONCEPT_EVIDENCE_UNKNOWN",
+      "SEMANTIC_DOMAIN_LABEL_DESCRIPTIVE_ONLY"
+    ]);
+    expect(renderSemanticEnrichmentDiff(packet, result)).toContain("Rejected: 1");
+    expect(renderSemanticEnrichmentDiff(packet, result)).toContain("Needs investigation: 1");
+  });
+
+  it("renders a reviewable semantic enrichment diff for accepted capability meanings", () => {
+    const packet = buildSkillEvidencePacket({ model: createFixtureApplicationModel() });
+    const result = validateSemanticEnrichment(packet, {
+      schemaVersion: semanticEnrichmentSchemaVersion,
+      domainProfile: {
+        summary: "Team workspace application.",
+        primaryDomain: "",
+        domains: ["team-management", "saas"],
+        confidence: "high",
+        evidenceIds: ["source:llms"]
+      },
+      entityMeanings: [],
+      capabilityMeanings: [
+        {
+          targetId: "cap:team",
+          meaning: "read_team_profile",
+          confidence: "high",
+          evidenceIds: ["source:llms"]
+        }
+      ],
+      candidateConcepts: [
+        {
+          id: "candidate:team-settings",
+          kind: "capability",
+          name: "manage_team_settings",
+          description: "Team settings management candidate.",
+          confidence: "medium",
+          evidenceIds: ["source:llms"]
+        }
+      ],
+      standardSuitability: [],
+      uncertaintyNotes: []
+    });
+
+    expect(result.valid).toBe(true);
+    expect(renderSemanticEnrichmentDiff(packet, result)).toMatchInlineSnapshot(`
+      "# Semantic Enrichment
+
+      Current:
+        Application type: saas
+
+      Proposed:
+        Summary: Team workspace application.
+        Domains:
+          team-management
+          saas
+
+      New capability meanings:
+        cap:team -> read_team_profile
+
+      Candidates:
+        candidate:team-settings: manage_team_settings (capability, medium)
+
+      Evidence-backed: 2
+      Rejected: 0
+      Needs investigation: 0
+      "
+    `);
+  });
+
+  it("correlates native and Graphify evidence without silently merging conflicts", () => {
+    const nativeEvidence = { ...evidence, id: "source:native" };
+    const graphifyEvidence = { ...evidence, id: "source:graphify" };
+
+    const correlations = correlateNativeAndGraphifyEvidence({
+      native: [
+        {
+          id: "native:team",
+          kind: "relationship",
+          subject: "Team",
+          predicate: "owns",
+          object: "Workspace",
+          evidence: [nativeEvidence]
+        }
+      ],
+      graphify: [
+        {
+          id: "graphify:team",
+          kind: "relationship",
+          subject: "Team",
+          predicate: "owns",
+          object: "BillingAccount",
+          evidence: [graphifyEvidence]
+        },
+        {
+          id: "graphify:user",
+          kind: "relationship",
+          subject: "User",
+          predicate: "belongsTo",
+          object: "Team",
+          evidence: [graphifyEvidence]
+        }
+      ]
+    });
+
+    expect(correlations.map((item) => [item.key, item.status])).toEqual([
+      ["Team:owns", "conflict"],
+      ["User:belongsTo", "graphify-only"]
+    ]);
+    expect(correlations[0]?.investigationNote).toContain("differently");
+  });
+
+  it("renders shared skill instructions for Codex, Claude Code, and Cursor adapters", () => {
+    expect(supportedSkillHostAdapters.map((adapter) => adapter.target)).toEqual([
+      "codex",
+      "claude-code",
+      "cursor"
+    ]);
+
+    for (const adapter of supportedSkillHostAdapters) {
+      const instructions = renderSkillHostInstructions({ adapter });
+      expect(instructions).toContain("Use the compact evidence packet as the primary context");
+      expect(instructions).toContain("semantic-enrichment diff");
+      expect(instructions).toContain("npx descuff start .");
+      expect(instructions).toContain("npx descuff finish .");
+    }
+
+    expect(renderSkillHostInstructions({ adapter: codexSkillAdapter })).toContain(
+      "# Descuff Skill For Codex"
+    );
+    expect(renderSharedSkillCoreInstructions()).toContain("Domain labels are descriptive");
+  });
 });
 
 function createFixtureAgentPlan() {
@@ -283,4 +483,75 @@ function createFixtureAgentPlan() {
       }
     ]
   });
+}
+
+function createFixtureApplicationModel(): ApplicationModel {
+  return {
+    schemaVersion: "0.1.0",
+    project: {
+      rootDir: "fixtures/saas",
+      framework: "nextjs",
+      evidence: [evidence]
+    },
+    applicationType: {
+      type: "saas",
+      confidence: "medium",
+      evidence: [evidence]
+    },
+    entities: [],
+    capabilities: [
+      {
+        id: "cap:team",
+        name: "get_team",
+        operationType: "read",
+        risk: "AUTHENTICATED_READ",
+        visibility: "authenticated",
+        inputs: [],
+        outputs: [],
+        linkedRoutes: ["/settings"],
+        linkedApis: ["api:team"],
+        evidence: [evidence],
+        confidence: "medium"
+      }
+    ],
+    routes: [
+      {
+        id: "route:settings",
+        path: "/settings",
+        routerKind: "app",
+        sourceFile: "app/settings/page.tsx",
+        visibility: "authenticated",
+        runtimeObserved: false,
+        evidence: [evidence]
+      }
+    ],
+    apis: [
+      {
+        id: "api:team",
+        path: "/api/team",
+        method: "GET",
+        sourceFile: "app/api/team/route.ts",
+        runtimeObserved: false,
+        sideEffect: "read",
+        evidence: [evidence]
+      }
+    ],
+    authentication: {
+      boundaries: [
+        {
+          id: "auth:middleware",
+          kind: "middleware",
+          sourceFile: "middleware.ts",
+          evidence: [evidence]
+        }
+      ],
+      evidence: [evidence]
+    },
+    integrations: [],
+    standards: [],
+    evidence: {
+      schemaVersion: "0.1.0",
+      items: [evidence]
+    }
+  };
 }

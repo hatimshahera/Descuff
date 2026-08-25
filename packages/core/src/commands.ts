@@ -5,6 +5,7 @@ export const descuffCommands = [
   "start",
   "finish",
   "fix",
+  "install",
   "apply-safe",
   "validate"
 ] as const;

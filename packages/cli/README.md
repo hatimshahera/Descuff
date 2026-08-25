@@ -5,8 +5,11 @@ Command-line entry point for Descuff, an open-source tool that helps developers 
 ```bash
 npx descuff start .
 npx descuff finish .
+npx descuff install all .
 ```
 
 `start` creates a baseline, plan, and coding-agent prompt in `.descuff/`. `finish` rescans after implementation and writes the before/after validation report.
+
+`install` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
 
 The current public preview targets local Next.js applications and keeps automatic source writes disabled. It detects App Router and Pages Router projects, common nested monorepo app layouts, API routes, Server Actions, auth boundaries, route visibility, and common agent-facing standards.

@@ -2,6 +2,14 @@
 
 All notable changes to Descuff will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- Added shared host-agent skill groundwork: compact skill evidence packets, semantic enrichment validation, semantic diff rendering, Graphify/native correlation contracts, and Codex/Claude Code/Cursor instruction rendering.
+- Added `descuff install [codex|claude-code|cursor|all]` to write local preview skill instructions under `.descuff/skills/`.
+- `descuff scan` now writes `.descuff/skill-evidence-packet.json` and `.descuff/skill-evidence-packet.md`.
+
 ## 0.1.1 - 2026-08-24
 
 ### Fixed

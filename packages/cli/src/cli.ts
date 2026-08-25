@@ -1,10 +1,16 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
   buildAgentPlan,
+  buildSkillEvidencePacket,
+  getSkillHostAdapter,
   renderAgentPlanMarkdown,
-  renderFixCommandInstructions
+  renderFixCommandInstructions,
+  renderSkillEvidencePacket,
+  renderSkillHostInstructions,
+  supportedSkillHostAdapters,
+  type SkillHostTarget
 } from "@descuff/agent-workflow";
 import { NativeNextAnalyzer } from "@descuff/analyzer-nextjs";
 import {
@@ -47,6 +53,7 @@ const helpText = `Descuff
 
 Usage:
   descuff <command> [project-root]
+  descuff install [codex|claude-code|cursor|all] [project-root]
 
 Commands:
   ${descuffCommands.join("\n  ")}
@@ -74,7 +81,8 @@ interface BaselineSnapshot {
 
 export async function runCli(argv: string[]): Promise<CommandResult> {
   const command = argv[2];
-  const projectRoot = resolve(argv[3] ?? process.cwd());
+  const projectRoot =
+    command === "install" ? resolve(argv[4] ?? process.cwd()) : resolve(argv[3] ?? process.cwd());
 
   if (command === undefined || command === "--help" || command === "-h") {
     return { exitCode: 0, stdout: helpText, stderr: "" };
@@ -106,6 +114,8 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
           stdout: renderFixCommandInstructions(),
           stderr: ""
         };
+      case "install":
+        return ok(await installCommand(projectRoot, argv[3]));
       case "apply-safe":
         return ok("apply-safe: no automatic file writes are enabled in this release.\n");
       case "validate":
@@ -118,6 +128,41 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
       stderr: `${errorMessage(error)}\n`
     };
   }
+}
+
+async function installCommand(projectRoot: string, targetArg: string | undefined): Promise<string> {
+  const target = targetArg ?? "all";
+  const adapters =
+    target === "all"
+      ? supportedSkillHostAdapters
+      : [getSkillHostAdapter(parseSkillHostTarget(target))];
+  const written: string[] = [];
+
+  for (const adapter of adapters) {
+    const relativePath = join("skills", adapter.target, adapter.instructionFileHint);
+    await writeArtifact(projectRoot, relativePath, renderSkillHostInstructions({ adapter }));
+    written.push(join(artifactDir(projectRoot), relativePath));
+  }
+
+  return [
+    "descuff install completed",
+    `Target: ${target}`,
+    "",
+    "Generated local host instructions:",
+    ...written.map((path) => `  ${path}`),
+    "",
+    "These files are local preview artifacts. Manually inspect them before copying into host-specific Codex, Claude Code, or Cursor directories.",
+    ""
+  ].join("\n");
+}
+
+function parseSkillHostTarget(value: string): SkillHostTarget {
+  if (value === "codex" || value === "claude-code" || value === "cursor") {
+    return value;
+  }
+  throw new Error(
+    `Unsupported install target: ${value}. Expected codex, claude-code, cursor, or all.`
+  );
 }
 
 async function scanCommand(projectRoot: string): Promise<string> {
@@ -321,11 +366,18 @@ async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
 }
 
 async function writeScanArtifacts(projectRoot: string, artifacts: ScanArtifacts): Promise<void> {
+  const skillEvidencePacket = buildSkillEvidencePacket({ model: artifacts.model });
   await writeJson(projectRoot, "analysis.json", artifacts.analysis);
   await writeJson(projectRoot, "model.json", artifacts.model);
   await writeJson(projectRoot, "assessments.json", artifacts.assessments);
   await writeJson(projectRoot, "generated-changes.json", artifacts.generatedChanges);
   await writeJson(projectRoot, "source-fingerprints.json", artifacts.sourceFingerprints);
+  await writeJson(projectRoot, "skill-evidence-packet.json", skillEvidencePacket);
+  await writeArtifact(
+    projectRoot,
+    "skill-evidence-packet.md",
+    renderSkillEvidencePacket(skillEvidencePacket)
+  );
 }
 
 async function writePlanArtifacts(projectRoot: string, artifacts: ScanArtifacts): Promise<void> {
@@ -519,8 +571,9 @@ async function writeJson(projectRoot: string, name: string, value: unknown): Pro
 }
 
 async function writeArtifact(projectRoot: string, name: string, content: string): Promise<void> {
-  await mkdir(artifactDir(projectRoot), { recursive: true });
-  await writeFile(join(artifactDir(projectRoot), name), content, "utf8");
+  const path = join(artifactDir(projectRoot), name);
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, content, "utf8");
 }
 
 function artifactDir(projectRoot: string): string {

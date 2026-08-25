@@ -21,6 +21,7 @@ This creates `.descuff/` with:
 - `model.json`: semantic model of the app
 - `assessments.json`: standard recommendations
 - `generated-changes.json`: proposed standards work
+- `skill-evidence-packet.json` and `skill-evidence-packet.md`: compact evidence for host-agent skill workflows
 - `plan.md`: implementation plan
 - `codex-prompt.md`: prompt for your coding agent
 
@@ -123,6 +124,12 @@ npx descuff plan .
 ```
 
 Write only the implementation plan files.
+
+```bash
+npx descuff install all .
+```
+
+Write local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`. These are inspectable artifacts; they do not yet modify your global coding-agent configuration.
 
 ```bash
 npx descuff validate .

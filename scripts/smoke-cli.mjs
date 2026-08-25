@@ -1,7 +1,17 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 const cliPath = "packages/cli/dist/index.js";
-const commands = ["scan", "report", "plan", "start", "finish", "fix", "apply-safe", "validate"];
+const commands = [
+  "scan",
+  "report",
+  "plan",
+  "start",
+  "finish",
+  "fix",
+  "install",
+  "apply-safe",
+  "validate"
+];
 const fixtureRoot = "fixtures/ecommerce";
 
 if (!existsSync(cliPath)) {
@@ -10,7 +20,12 @@ if (!existsSync(cliPath)) {
 }
 
 for (const command of commands) {
-  const args = command === "fix" ? [cliPath, command] : [cliPath, command, fixtureRoot];
+  const args =
+    command === "fix"
+      ? [cliPath, command]
+      : command === "install"
+        ? [cliPath, command, "all", fixtureRoot]
+        : [cliPath, command, fixtureRoot];
   const result = spawnSync(process.execPath, args, {
     encoding: "utf8"
   });
@@ -34,9 +49,11 @@ for (const command of commands) {
               ? "descuff start completed"
               : command === "finish"
                 ? "descuff finish passed"
-                : command === "validate"
-                  ? "descuff validate passed"
-                  : "no automatic file writes are enabled";
+                : command === "install"
+                  ? "descuff install completed"
+                  : command === "validate"
+                    ? "descuff validate passed"
+                    : "no automatic file writes are enabled";
 
   if (!result.stdout.includes(expectedOutput)) {
     console.error(`descuff ${command} produced unexpected output`);
