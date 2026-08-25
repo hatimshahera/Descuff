@@ -1,6 +1,6 @@
 {
   "name": "@descuff/standard-openapi",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "license": "MIT",
   "type": "module",
   "files": [
@@ -18,11 +18,11 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/ir": "^0.1.11",
-    "@descuff/standard-core": "^0.1.11"
+    "@descuff/ir": "^0.1.12",
+    "@descuff/standard-core": "^0.1.12"
   },
   "devDependencies": {
-    "@descuff/analyzer-nextjs": "^0.1.11",
-    "@descuff/core": "^0.1.11"
+    "@descuff/analyzer-nextjs": "^0.1.12",
+    "@descuff/core": "^0.1.12"
   }
 }

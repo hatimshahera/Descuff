@@ -4,6 +4,12 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased
 
+## 0.1.12 - 2026-08-25
+
+### Added
+
+- Added `descuff install --platform cursor` to write a Cursor project rule at `.cursor/rules/descuff.mdc`.
+
 ## 0.1.11 - 2026-08-25
 
 ### Added

@@ -13,7 +13,7 @@ describe("descuff CLI", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Usage:");
-    expect(result.stdout).toContain("descuff install --platform [codex|claude-code]");
+    expect(result.stdout).toContain("descuff install --platform [codex|claude-code|cursor]");
   });
 
   it("runs scan on a Next.js fixture and writes artifacts", async () => {
@@ -262,6 +262,25 @@ describe("descuff CLI", () => {
       expect(command).toContain("npx descuff start .");
       expect(command).toContain("npx descuff enrich .");
       expect(command).toContain("npx descuff finish .");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("installs a Cursor project rule with platform syntax", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cursor-platform-"));
+
+    try {
+      const result = await runCli(["node", "descuff", "install", "--platform", "cursor", tempRoot]);
+      const rule = await readFile(join(tempRoot, ".cursor", "rules", "descuff.mdc"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Mode: project");
+      expect(result.stdout).toContain("Invoke it in Cursor Agent");
+      expect(rule).toContain("# Descuff Skill For Cursor");
+      expect(rule).toContain("npx descuff start .");
+      expect(rule).toContain("npx descuff enrich .");
+      expect(rule).toContain("npx descuff finish .");
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }

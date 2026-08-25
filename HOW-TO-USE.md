@@ -53,7 +53,15 @@ Then invoke it in Claude Code with:
 /descuff .
 ```
 
-Paste this into Codex, Cursor, Claude Code, or another coding agent:
+For Cursor, install the project rule from the app root:
+
+```bash
+npx descuff install --platform cursor .
+```
+
+Then ask Cursor Agent to Descuff the app from that project.
+
+If you do not want a host-specific install, paste this into Codex, Cursor, Claude Code, or another coding agent:
 
 ```text
 Use Descuff to make this Next.js app more usable by AI agents.
@@ -179,6 +187,12 @@ npx descuff install --platform claude-code .
 ```
 
 Install a Claude Code project slash command at `.claude/commands/descuff.md`.
+
+```bash
+npx descuff install --platform cursor .
+```
+
+Install a Cursor project rule at `.cursor/rules/descuff.mdc`.
 
 ```bash
 npx descuff install codex --global

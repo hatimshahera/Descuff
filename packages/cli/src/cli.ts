@@ -65,7 +65,7 @@ const helpText = `Descuff
 Usage:
   descuff <command> [project-root]
   descuff install [codex|claude-code|cursor|all] [project-root]
-  descuff install --platform [codex|claude-code] [project-root]
+  descuff install --platform [codex|claude-code|cursor] [project-root]
   descuff install codex --global
 
 Commands:
@@ -194,8 +194,12 @@ async function installCommand(projectRoot: string, args: InstallArgs): Promise<s
     return installClaudeCodeProjectCommand(projectRoot);
   }
 
+  if (args.platform && target === "cursor") {
+    return installCursorProjectRule(projectRoot);
+  }
+
   if (args.platform && target !== "codex") {
-    throw new Error("Platform install currently supports codex and claude-code.");
+    throw new Error("Platform install currently supports codex, claude-code, and cursor.");
   }
 
   if (args.global) {
@@ -240,6 +244,28 @@ async function installClaudeCodeProjectCommand(projectRoot: string): Promise<str
     `  ${commandPath}`,
     "",
     "Invoke it in Claude Code with: /descuff .",
+    ""
+  ].join("\n");
+}
+
+async function installCursorProjectRule(projectRoot: string): Promise<string> {
+  const rulePath = join(projectRoot, ".cursor", "rules", "descuff.mdc");
+  await mkdir(dirname(rulePath), { recursive: true });
+  await writeFile(
+    rulePath,
+    renderSkillHostInstructions({ adapter: getSkillHostAdapter("cursor") }),
+    "utf8"
+  );
+
+  return [
+    "descuff install completed",
+    "Target: cursor",
+    "Mode: project",
+    "",
+    "Installed Cursor rule:",
+    `  ${rulePath}`,
+    "",
+    "Invoke it in Cursor Agent by asking it to Descuff this app.",
     ""
   ].join("\n");
 }
@@ -313,7 +339,7 @@ function parseInstallPlatform(value: string | undefined): SkillHostTarget {
     return value;
   }
 
-  throw new Error("Unsupported install platform. Expected codex or claude-code.");
+  throw new Error("Unsupported install platform. Expected codex, claude-code, or cursor.");
 }
 
 function resolveCodexHome(): string {

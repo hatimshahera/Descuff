@@ -8,7 +8,7 @@ Turn your existing website into an interface AI agents can understand and use.
 
 Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser-registered WebMCP planning.
 
-Current release: `descuff@0.1.11` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
+Current release: `descuff@0.1.12` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
 ## Quick Start
 
@@ -79,6 +79,7 @@ npx descuff plan [project-root]
 npx descuff install [codex|claude-code|cursor|all] [project-root]
 npx descuff install --platform codex
 npx descuff install --platform claude-code [project-root]
+npx descuff install --platform cursor [project-root]
 npx descuff install codex --global
 npx descuff enrich [project-root]
 npx descuff validate [project-root]
@@ -99,6 +100,7 @@ Lower-level commands:
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `install --platform codex` installs the tested Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`; invoke it with `$descuff .`.
 - `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`; invoke it with `/descuff .`.
+- `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`; ask Cursor Agent to Descuff the app from that project.
 - `install all` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
