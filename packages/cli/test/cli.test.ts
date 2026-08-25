@@ -24,6 +24,13 @@ describe("descuff CLI", () => {
       join(fixtureRoot, ".descuff", "skill-evidence-packet.md"),
       "utf8"
     );
+    const enrichmentTemplate = JSON.parse(
+      await readFile(join(fixtureRoot, ".descuff", "semantic-enrichment-template.json"), "utf8")
+    ) as { schemaVersion: string };
+    const enrichmentPrompt = await readFile(
+      join(fixtureRoot, ".descuff", "semantic-enrichment-prompt.md"),
+      "utf8"
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("descuff scan completed");
@@ -31,6 +38,8 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("Generated changes:");
     expect(packet.deterministicSummary.applicationType).toBe("ecommerce");
     expect(packetMarkdown).toContain("Descuff Skill Evidence Packet");
+    expect(enrichmentTemplate.schemaVersion).toBe("0.1.0");
+    expect(enrichmentPrompt).toContain("Descuff Semantic Enrichment Request");
   });
 
   it("renders a report from a Next.js fixture", async () => {

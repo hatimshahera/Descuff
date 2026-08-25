@@ -26,6 +26,8 @@ Descuff writes:
 .descuff/assessments.json
 .descuff/generated-changes.json
 .descuff/skill-evidence-packet.json
+.descuff/semantic-enrichment-prompt.md
+.descuff/semantic-enrichment-template.json
 .descuff/plan.md
 .descuff/codex-prompt.md
 ```
@@ -86,7 +88,7 @@ start -> coding agent implements plan -> finish
 
 Lower-level commands:
 
-- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, and `.descuff/skill-evidence-packet.*`.
+- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/skill-evidence-packet.*`, and semantic-enrichment prompt/template artifacts.
 - `report` prints application type, capability count, route/API counts, and standard status.
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `install` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.

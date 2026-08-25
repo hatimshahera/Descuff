@@ -4,9 +4,11 @@ import { dirname, join, resolve } from "node:path";
 import {
   buildAgentPlan,
   buildSkillEvidencePacket,
+  createSemanticEnrichmentTemplate,
   getSkillHostAdapter,
   renderAgentPlanMarkdown,
   renderFixCommandInstructions,
+  renderSemanticEnrichmentPrompt,
   renderSkillEvidencePacket,
   renderSkillHostInstructions,
   supportedSkillHostAdapters,
@@ -377,6 +379,16 @@ async function writeScanArtifacts(projectRoot: string, artifacts: ScanArtifacts)
     projectRoot,
     "skill-evidence-packet.md",
     renderSkillEvidencePacket(skillEvidencePacket)
+  );
+  await writeJson(
+    projectRoot,
+    "semantic-enrichment-template.json",
+    createSemanticEnrichmentTemplate(skillEvidencePacket)
+  );
+  await writeArtifact(
+    projectRoot,
+    "semantic-enrichment-prompt.md",
+    renderSemanticEnrichmentPrompt(skillEvidencePacket)
   );
 }
 

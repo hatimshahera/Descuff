@@ -66,6 +66,31 @@ export interface SemanticEnrichmentValidationResult {
   valid: boolean;
 }
 
+export function createSemanticEnrichmentTemplate(packet: SkillEvidencePacket): SemanticEnrichment {
+  const firstEvidenceId = packet.evidence[0]?.id;
+
+  return {
+    schemaVersion: semanticEnrichmentSchemaVersion,
+    domainProfile: {
+      summary: "",
+      primaryDomain: "",
+      domains: [],
+      confidence: "low",
+      evidenceIds: firstEvidenceId === undefined ? [] : [firstEvidenceId]
+    },
+    entityMeanings: [],
+    capabilityMeanings: packet.capabilities.map((capability) => ({
+      targetId: capability.id,
+      meaning: "",
+      confidence: "low",
+      evidenceIds: capability.evidenceIds.slice(0, 3)
+    })),
+    candidateConcepts: [],
+    standardSuitability: [],
+    uncertaintyNotes: []
+  };
+}
+
 export function createEmptySemanticEnrichment(): SemanticEnrichment {
   return {
     schemaVersion: semanticEnrichmentSchemaVersion,
@@ -82,6 +107,38 @@ export function createEmptySemanticEnrichment(): SemanticEnrichment {
     standardSuitability: [],
     uncertaintyNotes: []
   };
+}
+
+export function renderSemanticEnrichmentPrompt(packet: SkillEvidencePacket): string {
+  const template = createSemanticEnrichmentTemplate(packet);
+  const lines = [
+    "# Descuff Semantic Enrichment Request",
+    "",
+    "Use the Descuff skill evidence packet to propose evidence-backed semantic enrichment.",
+    "",
+    "Rules:",
+    "",
+    "- Return JSON only. Do not include Markdown around the response.",
+    "- Use only evidence IDs that exist in `.descuff/skill-evidence-packet.json`.",
+    "- Keep domain labels descriptive. Do not use them to approve standards or safety behavior.",
+    "- Keep new entities or capabilities as `candidateConcepts` unless Descuff deterministic evidence already models them.",
+    "- Do not set readiness scores, validation status, safety approval, or generated file contents.",
+    "- Do not expose sensitive, private, mutating, or high-consequence capabilities.",
+    "",
+    "Current deterministic summary:",
+    "",
+    `- Application type: ${packet.deterministicSummary.applicationType} (${packet.deterministicSummary.applicationTypeConfidence})`,
+    `- Routes: ${packet.deterministicSummary.routeCount}`,
+    `- APIs: ${packet.deterministicSummary.apiCount}`,
+    `- Capabilities: ${packet.deterministicSummary.capabilityCount}`,
+    "",
+    "Return JSON matching this shape:",
+    "",
+    JSON.stringify(template, null, 2),
+    ""
+  ];
+
+  return lines.join("\n");
 }
 
 export function validateSemanticEnrichment(

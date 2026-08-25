@@ -22,6 +22,7 @@ This creates `.descuff/` with:
 - `assessments.json`: standard recommendations
 - `generated-changes.json`: proposed standards work
 - `skill-evidence-packet.json` and `skill-evidence-packet.md`: compact evidence for host-agent skill workflows
+- `semantic-enrichment-prompt.md` and `semantic-enrichment-template.json`: strict host-agent semantic enrichment handoff artifacts
 - `plan.md`: implementation plan
 - `codex-prompt.md`: prompt for your coding agent
 

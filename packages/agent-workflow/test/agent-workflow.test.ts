@@ -6,9 +6,11 @@ import {
   buildSkillEvidencePacket,
   codexSkillAdapter,
   correlateNativeAndGraphifyEvidence,
+  createSemanticEnrichmentTemplate,
   evaluateAgentWorkflowDryRun,
   getFixCommandSummary,
   renderSemanticEnrichmentDiff,
+  renderSemanticEnrichmentPrompt,
   renderSharedSkillCoreInstructions,
   renderSkillEvidencePacket,
   renderSkillHostInstructions,
@@ -324,6 +326,26 @@ describe("@descuff/agent-workflow", () => {
     expect(renderSemanticEnrichmentDiff(packet, result)).toContain("Needs investigation: 1");
   });
 
+  it("renders a semantic enrichment prompt and template for host agents", () => {
+    const packet = buildSkillEvidencePacket({ model: createFixtureApplicationModel() });
+    const template = createSemanticEnrichmentTemplate(packet);
+    const prompt = renderSemanticEnrichmentPrompt(packet);
+
+    expect(template.schemaVersion).toBe(semanticEnrichmentSchemaVersion);
+    expect(template.capabilityMeanings).toEqual([
+      {
+        targetId: "cap:team",
+        meaning: "",
+        confidence: "low",
+        evidenceIds: ["source:llms"]
+      }
+    ]);
+    expect(prompt).toContain("Return JSON only");
+    expect(prompt).toContain("Use only evidence IDs");
+    expect(prompt).toContain("Application type: saas (medium)");
+    expect(prompt).toContain('"schemaVersion": "0.1.0"');
+  });
+
   it("renders a reviewable semantic enrichment diff for accepted capability meanings", () => {
     const packet = buildSkillEvidencePacket({ model: createFixtureApplicationModel() });
     const result = validateSemanticEnrichment(packet, {
@@ -436,6 +458,8 @@ describe("@descuff/agent-workflow", () => {
     for (const adapter of supportedSkillHostAdapters) {
       const instructions = renderSkillHostInstructions({ adapter });
       expect(instructions).toContain("Use the compact evidence packet as the primary context");
+      expect(instructions).toContain(".descuff/semantic-enrichment-prompt.md");
+      expect(instructions).toContain(".descuff/semantic-enrichment-template.json");
       expect(instructions).toContain("semantic-enrichment diff");
       expect(instructions).toContain("npx descuff start .");
       expect(instructions).toContain("npx descuff finish .");
