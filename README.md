@@ -95,7 +95,7 @@ Lower-level commands:
 - `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/graphify-enrichment.*`, `.descuff/skill-evidence-packet.*`, and semantic-enrichment prompt/template artifacts.
 - `report` prints domain profile, compatibility application type, capability count, route/API counts, and standard status.
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
-- `install` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`. `install codex --global` installs the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`.
+- `install` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`. `install codex --global` installs the tested Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`.
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
 - `fix` prints agent workflow instructions. It does not invoke an LLM and does not edit source directly.

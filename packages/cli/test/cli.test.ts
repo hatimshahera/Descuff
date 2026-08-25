@@ -276,6 +276,46 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("runs the installed Codex skill contract against a fixture", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-codex-skill-"));
+    const codexHome = join(tempRoot, "codex-home");
+    const projectRoot = join(tempRoot, "ecommerce");
+    const previousCodexHome = process.env.CODEX_HOME;
+
+    try {
+      process.env.CODEX_HOME = codexHome;
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+
+      const install = await runCli(["node", "descuff", "install", "codex", "--global"]);
+      const skill = await readFile(join(codexHome, "skills", "descuff", "SKILL.md"), "utf8");
+      const start = await runCli(["node", "descuff", "start", projectRoot]);
+      const template = await readFile(
+        join(projectRoot, ".descuff", "semantic-enrichment-template.json"),
+        "utf8"
+      );
+      await writeFile(join(projectRoot, ".descuff", "semantic-enrichment.json"), template);
+      const enrich = await runCli(["node", "descuff", "enrich", projectRoot]);
+      const finish = await runCli(["node", "descuff", "finish", projectRoot]);
+
+      expect(install.exitCode).toBe(0);
+      expect(skill).toContain("name: descuff");
+      expect(skill).toContain("npx descuff start .");
+      expect(skill).toContain("npx descuff enrich .");
+      expect(skill).toContain("npx descuff finish .");
+      expect(start.exitCode).toBe(0);
+      expect(enrich.exitCode).toBe(0);
+      expect(finish.exitCode).toBe(0);
+      expect(finish.stdout).toContain("descuff finish passed");
+    } finally {
+      if (previousCodexHome === undefined) {
+        delete process.env.CODEX_HOME;
+      } else {
+        process.env.CODEX_HOME = previousCodexHome;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("rejects semantic enrichment with unknown evidence IDs", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-enrich-bad-"));
     const projectRoot = join(tempRoot, "ecommerce");

@@ -29,6 +29,18 @@ This creates `.descuff/` with:
 
 ## 2. Give The Plan To Your Coding Agent
 
+For Codex, you can install the tested skill once:
+
+```bash
+npx descuff install codex --global
+```
+
+Then invoke it in Codex with:
+
+```text
+$descuff .
+```
+
 Paste this into Codex, Cursor, Claude Code, or another coding agent:
 
 ```text

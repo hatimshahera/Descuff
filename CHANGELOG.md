@@ -9,6 +9,7 @@ All notable changes to Descuff will be documented in this file.
 - Added shared host-agent skill groundwork: compact skill evidence packets, semantic enrichment validation, semantic diff rendering, Graphify/native correlation contracts, and Codex/Claude Code/Cursor instruction rendering.
 - Added `descuff install [codex|claude-code|cursor|all]` to write local preview skill instructions under `.descuff/skills/`.
 - Added `descuff install codex --global` to install a real Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`.
+- Added fixture coverage proving the installed Codex skill contract can run `start -> enrich -> finish`.
 - Added `descuff enrich` to deterministically validate `.descuff/semantic-enrichment.json` and write semantic enrichment review artifacts.
 - Added tested skill-style orchestration coverage for `start -> enrich -> finish` without any hidden LLM call.
 - Added an evidence-backed domain profile to the semantic model and skill evidence packet while preserving `applicationType` as a compatibility field.
