@@ -280,6 +280,70 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("fails check when an API capability is removed but OpenAPI still advertises it", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-capability-removed-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      await writeFile(
+        join(projectRoot, "app", "api", "search", "route.ts"),
+        "export const dynamic = 'force-static';\n"
+      );
+      process.env.DESCUFF_CHANGED_FILES = "app/api/search/route.ts";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+      const check = await readFile(join(projectRoot, ".descuff", "drift-check.json"), "utf8");
+      const report = await readFile(join(projectRoot, ".descuff", "drift-report.md"), "utf8");
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff check fail");
+      expect(check).toContain('"code": "CAPABILITY_REMOVED"');
+      expect(report).toContain("## Suggested Repairs");
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails check when a public route change makes Schema.org metadata stale", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-schema-stale-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      await mkdir(join(projectRoot, "app", "sale"), { recursive: true });
+      await writeFile(
+        join(projectRoot, "app", "sale", "page.tsx"),
+        "export default function SalePage() { return <main><h1>Sale</h1></main>; }\n"
+      );
+      process.env.DESCUFF_CHANGED_FILES = "app/sale/page.tsx";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+      const check = await readFile(join(projectRoot, ".descuff", "drift-check.json"), "utf8");
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff check fail");
+      expect(result.stdout).toContain("Validation depth: targeted-runtime");
+      expect(check).toContain('"code": "STRUCTURED_METADATA_STALE"');
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("does not generate API or WebMCP plans for static sites without APIs", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-static-"));
 

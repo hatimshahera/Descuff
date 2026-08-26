@@ -158,6 +158,12 @@ export interface DriftCheckResult {
   summary: string;
 }
 
+export interface DriftCurrentState {
+  baselineRoutePaths: string[];
+  capabilityIds: string[];
+  routePaths: string[];
+}
+
 export interface DriftValidationPlan {
   schemaVersion: string;
   validationDepth: DriftValidationDepth;

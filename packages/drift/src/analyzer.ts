@@ -10,6 +10,7 @@ import {
   type DriftBaseline,
   type DriftCapabilityIndexEntry,
   type DriftCheckResult,
+  type DriftCurrentState,
   type DriftDiffResult,
   type DriftFailure,
   type DriftImpact,
@@ -67,9 +68,17 @@ export function analyzeDrift(input: DriftDiffInput): DriftDiffResult {
 export function createDriftCheckResult(
   diff: DriftDiffResult,
   validation?: ValidationSummary,
-  validationPlan?: DriftValidationPlan
+  validationPlan?: DriftValidationPlan,
+  currentState?: DriftCurrentState
 ): DriftCheckResult {
   const planProperties = validationPlan === undefined ? {} : { validationPlan };
+  const currentStateFailures =
+    currentState === undefined
+      ? []
+      : [
+          ...removedCapabilityFailures(diff, currentState),
+          ...addedRouteContractFailures(diff, currentState)
+        ];
 
   if (diff.status === "fail") {
     return {
@@ -78,7 +87,7 @@ export function createDriftCheckResult(
       validationDepth: diff.validationDepth,
       ...planProperties,
       diff,
-      failures: diff.failures,
+      failures: [...diff.failures, ...currentStateFailures],
       summary: diff.summary
     };
   }
@@ -102,7 +111,7 @@ export function createDriftCheckResult(
       validationDepth: diff.validationDepth,
       ...planProperties,
       diff,
-      failures: diff.failures,
+      failures: [...diff.failures, ...currentStateFailures],
       summary: diff.summary
     };
   }
@@ -110,17 +119,19 @@ export function createDriftCheckResult(
   const validationFailures = validation.failures.map((failure) =>
     validationFailureToDriftFailure(failure, diff)
   );
+  const failures = [...currentStateFailures, ...validationFailures];
   return {
     schemaVersion: driftResultSchemaVersion,
-    status: validation.passed ? "pass" : "fail",
+    status: failures.length === 0 ? "pass" : "fail",
     validationDepth: diff.validationDepth,
     ...planProperties,
     diff,
     validation,
-    failures: validation.passed ? [] : validationFailures,
-    summary: validation.passed
-      ? "Agent-facing changes were validated successfully."
-      : "Agent-facing drift detected during validation."
+    failures: failures.length === 0 ? [] : failures,
+    summary:
+      validation.passed && currentStateFailures.length === 0
+        ? "Agent-facing changes were validated successfully."
+        : "Agent-facing drift detected during validation."
   };
 }
 
@@ -422,6 +433,48 @@ function validationFailureToDriftFailure(
     affectedStandards,
     suggestedAction: repairActionForValidationFailure(failure, affectedStandards)
   };
+}
+
+function removedCapabilityFailures(
+  diff: DriftDiffResult,
+  currentState: DriftCurrentState
+): DriftFailure[] {
+  const currentIds = new Set(currentState.capabilityIds);
+  return diff.affectedCapabilities
+    .filter((capability) => !currentIds.has(capability.id))
+    .map((capability) => ({
+      code: "CAPABILITY_REMOVED",
+      message: `Capability ${capability.name} existed in the drift baseline but is no longer detected.`,
+      capabilityId: capability.id,
+      affectedStandards: diff.affectedStandards,
+      suggestedAction:
+        "Update or remove affected machine-facing contracts, then regenerate the drift baseline after validation passes."
+    }));
+}
+
+function addedRouteContractFailures(
+  diff: DriftDiffResult,
+  currentState: DriftCurrentState
+): DriftFailure[] {
+  if (
+    !diff.affectedStandards.includes("schema-org") &&
+    !diff.affectedStandards.includes("llms-txt")
+  ) {
+    return [];
+  }
+
+  const baselineRoutes = new Set(currentState.baselineRoutePaths);
+  return currentState.routePaths
+    .filter((routePath) => !baselineRoutes.has(routePath))
+    .map((routePath) => ({
+      code: "STRUCTURED_METADATA_STALE",
+      message: `Public route ${routePath} is new since the drift baseline and may be missing from structured metadata.`,
+      affectedStandards: diff.affectedStandards.filter((standard) =>
+        ["llms-txt", "schema-org"].includes(standard)
+      ),
+      suggestedAction:
+        "Update public route metadata such as llms.txt and Schema.org JSON-LD, then rerun descuff check."
+    }));
 }
 
 function driftCodeForValidationFailure(

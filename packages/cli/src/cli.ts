@@ -566,7 +566,11 @@ async function checkCommand(projectRoot: string): Promise<CommandResult> {
         validationPlan,
         new Set(diff.affectedStandards)
       );
-  const check = createDriftCheckResult(diff, validation.summary, validationPlan);
+  const check = createDriftCheckResult(diff, validation.summary, validationPlan, {
+    baselineRoutePaths: baseline.routes.map((route) => route.path),
+    capabilityIds: artifacts.model.capabilities.map((capability) => capability.id),
+    routePaths: artifacts.model.routes.map((route) => route.path)
+  });
 
   await writeJson(projectRoot, "drift-check.json", check);
   await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(check));
