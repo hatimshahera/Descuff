@@ -41,7 +41,8 @@ import {
   createMissingDriftBaselineResult,
   renderDriftReport,
   type DriftBaseline,
-  type DriftDiffResult
+  type DriftDiffResult,
+  type DriftValidationPlan
 } from "@descuff/drift";
 import {
   structuralAnalysisToApplicationModel,
@@ -70,7 +71,8 @@ import {
   validateRuntimeObservations,
   validateSecurityModel,
   validateSourceFingerprints,
-  validateStaticGeneratedChanges
+  validateStaticGeneratedChanges,
+  validateWebMcpBehavior
 } from "@descuff/validator";
 
 const helpText = `Descuff
@@ -555,8 +557,16 @@ async function checkCommand(projectRoot: string): Promise<CommandResult> {
 
   const artifacts = await buildScanArtifacts(projectRoot);
   await writeScanArtifacts(projectRoot, artifacts);
-  const validation = await validateArtifacts(projectRoot, artifacts);
-  const check = createDriftCheckResult(diff, validation.summary, createDriftValidationPlan(diff));
+  const validationPlan = createDriftValidationPlan(diff);
+  const validation = validationPlan.fullValidationFallback
+    ? await validateArtifacts(projectRoot, artifacts)
+    : await validateArtifactsForDriftPlan(
+        projectRoot,
+        artifacts,
+        validationPlan,
+        new Set(diff.affectedStandards)
+      );
+  const check = createDriftCheckResult(diff, validation.summary, validationPlan);
 
   await writeJson(projectRoot, "drift-check.json", check);
   await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(check));
@@ -729,6 +739,66 @@ async function validateArtifacts(
       await createSourceFingerprintManifest(projectRoot, artifacts.analysis)
     )
   ]);
+  const report = createValidationReadinessReport(artifacts.model, [summary]);
+  await writeJson(projectRoot, "validation.json", report);
+  await writeArtifact(projectRoot, "validation-repair.md", renderValidationRepairGuide(summary));
+
+  return { summary, report };
+}
+
+async function validateArtifactsForDriftPlan(
+  projectRoot: string,
+  artifacts: ScanArtifacts,
+  plan: DriftValidationPlan,
+  affectedStandards: Set<string>
+): Promise<{ summary: ValidationSummary; report: ValidationReadinessReport }> {
+  const summaries: ValidationSummary[] = [];
+  const suites = new Set(plan.suites);
+
+  if (suites.has("static-generated-changes")) {
+    summaries.push(validateStaticGeneratedChanges(artifacts.generatedChanges, artifacts.model));
+  }
+
+  if (suites.has("static-standards")) {
+    summaries.push(
+      await runStandardValidation(
+        applicableStandardAdapters(
+          standardAdapters(),
+          artifacts.assessments,
+          planAffectedStandards(plan, artifacts, affectedStandards)
+        ),
+        {
+          model: artifacts.model,
+          generatedChanges: artifacts.generatedChanges
+        }
+      )
+    );
+  }
+
+  if (suites.has("runtime-observations")) {
+    summaries.push(validateRuntimeObservations(artifacts.model, artifacts.analysis));
+  } else if (suites.has("webmcp-behavior")) {
+    summaries.push(validateWebMcpBehavior(artifacts.model, artifacts.analysis));
+  }
+
+  if (suites.has("security-model")) {
+    summaries.push(validateSecurityModel(artifacts.model));
+  }
+
+  if (suites.has("capability-confidence")) {
+    summaries.push(validateCapabilityConfidence(artifacts.model));
+  }
+
+  if (suites.has("source-fingerprints")) {
+    summaries.push(
+      validateSourceFingerprints(
+        artifacts.sourceFingerprints,
+        await createSourceFingerprintManifest(projectRoot, artifacts.analysis)
+      )
+    );
+  }
+
+  const summary = mergeValidationSummaries(summaries);
   const report = createValidationReadinessReport(artifacts.model, [summary]);
   await writeJson(projectRoot, "validation.json", report);
   await writeArtifact(projectRoot, "validation-repair.md", renderValidationRepairGuide(summary));
@@ -921,14 +991,39 @@ function standardAdapters(): StandardAdapter[] {
 
 function applicableStandardAdapters(
   adapters: StandardAdapter[],
-  assessments: StandardAssessment[]
+  assessments: StandardAssessment[],
+  allowedStandardIds?: Set<string>
 ): StandardAdapter[] {
   const applicableIds = new Set(
     assessments
       .filter((assessment) => assessment.applicability !== "not-applicable")
       .map((assessment) => assessment.standardId)
   );
-  return adapters.filter((adapter) => applicableIds.has(adapter.id));
+  return adapters.filter(
+    (adapter) =>
+      applicableIds.has(adapter.id) &&
+      (allowedStandardIds === undefined || allowedStandardIds.has(adapter.id))
+  );
+}
+
+function planAffectedStandards(
+  plan: DriftValidationPlan,
+  artifacts: ScanArtifacts,
+  affectedStandards: Set<string>
+): Set<string> | undefined {
+  const implemented = new Set<string>(artifacts.model.standards.map((standard) => standard.kind));
+  const recommended = new Set(
+    artifacts.assessments
+      .filter((assessment) => assessment.applicability !== "not-applicable")
+      .map((assessment) => assessment.standardId)
+  );
+  const affected = new Set(
+    [...affectedStandards].filter(
+      (standardId) => implemented.has(standardId) || recommended.has(standardId)
+    )
+  );
+
+  return plan.suites.includes("static-standards") && affected.size > 0 ? affected : undefined;
 }
 
 function withSyntheticReadOnlyRuntime(analysis: StructuralAnalysis): StructuralAnalysis {

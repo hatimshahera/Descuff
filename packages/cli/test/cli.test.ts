@@ -252,6 +252,34 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("checks metadata-only drift with targeted static validation", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-metadata-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      process.env.DESCUFF_CHANGED_FILES = "openapi.json";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+      const check = await readFile(join(projectRoot, ".descuff", "drift-check.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Validation depth: targeted-static");
+      expect(check).toContain('"static-standards"');
+      expect(check).toContain('"source-fingerprints"');
+      expect(check).toContain('"fullValidationFallback": false');
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("does not generate API or WebMCP plans for static sites without APIs", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-static-"));
 

@@ -85,7 +85,7 @@ export function createDriftValidationPlan(diff: DriftDiffResult): DriftValidatio
     schemaVersion: driftResultSchemaVersion,
     validationDepth: diff.validationDepth,
     suites: [...suites].sort(),
-    fullValidationFallback: true,
+    fullValidationFallback: diff.validationDepth === "full" || impactKinds.includes("unknown"),
     reasons: reasons.length > 0 ? reasons : ["Agent-facing evidence changed."]
   };
 }

@@ -109,7 +109,7 @@ describe("@descuff/drift", () => {
 
     expect(diff.validationDepth).toBe("targeted-static");
     expect(plan.suites).toEqual(["source-fingerprints", "static-standards"]);
-    expect(plan.fullValidationFallback).toBe(true);
+    expect(plan.fullValidationFallback).toBe(false);
   });
 
   it("plans runtime and WebMCP validation for API drift", () => {
@@ -129,6 +129,7 @@ describe("@descuff/drift", () => {
       "webmcp-behavior"
     ]);
     expect(plan.reasons).toContain("API or runtime-observed behavior changed.");
+    expect(plan.fullValidationFallback).toBe(false);
   });
 
   it("plans full validation for unknown drift", () => {
@@ -234,7 +235,7 @@ describe("@descuff/drift", () => {
 
     expect(report).toContain("## Validation Plan");
     expect(report).toContain("webmcp-behavior");
-    expect(report).toContain("full validation fallback: yes");
+    expect(report).toContain("full validation fallback: no");
   });
 });
 
