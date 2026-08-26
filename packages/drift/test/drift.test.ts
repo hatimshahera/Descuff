@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ApplicationModel, EvidenceRef } from "@descuff/ir";
 import type { StandardAssessment } from "@descuff/standard-core";
-import type { SourceFingerprintManifest, ValidationReadinessReport } from "@descuff/validator";
+import type {
+  SourceFingerprintManifest,
+  ValidationReadinessReport,
+  ValidationSummary
+} from "@descuff/validator";
 import {
   analyzeDrift,
   changedFilesFromFingerprints,
@@ -237,6 +241,43 @@ describe("@descuff/drift", () => {
     expect(report).toContain("webmcp-behavior");
     expect(report).toContain("full validation fallback: no");
   });
+
+  it("maps WebMCP validation failures to drift repair failures", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["app/api/search/route.ts"]
+    });
+    const check = createDriftCheckResult(
+      diff,
+      webMcpFailureSummary(),
+      createDriftValidationPlan(diff)
+    );
+
+    expect(check.status).toBe("fail");
+    expect(check.failures[0]).toMatchObject({
+      code: "WEBMCP_TOOL_DISCONNECTED",
+      affectedStandards: ["webmcp"]
+    });
+    expect(renderDriftReport(check)).toContain("## Suggested Repairs");
+  });
+
+  it("maps API runtime failures to OpenAPI behavior mismatch when OpenAPI is affected", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["app/api/search/route.ts"]
+    });
+    const check = createDriftCheckResult(
+      diff,
+      runtimeApiFailureSummary(),
+      createDriftValidationPlan(diff)
+    );
+
+    expect(check.status).toBe("fail");
+    expect(check.failures[0]).toMatchObject({
+      code: "OPENAPI_BEHAVIOR_MISMATCH",
+      affectedStandards: ["openapi"]
+    });
+  });
 });
 
 function fixtureBaseline() {
@@ -432,5 +473,42 @@ function fixtureValidationReport(): ValidationReadinessReport {
     },
     ready: true,
     blockers: []
+  };
+}
+
+function webMcpFailureSummary(): ValidationSummary {
+  return {
+    passed: false,
+    failures: [
+      {
+        code: "WEBMCP_TOOL_RUNTIME_MISMATCH",
+        level: "runtime",
+        severity: "error",
+        message: "WebMCP tool no longer matches the linked API.",
+        source: "capability:search",
+        evidence: [evidence],
+        suggestedAction: "Align the WebMCP tool result with the linked API response shape."
+      }
+    ],
+    warnings: []
+  };
+}
+
+function runtimeApiFailureSummary(): ValidationSummary {
+  return {
+    passed: false,
+    failures: [
+      {
+        code: "RUNTIME_API_STATUS_FAILED",
+        level: "runtime",
+        severity: "error",
+        message: "GET /api/search returned HTTP 500.",
+        source: "api:get:search",
+        path: "app/api/search/route.ts",
+        evidence: [evidence],
+        suggestedAction: "Fix the API handler or generated references."
+      }
+    ],
+    warnings: []
   };
 }

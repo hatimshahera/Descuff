@@ -61,6 +61,22 @@ export function renderDriftReport(result: DriftDiffResult | DriftCheckResult): s
     lines.push(...failures.map((failure) => `- ${failure.code}: ${failure.message}`));
   }
 
+  lines.push("", "## Suggested Repairs", "");
+  if (failures.length === 0) {
+    lines.push("- none");
+  } else {
+    const repairs = [
+      ...new Set(
+        failures.map((failure) =>
+          failure.file === undefined
+            ? failure.suggestedAction
+            : `${failure.file}: ${failure.suggestedAction}`
+        )
+      )
+    ];
+    lines.push(...repairs.map((repair) => `- ${repair}`));
+  }
+
   lines.push("");
   return lines.join("\n");
 }

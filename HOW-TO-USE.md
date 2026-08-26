@@ -159,6 +159,8 @@ npx descuff check .
 
 The drift report includes a validation plan with affected suites such as static standards, source fingerprints, runtime observations, WebMCP behavior, security model, and capability confidence. Descuff runs targeted suites for supported drift classes, and falls back to full validation when a narrower targeted validator cannot prove safety on its own.
 
+When validation fails, the report maps low-level validation failures into drift-oriented repair codes such as `WEBMCP_TOOL_DISCONNECTED`, `OPENAPI_BEHAVIOR_MISMATCH`, `MACHINE_CONTRACT_STALE`, and `STRUCTURED_METADATA_STALE`.
+
 CI systems can pass changed files directly:
 
 ```bash

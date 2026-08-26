@@ -10,6 +10,7 @@ All notable changes to Descuff will be documented in this file.
 - Added drift baseline contract fingerprints and typed baseline failures for missing, malformed, unsupported, and project-mismatched baselines.
 - Added drift validation plans that identify affected validation suites and explicitly record when full validation is used as the safety fallback.
 - Added targeted `descuff check` execution for static metadata, source fingerprints, runtime observations, WebMCP behavior, security model, and capability-confidence suites.
+- Added drift-level repair mapping for stale baselines, WebMCP disconnections, OpenAPI/API behavior mismatches, stale machine contracts, and structured metadata drift.
 
 ## 0.1.12 - 2026-08-25 - Cursor Platform Install
 

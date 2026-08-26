@@ -107,7 +107,9 @@ export function createDriftCheckResult(
     };
   }
 
-  const validationFailures = validation.failures.map(validationFailureToDriftFailure);
+  const validationFailures = validation.failures.map((failure) =>
+    validationFailureToDriftFailure(failure, diff)
+  );
   return {
     schemaVersion: driftResultSchemaVersion,
     status: validation.passed ? "pass" : "fail",
@@ -408,14 +410,90 @@ function driftFailuresForImpact(impactItem: DriftImpact): DriftFailure[] {
   ];
 }
 
-function validationFailureToDriftFailure(failure: ValidationFailure): DriftFailure {
+function validationFailureToDriftFailure(
+  failure: ValidationFailure,
+  diff: DriftDiffResult
+): DriftFailure {
+  const affectedStandards = affectedStandardsForValidationFailure(failure, diff);
   return {
-    code: failure.code,
+    code: driftCodeForValidationFailure(failure, diff),
     message: failure.message,
     file: failure.path ?? failure.source,
-    affectedStandards: [],
-    suggestedAction: failure.suggestedAction
+    affectedStandards,
+    suggestedAction: repairActionForValidationFailure(failure, affectedStandards)
   };
+}
+
+function driftCodeForValidationFailure(
+  failure: ValidationFailure,
+  diff: DriftDiffResult
+): DriftFailure["code"] {
+  if (failure.code === "EVIDENCE_STALE" || failure.code === "EVIDENCE_SOURCE_MISSING") {
+    return "DRIFT_BASELINE_STALE";
+  }
+
+  if (failure.code.startsWith("WEBMCP_")) {
+    return "WEBMCP_TOOL_DISCONNECTED";
+  }
+
+  if (failure.code.startsWith("SCHEMA_ORG_")) {
+    return "STRUCTURED_METADATA_STALE";
+  }
+
+  if (
+    diff.affectedStandards.includes("openapi") &&
+    (failure.code.startsWith("RUNTIME_API_") || failure.code.startsWith("OPENAPI_"))
+  ) {
+    return "OPENAPI_BEHAVIOR_MISMATCH";
+  }
+
+  if (
+    failure.code.startsWith("API_CATALOG_") ||
+    failure.code.startsWith("LLMS_TXT_") ||
+    failure.code.startsWith("OPENAPI_")
+  ) {
+    return "MACHINE_CONTRACT_STALE";
+  }
+
+  return failure.code;
+}
+
+function affectedStandardsForValidationFailure(
+  failure: ValidationFailure,
+  diff: DriftDiffResult
+): string[] {
+  if (failure.code.startsWith("WEBMCP_")) {
+    return ["webmcp"];
+  }
+
+  if (failure.code.startsWith("OPENAPI_") || failure.code.startsWith("RUNTIME_API_")) {
+    return diff.affectedStandards.includes("openapi") ? ["openapi"] : [];
+  }
+
+  if (failure.code.startsWith("SCHEMA_ORG_")) {
+    return ["schema-org"];
+  }
+
+  if (failure.code.startsWith("API_CATALOG_")) {
+    return ["api-catalog"];
+  }
+
+  if (failure.code.startsWith("LLMS_TXT_")) {
+    return ["llms-txt"];
+  }
+
+  return diff.affectedStandards;
+}
+
+function repairActionForValidationFailure(
+  failure: ValidationFailure,
+  affectedStandards: string[]
+): string {
+  if (affectedStandards.length === 0) {
+    return failure.suggestedAction;
+  }
+
+  return `${failure.suggestedAction} Affected agent-facing interface(s): ${affectedStandards.join(", ")}.`;
 }
 
 function chooseValidationDepth(impacts: DriftImpact[]): DriftValidationDepth {
