@@ -5,6 +5,8 @@ Command-line entry point for Descuff, an open-source tool that helps developers 
 ```bash
 npx descuff start .
 npx descuff finish .
+npx descuff diff .
+npx descuff check .
 npx descuff install --platform codex
 npx descuff install --platform claude-code .
 npx descuff install --platform cursor .
@@ -12,6 +14,8 @@ npx descuff enrich .
 ```
 
 `start` creates a baseline, plan, and coding-agent prompt in `.descuff/`. `finish` rescans after implementation and writes the before/after validation report.
+
+`diff` compares changed files against `.descuff/drift-baseline.json` and writes a drift impact report. `check` fast-passes irrelevant changes and runs validation when routes, APIs, capabilities, auth boundaries, or published standards may have changed.
 
 `install --platform codex` installs the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`. `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`. `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`. `install all` still writes local preview skill instructions under `.descuff/skills/`.
 

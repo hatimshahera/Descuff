@@ -110,6 +110,7 @@ Descuff writes:
 
 - `final-validation.json`: final readiness and validation result
 - `before-after.md`: human-readable before/after report
+- `drift-baseline.json`: baseline used by later `diff` and `check` runs
 
 Example:
 
@@ -137,6 +138,60 @@ Check:
 - validation warnings
 - remaining lost readiness points
 - whether sensitive or mutating capabilities were preserved safely
+
+## 5. Keep Readiness From Drifting
+
+After a successful `start` or `finish`, Descuff writes `.descuff/drift-baseline.json`.
+
+Use `diff` to see whether a change can affect agent readiness:
+
+```bash
+npx descuff diff .
+```
+
+Use `check` in CI:
+
+```bash
+npx descuff check .
+```
+
+`check` fast-passes changes such as docs, tests, styles, images, and GitHub metadata. If a change touches routes, APIs, capabilities, auth boundaries, or published agent-facing standards, Descuff runs validation and writes `.descuff/drift-check.json` plus `.descuff/drift-report.md`.
+
+CI systems can pass changed files directly:
+
+```bash
+DESCUFF_CHANGED_FILES="app/page.tsx,app/api/search/route.ts" npx descuff check .
+```
+
+Or compare against a base ref:
+
+```bash
+DESCUFF_BASE_REF=origin/main npx descuff check .
+```
+
+Minimal GitHub Actions example:
+
+```yaml
+name: Descuff
+
+on:
+  pull_request:
+
+jobs:
+  agent-readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: DESCUFF_BASE_REF=origin/main npx descuff check .
+```
 
 ## Command Reference
 
@@ -169,6 +224,18 @@ npx descuff plan .
 ```
 
 Write only the implementation plan files.
+
+```bash
+npx descuff diff .
+```
+
+Compare changed files against the latest drift baseline and report whether validation is needed.
+
+```bash
+npx descuff check .
+```
+
+Fast-pass irrelevant changes and validate changes that can affect agent readiness.
 
 ```bash
 npx descuff install all .

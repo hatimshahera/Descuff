@@ -19,6 +19,7 @@
     { "path": "../standards/openapi" },
     { "path": "../standards/api-catalog" },
     { "path": "../standards/webmcp" },
-    { "path": "../validator" }
+    { "path": "../validator" },
+    { "path": "../drift" }
   ]
 }

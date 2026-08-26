@@ -8,6 +8,8 @@ const commands = [
   "plan",
   "start",
   "finish",
+  "diff",
+  "check",
   "fix",
   "install",
   "apply-safe",
@@ -35,7 +37,11 @@ for (const command of commands) {
         ? [cliPath, command, "all", fixtureRoot]
         : [cliPath, command, fixtureRoot];
   const result = spawnSync(process.execPath, args, {
-    encoding: "utf8"
+    encoding: "utf8",
+    env:
+      command === "diff" || command === "check"
+        ? { ...process.env, DESCUFF_CHANGED_FILES: "README.md" }
+        : process.env
   });
 
   if (result.status !== 0) {
@@ -57,13 +63,17 @@ for (const command of commands) {
               ? "descuff start completed"
               : command === "finish"
                 ? "descuff finish passed"
-                : command === "install"
-                  ? "descuff install completed"
-                  : command === "enrich"
-                    ? "descuff enrich passed"
-                    : command === "validate"
-                      ? "descuff validate passed"
-                      : "no automatic file writes are enabled";
+                : command === "diff"
+                  ? "descuff diff pass"
+                  : command === "check"
+                    ? "descuff check pass"
+                    : command === "install"
+                      ? "descuff install completed"
+                      : command === "enrich"
+                        ? "descuff enrich passed"
+                        : command === "validate"
+                          ? "descuff validate passed"
+                          : "no automatic file writes are enabled";
 
   if (!result.stdout.includes(expectedOutput)) {
     console.error(`descuff ${command} produced unexpected output`);

@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
+import { execFile } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { promisify } from "node:util";
 import {
   buildAgentPlan,
   buildGraphifyEnrichmentSummary,
@@ -30,6 +32,15 @@ import {
   isDescuffCommand,
   type CommandResult
 } from "@descuff/core";
+import {
+  analyzeDrift,
+  changedFilesFromFingerprints,
+  createDriftBaseline,
+  createDriftCheckResult,
+  renderDriftReport,
+  type DriftBaseline,
+  type DriftDiffResult
+} from "@descuff/drift";
 import {
   structuralAnalysisToApplicationModel,
   type ApplicationModel,
@@ -67,10 +78,14 @@ Usage:
   descuff install [codex|claude-code|cursor|all] [project-root]
   descuff install --platform [codex|claude-code|cursor] [project-root]
   descuff install codex --global
+  descuff diff [project-root]
+  descuff check [project-root]
 
 Commands:
   ${descuffCommands.join("\n  ")}
 `;
+
+const execFileAsync = promisify(execFile);
 
 interface ScanArtifacts {
   analysis: StructuralAnalysis;
@@ -132,6 +147,10 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
         return ok(await startCommand(projectRoot));
       case "finish":
         return await finishCommand(projectRoot);
+      case "diff":
+        return await diffCommand(projectRoot);
+      case "check":
+        return await checkCommand(projectRoot);
       case "fix":
         return {
           exitCode: 0,
@@ -398,8 +417,17 @@ async function startCommand(projectRoot: string): Promise<string> {
   await writeScanArtifacts(projectRoot, artifacts);
   const validation = await validateArtifacts(projectRoot, artifacts);
   const baseline = createBaselineSnapshot(artifacts, validation.report);
+  const driftBaseline = createDriftBaseline({
+    model: artifacts.model,
+    assessments: artifacts.assessments,
+    sourceFingerprints: artifacts.sourceFingerprints,
+    validationReport: validation.report
+  });
 
   await writeJson(projectRoot, "baseline.json", baseline);
+  if (validation.summary.passed) {
+    await writeJson(projectRoot, "drift-baseline.json", driftBaseline);
+  }
   await writePlanArtifacts(projectRoot, artifacts);
   await writeArtifact(projectRoot, "codex-prompt.md", renderCodexPrompt());
 
@@ -432,6 +460,18 @@ async function finishCommand(projectRoot: string): Promise<CommandResult> {
 
   await writeJson(projectRoot, "final-validation.json", validation.report);
   await writeArtifact(projectRoot, "before-after.md", comparison);
+  if (validation.summary.passed) {
+    await writeJson(
+      projectRoot,
+      "drift-baseline.json",
+      createDriftBaseline({
+        model: artifacts.model,
+        assessments: artifacts.assessments,
+        sourceFingerprints: artifacts.sourceFingerprints,
+        validationReport: validation.report
+      })
+    );
+  }
 
   const stdout = `${[
     `descuff finish ${validation.summary.passed ? "passed" : "failed"}`,
@@ -448,6 +488,66 @@ async function finishCommand(projectRoot: string): Promise<CommandResult> {
     exitCode: validation.summary.passed ? 0 : 1,
     stdout,
     stderr: ""
+  };
+}
+
+async function diffCommand(projectRoot: string): Promise<CommandResult> {
+  const baseline = await readJson<DriftBaseline>(projectRoot, "drift-baseline.json");
+  const changedFiles = await discoverChangedFiles(projectRoot, baseline);
+  const diff = analyzeDrift({ baseline, changedFiles });
+
+  await writeJson(projectRoot, "drift-diff.json", diff);
+  await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(diff));
+
+  return {
+    exitCode: diff.status === "fail" ? 1 : 0,
+    stdout: renderDriftCommandOutput(projectRoot, "diff", diff),
+    stderr:
+      diff.status === "fail" ? `${diff.failures.map((failure) => failure.code).join("\n")}\n` : ""
+  };
+}
+
+async function checkCommand(projectRoot: string): Promise<CommandResult> {
+  const baseline = await readJson<DriftBaseline>(projectRoot, "drift-baseline.json");
+  const changedFiles = await discoverChangedFiles(projectRoot, baseline);
+  const diff = analyzeDrift({ baseline, changedFiles });
+
+  await writeJson(projectRoot, "drift-diff.json", diff);
+
+  if (diff.status === "pass" || diff.status === "fail") {
+    const check = createDriftCheckResult(diff);
+    await writeJson(projectRoot, "drift-check.json", check);
+    await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(check));
+
+    return {
+      exitCode: check.status === "pass" ? 0 : 1,
+      stdout: renderDriftCommandOutput(
+        projectRoot,
+        "check",
+        check.diff,
+        check.summary,
+        check.status
+      ),
+      stderr:
+        check.status === "pass"
+          ? ""
+          : `${check.failures.map((failure) => failure.code).join("\n")}\n`
+    };
+  }
+
+  const artifacts = await buildScanArtifacts(projectRoot);
+  await writeScanArtifacts(projectRoot, artifacts);
+  const validation = await validateArtifacts(projectRoot, artifacts);
+  const check = createDriftCheckResult(diff, validation.summary);
+
+  await writeJson(projectRoot, "drift-check.json", check);
+  await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(check));
+
+  return {
+    exitCode: check.status === "pass" ? 0 : 1,
+    stdout: renderDriftCommandOutput(projectRoot, "check", check.diff, check.summary, check.status),
+    stderr:
+      check.status === "pass" ? "" : `${check.failures.map((failure) => failure.code).join("\n")}\n`
   };
 }
 
@@ -471,6 +571,97 @@ async function validateCommand(projectRoot: string): Promise<CommandResult> {
     exitCode: validation.summary.passed ? 0 : 1,
     stdout,
     stderr: ""
+  };
+}
+
+function renderDriftCommandOutput(
+  projectRoot: string,
+  command: "diff" | "check",
+  diff: DriftDiffResult,
+  summary = diff.summary,
+  status = diff.status
+): string {
+  return [
+    `descuff ${command} ${status}`,
+    summary,
+    `Changed files: ${diff.changedFiles.length}`,
+    `Impacts: ${diff.impacts.filter((impact) => impact.kind !== "none").length}`,
+    `Affected capabilities: ${diff.affectedCapabilities.length}`,
+    `Affected standards: ${diff.affectedStandards.join(", ") || "none"}`,
+    `Validation depth: ${diff.validationDepth}`,
+    `Report: ${join(artifactDir(projectRoot), "drift-report.md")}`,
+    ""
+  ].join("\n");
+}
+
+async function discoverChangedFiles(
+  projectRoot: string,
+  baseline: DriftBaseline
+): Promise<string[]> {
+  const fromEnvironment = changedFilesFromEnvironment();
+  if (fromEnvironment.length > 0) {
+    return fromEnvironment;
+  }
+
+  const fromGit = await changedFilesFromGit(projectRoot);
+  if (fromGit !== undefined) {
+    return fromGit;
+  }
+
+  return changedFilesFromFingerprints(
+    baseline,
+    await fingerprintBaselineSourceFiles(projectRoot, baseline.sourceFingerprints)
+  );
+}
+
+function changedFilesFromEnvironment(): string[] {
+  const raw = process.env.DESCUFF_CHANGED_FILES;
+  if (raw === undefined || raw.trim().length === 0) {
+    return [];
+  }
+
+  return uniqueSorted(
+    raw
+      .split(/[\n,]/)
+      .map((file) => file.trim())
+      .filter((file) => file.length > 0)
+  );
+}
+
+async function changedFilesFromGit(projectRoot: string): Promise<string[] | undefined> {
+  const baseRef = process.env.DESCUFF_BASE_REF;
+  const args =
+    baseRef === undefined || baseRef.trim().length === 0
+      ? ["diff", "--name-only", "HEAD", "--"]
+      : ["diff", "--name-only", `${baseRef.trim()}...HEAD`, "--"];
+
+  try {
+    const result = await execFileAsync("git", args, { cwd: projectRoot });
+    return uniqueSorted(
+      String(result.stdout)
+        .split("\n")
+        .map((file) => file.trim())
+        .filter((file) => file.length > 0)
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+async function fingerprintBaselineSourceFiles(
+  projectRoot: string,
+  baselineFingerprints: SourceFingerprintManifest
+): Promise<SourceFingerprintManifest> {
+  const files: SourceFileFingerprint[] = [];
+
+  for (const file of baselineFingerprints.files) {
+    files.push(await fingerprintSourceFile(projectRoot, file.path, file.evidence));
+  }
+
+  return {
+    schemaVersion: "0.1.0",
+    generatedAt: new Date(0).toISOString(),
+    files
   };
 }
 

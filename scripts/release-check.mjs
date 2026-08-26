@@ -11,6 +11,7 @@ const packageJsonPaths = [
   "packages/cli/package.json",
   "packages/config/package.json",
   "packages/core/package.json",
+  "packages/drift/package.json",
   "packages/ir/package.json",
   "packages/reporter/package.json",
   "packages/standards/api-catalog/package.json",

@@ -57,6 +57,7 @@ Descuff rescans, validates, and writes:
 - Generates a conservative implementation plan for a developer-owned coding agent.
 - Validates standards, security boundaries, runtime evidence, and readiness.
 - Reports before/after improvement so teams can see what changed.
+- Tracks a local drift baseline so CI can fast-pass irrelevant changes and revalidate agent-facing changes before they ship.
 
 ## Why It Exists
 
@@ -76,6 +77,8 @@ npx descuff finish [project-root]
 npx descuff scan [project-root]
 npx descuff report [project-root]
 npx descuff plan [project-root]
+npx descuff diff [project-root]
+npx descuff check [project-root]
 npx descuff install [codex|claude-code|cursor|all] [project-root]
 npx descuff install --platform codex
 npx descuff install --platform claude-code [project-root]
@@ -98,6 +101,8 @@ Lower-level commands:
 - `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/graphify-enrichment.*`, `.descuff/skill-evidence-packet.*`, and semantic-enrichment prompt/template artifacts.
 - `report` prints domain profile, compatibility application type, capability count, route/API counts, and standard status.
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
+- `diff` compares changed files against `.descuff/drift-baseline.json` and writes `.descuff/drift-diff.json` plus `.descuff/drift-report.md`.
+- `check` performs the same drift analysis, fast-passes unrelated changes, and runs validation for changes that can affect routes, APIs, capabilities, auth boundaries, or published standards.
 - `install --platform codex` installs the tested Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`; invoke it with `$descuff .`.
 - `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`; invoke it with `/descuff .`.
 - `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`; ask Cursor Agent to Descuff the app from that project.

@@ -108,11 +108,70 @@ describe("descuff CLI", () => {
 
   it("starts a baseline-to-agent workflow for a Next.js fixture", async () => {
     const result = await runCli(["node", "descuff", "start", fixtureRoot]);
+    const driftBaseline = await readFile(
+      join(fixtureRoot, ".descuff", "drift-baseline.json"),
+      "utf8"
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("descuff start completed");
     expect(result.stdout).toContain("Baseline readiness: 100/100");
     expect(result.stdout).toContain("codex-prompt.md");
+    expect(driftBaseline).toContain('"schemaVersion": "0.1.0"');
+  });
+
+  it("diffs changed files against the drift baseline", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-diff-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      process.env.DESCUFF_CHANGED_FILES = "README.md";
+
+      const result = await runCli(["node", "descuff", "diff", projectRoot]);
+      const report = await readFile(join(projectRoot, ".descuff", "drift-report.md"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff diff pass");
+      expect(result.stdout).toContain("Validation depth: none");
+      expect(report).toContain("Descuff Drift Report");
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("checks impacted changes with validation", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      process.env.DESCUFF_CHANGED_FILES = "app/api/search/route.ts";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+      const check = await readFile(join(projectRoot, ".descuff", "drift-check.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff check pass");
+      expect(result.stdout).toContain("Validation depth: targeted-runtime");
+      expect(check).toContain('"status": "pass"');
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("does not generate API or WebMCP plans for static sites without APIs", async () => {
@@ -430,6 +489,8 @@ describe("descuff CLI", () => {
       "plan",
       "start",
       "finish",
+      "diff",
+      "check",
       "fix",
       "install",
       "enrich",

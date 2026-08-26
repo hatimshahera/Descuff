@@ -4,6 +4,8 @@ export const descuffCommands = [
   "plan",
   "start",
   "finish",
+  "diff",
+  "check",
   "fix",
   "install",
   "enrich",

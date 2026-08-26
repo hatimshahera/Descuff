@@ -19,6 +19,8 @@ describe("@descuff/core", () => {
       "plan",
       "start",
       "finish",
+      "diff",
+      "check",
       "fix",
       "install",
       "enrich",

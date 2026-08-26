@@ -4,6 +4,10 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+### Added
+
+- Added initial continuous-readiness drift detection with `descuff diff`, `descuff check`, `.descuff/drift-baseline.json`, `.descuff/drift-diff.json`, `.descuff/drift-check.json`, and `.descuff/drift-report.md`.
+
 ## 0.1.12 - 2026-08-25 - Cursor Platform Install
 
 ### Added

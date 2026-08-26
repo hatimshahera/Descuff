@@ -45,6 +45,7 @@
     "@descuff/analyzer-graphify": "^0.1.12",
     "@descuff/analyzer-nextjs": "^0.1.12",
     "@descuff/core": "^0.1.12",
+    "@descuff/drift": "^0.1.12",
     "@descuff/ir": "^0.1.12",
     "@descuff/reporter": "^0.1.12",
     "@descuff/standard-api-catalog": "^0.1.12",

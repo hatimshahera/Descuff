@@ -99,6 +99,9 @@ importers:
       "@descuff/core":
         specifier: ^0.1.12
         version: link:../core
+      "@descuff/drift":
+        specifier: ^0.1.12
+        version: link:../drift
       "@descuff/ir":
         specifier: ^0.1.12
         version: link:../ir
@@ -138,6 +141,18 @@ importers:
       "@descuff/ir":
         specifier: ^0.1.12
         version: link:../ir
+
+  packages/drift:
+    dependencies:
+      "@descuff/ir":
+        specifier: ^0.1.12
+        version: link:../ir
+      "@descuff/standard-core":
+        specifier: ^0.1.12
+        version: link:../standards/core
+      "@descuff/validator":
+        specifier: ^0.1.12
+        version: link:../validator
 
   packages/ir: {}
 

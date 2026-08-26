@@ -16,6 +16,7 @@
     { "path": "./packages/validator" },
     { "path": "./packages/reporter" },
     { "path": "./packages/agent-workflow" },
+    { "path": "./packages/drift" },
     { "path": "./packages/cli" }
   ]
 }
