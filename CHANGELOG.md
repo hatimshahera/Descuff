@@ -2,15 +2,15 @@
 
 All notable changes to Descuff will be documented in this file.
 
-## Unreleased
+## Unreleased - Next Changes
 
-## 0.1.12 - 2026-08-25
+## 0.1.12 - 2026-08-25 - Cursor Platform Install
 
 ### Added
 
 - Added `descuff install --platform cursor` to write a Cursor project rule at `.cursor/rules/descuff.mdc`.
 
-## 0.1.11 - 2026-08-25
+## 0.1.11 - 2026-08-25 - Host-Agent Skill Workflow
 
 ### Added
 
@@ -29,13 +29,13 @@ All notable changes to Descuff will be documented in this file.
 
 - Tightened host-agent semantic-enrichment validation so malformed JSON with renamed or missing required fields is rejected before it can appear in accepted enrichment output.
 
-## 0.1.1 - 2026-08-24
+## 0.1.1 - 2026-08-24 - npm Dependency Range Fix
 
 ### Fixed
 
 - Replaced publish-time `workspace:` dependency ranges with concrete `^0.1.1` internal package ranges so `npx descuff@0.1.1` installs correctly from npm.
 
-## 0.1.0 - 2026-08-21
+## 0.1.0 - 2026-08-21 - Public Preview Hardening
 
 ### Added
 
@@ -59,7 +59,7 @@ All notable changes to Descuff will be documented in this file.
 - The audit intentionally used `descuff start`, model/plan inspection, and validation results as the benchmark loop. Implementing standards inside every external repository was skipped because it would be expensive and would mainly test coding-agent behavior, not Descuff's analysis and validation engine.
 - Remaining known limitation: generated `llms.txt` validation can reject intercepted/parallel App Router route markers until those route references are normalized or omitted.
 
-## 0.0.2 - 2026-08-20
+## 0.0.2 - 2026-08-20 - Start And Finish Workflow
 
 ### Added
 
@@ -70,7 +70,7 @@ All notable changes to Descuff will be documented in this file.
 
 - `descuff validate` now rescans before scoring readiness so stale validation artifacts do not survive source changes.
 
-## 0.0.1 - 2026-08-20
+## 0.0.1 - 2026-08-20 - Initial Monorepo Foundation
 
 ### Added
 

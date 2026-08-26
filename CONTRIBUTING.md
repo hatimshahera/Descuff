@@ -65,4 +65,5 @@ pnpm run ci
 - Include tests for behavior changes.
 - Call out safety implications, especially for generated standards, WebMCP browser-tool registration, authenticated routes, Server Actions, or mutating APIs.
 - Include before/after CLI output when changing command behavior.
+- Use a one-line release heading in `CHANGELOG.md` for dated entries: `## version - YYYY-MM-DD - Short Release Title`.
 - Keep unrelated formatting churn out of the diff.
