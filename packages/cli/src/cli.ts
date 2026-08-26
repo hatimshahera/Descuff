@@ -37,6 +37,7 @@ import {
   changedFilesFromFingerprints,
   createDriftBaseline,
   createDriftCheckResult,
+  createDriftValidationPlan,
   createMissingDriftBaselineResult,
   renderDriftReport,
   type DriftBaseline,
@@ -519,7 +520,7 @@ async function checkCommand(projectRoot: string): Promise<CommandResult> {
   const baseline = await readDriftBaseline(projectRoot);
   if (baseline === undefined) {
     const diff = createMissingDriftBaselineResult();
-    const check = createDriftCheckResult(diff);
+    const check = createDriftCheckResult(diff, undefined, createDriftValidationPlan(diff));
     await writeJson(projectRoot, "drift-diff.json", diff);
     await writeJson(projectRoot, "drift-check.json", check);
     await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(check));
@@ -532,7 +533,7 @@ async function checkCommand(projectRoot: string): Promise<CommandResult> {
   await writeJson(projectRoot, "drift-diff.json", diff);
 
   if (diff.status === "pass" || diff.status === "fail") {
-    const check = createDriftCheckResult(diff);
+    const check = createDriftCheckResult(diff, undefined, createDriftValidationPlan(diff));
     await writeJson(projectRoot, "drift-check.json", check);
     await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(check));
 
@@ -555,7 +556,7 @@ async function checkCommand(projectRoot: string): Promise<CommandResult> {
   const artifacts = await buildScanArtifacts(projectRoot);
   await writeScanArtifacts(projectRoot, artifacts);
   const validation = await validateArtifacts(projectRoot, artifacts);
-  const check = createDriftCheckResult(diff, validation.summary);
+  const check = createDriftCheckResult(diff, validation.summary, createDriftValidationPlan(diff));
 
   await writeJson(projectRoot, "drift-check.json", check);
   await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(check));

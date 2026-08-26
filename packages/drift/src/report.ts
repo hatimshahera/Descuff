@@ -44,6 +44,16 @@ export function renderDriftReport(result: DriftDiffResult | DriftCheckResult): s
     );
   }
 
+  const plan = "validationPlan" in result ? result.validationPlan : undefined;
+  lines.push("", "## Validation Plan", "");
+  if (plan === undefined) {
+    lines.push("- none recorded");
+  } else {
+    lines.push(`- suites: ${plan.suites.join(", ") || "none"}`);
+    lines.push(`- full validation fallback: ${plan.fullValidationFallback ? "yes" : "no"}`);
+    lines.push(...plan.reasons.map((reason) => `- reason: ${reason}`));
+  }
+
   lines.push("", "## Failures", "");
   if (failures.length === 0) {
     lines.push("- none");

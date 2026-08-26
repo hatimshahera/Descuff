@@ -7,6 +7,7 @@ import {
   changedFilesFromFingerprints,
   createDriftBaseline,
   createDriftCheckResult,
+  createDriftValidationPlan,
   renderDriftReport
 } from "../src/index.js";
 
@@ -92,11 +93,54 @@ describe("@descuff/drift", () => {
     });
 
     expect(diff.status).toBe("needs-validation");
-    expect(diff.validationDepth).toBe("targeted-static");
+    expect(diff.validationDepth).toBe("targeted-runtime");
     expect(diff.impacts[0]).toMatchObject({
       kind: "server-action",
       affectedStandards: ["webmcp"]
     });
+  });
+
+  it("plans static validation for machine-facing metadata drift", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["openapi.json"]
+    });
+    const plan = createDriftValidationPlan(diff);
+
+    expect(diff.validationDepth).toBe("targeted-static");
+    expect(plan.suites).toEqual(["source-fingerprints", "static-standards"]);
+    expect(plan.fullValidationFallback).toBe(true);
+  });
+
+  it("plans runtime and WebMCP validation for API drift", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["app/api/search/route.ts"]
+    });
+    const plan = createDriftValidationPlan(diff);
+
+    expect(plan.validationDepth).toBe("targeted-runtime");
+    expect(plan.suites).toEqual([
+      "runtime-observations",
+      "security-model",
+      "source-fingerprints",
+      "static-generated-changes",
+      "static-standards",
+      "webmcp-behavior"
+    ]);
+    expect(plan.reasons).toContain("API or runtime-observed behavior changed.");
+  });
+
+  it("plans full validation for unknown drift", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["lib/new-thing.ts"]
+    });
+    const plan = createDriftValidationPlan(diff);
+
+    expect(diff.validationDepth).toBe("full");
+    expect(plan.suites).toEqual(["full-validation"]);
+    expect(plan.reasons).toContain("Targeted validation cannot prove safety for this change set.");
   });
 
   it("maps WebMCP metadata changes directly to the WebMCP standard", () => {
@@ -178,6 +222,19 @@ describe("@descuff/drift", () => {
 
     expect(renderDriftReport(diff)).toContain("AGENT_INTERFACE_DRIFT");
     expect(renderDriftReport(diff)).toContain("search_products");
+  });
+
+  it("renders the validation plan in check reports", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["app/api/search/route.ts"]
+    });
+    const check = createDriftCheckResult(diff, undefined, createDriftValidationPlan(diff));
+    const report = renderDriftReport(check);
+
+    expect(report).toContain("## Validation Plan");
+    expect(report).toContain("webmcp-behavior");
+    expect(report).toContain("full validation fallback: yes");
   });
 });
 

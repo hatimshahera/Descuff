@@ -20,6 +20,16 @@ export type DriftImpactKind =
 
 export type DriftStatus = "pass" | "needs-validation" | "fail";
 export type DriftValidationDepth = "none" | "targeted-static" | "targeted-runtime" | "full";
+export type DriftValidationSuite =
+  | "none"
+  | "static-generated-changes"
+  | "static-standards"
+  | "source-fingerprints"
+  | "runtime-observations"
+  | "webmcp-behavior"
+  | "security-model"
+  | "capability-confidence"
+  | "full-validation";
 
 export interface DriftBaseline {
   schemaVersion: string;
@@ -141,8 +151,17 @@ export interface DriftCheckResult {
   schemaVersion: string;
   status: DriftStatus;
   validationDepth: DriftValidationDepth;
+  validationPlan?: DriftValidationPlan;
   diff: DriftDiffResult;
   validation?: ValidationSummary;
   failures: DriftFailure[];
   summary: string;
+}
+
+export interface DriftValidationPlan {
+  schemaVersion: string;
+  validationDepth: DriftValidationDepth;
+  suites: DriftValidationSuite[];
+  fullValidationFallback: boolean;
+  reasons: string[];
 }

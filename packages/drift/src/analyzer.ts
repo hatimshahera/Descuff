@@ -14,7 +14,8 @@ import {
   type DriftFailure,
   type DriftImpact,
   type DriftImpactKind,
-  type DriftValidationDepth
+  type DriftValidationDepth,
+  type DriftValidationPlan
 } from "./types.js";
 import { normalizePath, uniqueSorted } from "./shared.js";
 
@@ -65,13 +66,17 @@ export function analyzeDrift(input: DriftDiffInput): DriftDiffResult {
 
 export function createDriftCheckResult(
   diff: DriftDiffResult,
-  validation?: ValidationSummary
+  validation?: ValidationSummary,
+  validationPlan?: DriftValidationPlan
 ): DriftCheckResult {
+  const planProperties = validationPlan === undefined ? {} : { validationPlan };
+
   if (diff.status === "fail") {
     return {
       schemaVersion: driftResultSchemaVersion,
       status: "fail",
       validationDepth: diff.validationDepth,
+      ...planProperties,
       diff,
       failures: diff.failures,
       summary: diff.summary
@@ -83,6 +88,7 @@ export function createDriftCheckResult(
       schemaVersion: driftResultSchemaVersion,
       status: "pass",
       validationDepth: "none",
+      ...planProperties,
       diff,
       failures: [],
       summary: "No agent-facing capability changes detected."
@@ -94,6 +100,7 @@ export function createDriftCheckResult(
       schemaVersion: driftResultSchemaVersion,
       status: "needs-validation",
       validationDepth: diff.validationDepth,
+      ...planProperties,
       diff,
       failures: diff.failures,
       summary: diff.summary
@@ -105,6 +112,7 @@ export function createDriftCheckResult(
     schemaVersion: driftResultSchemaVersion,
     status: validation.passed ? "pass" : "fail",
     validationDepth: diff.validationDepth,
+    ...planProperties,
     diff,
     validation,
     failures: validation.passed ? [] : validationFailures,
@@ -419,7 +427,7 @@ function chooseValidationDepth(impacts: DriftImpact[]): DriftValidationDepth {
     return "full";
   }
 
-  if (impacts.some((item) => item.kind === "api" || item.kind === "runtime")) {
+  if (impacts.some((item) => ["api", "runtime", "route", "server-action"].includes(item.kind))) {
     return "targeted-runtime";
   }
 

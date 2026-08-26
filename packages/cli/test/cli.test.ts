@@ -240,6 +240,8 @@ describe("descuff CLI", () => {
       expect(result.stdout).toContain("descuff check pass");
       expect(result.stdout).toContain("Validation depth: targeted-runtime");
       expect(check).toContain('"status": "pass"');
+      expect(check).toContain('"validationPlan"');
+      expect(check).toContain('"webmcp-behavior"');
     } finally {
       if (previousChangedFiles === undefined) {
         delete process.env.DESCUFF_CHANGED_FILES;
