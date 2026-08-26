@@ -37,6 +37,7 @@ import {
   changedFilesFromFingerprints,
   createDriftBaseline,
   createDriftCheckResult,
+  createMissingDriftBaselineResult,
   renderDriftReport,
   type DriftBaseline,
   type DriftDiffResult
@@ -492,9 +493,16 @@ async function finishCommand(projectRoot: string): Promise<CommandResult> {
 }
 
 async function diffCommand(projectRoot: string): Promise<CommandResult> {
-  const baseline = await readJson<DriftBaseline>(projectRoot, "drift-baseline.json");
+  const baseline = await readDriftBaseline(projectRoot);
+  if (baseline === undefined) {
+    const diff = createMissingDriftBaselineResult();
+    await writeJson(projectRoot, "drift-diff.json", diff);
+    await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(diff));
+    return driftFailureCommandResult(projectRoot, "diff", diff);
+  }
+
   const changedFiles = await discoverChangedFiles(projectRoot, baseline);
-  const diff = analyzeDrift({ baseline, changedFiles });
+  const diff = analyzeDrift({ baseline, changedFiles, projectRoot });
 
   await writeJson(projectRoot, "drift-diff.json", diff);
   await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(diff));
@@ -508,9 +516,18 @@ async function diffCommand(projectRoot: string): Promise<CommandResult> {
 }
 
 async function checkCommand(projectRoot: string): Promise<CommandResult> {
-  const baseline = await readJson<DriftBaseline>(projectRoot, "drift-baseline.json");
+  const baseline = await readDriftBaseline(projectRoot);
+  if (baseline === undefined) {
+    const diff = createMissingDriftBaselineResult();
+    const check = createDriftCheckResult(diff);
+    await writeJson(projectRoot, "drift-diff.json", diff);
+    await writeJson(projectRoot, "drift-check.json", check);
+    await writeArtifact(projectRoot, "drift-report.md", renderDriftReport(check));
+    return driftFailureCommandResult(projectRoot, "check", check.diff, check.summary, check.status);
+  }
+
   const changedFiles = await discoverChangedFiles(projectRoot, baseline);
-  const diff = analyzeDrift({ baseline, changedFiles });
+  const diff = analyzeDrift({ baseline, changedFiles, projectRoot });
 
   await writeJson(projectRoot, "drift-diff.json", diff);
 
@@ -548,6 +565,20 @@ async function checkCommand(projectRoot: string): Promise<CommandResult> {
     stdout: renderDriftCommandOutput(projectRoot, "check", check.diff, check.summary, check.status),
     stderr:
       check.status === "pass" ? "" : `${check.failures.map((failure) => failure.code).join("\n")}\n`
+  };
+}
+
+function driftFailureCommandResult(
+  projectRoot: string,
+  command: "diff" | "check",
+  diff: DriftDiffResult,
+  summary = diff.summary,
+  status = diff.status
+): CommandResult {
+  return {
+    exitCode: 1,
+    stdout: renderDriftCommandOutput(projectRoot, command, diff, summary, status),
+    stderr: `${diff.failures.map((failure) => failure.code).join("\n")}\n`
   };
 }
 
@@ -612,6 +643,17 @@ async function discoverChangedFiles(
     baseline,
     await fingerprintBaselineSourceFiles(projectRoot, baseline.sourceFingerprints)
   );
+}
+
+async function readDriftBaseline(projectRoot: string): Promise<DriftBaseline | undefined> {
+  try {
+    return await readJson<DriftBaseline>(projectRoot, "drift-baseline.json");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 function changedFilesFromEnvironment(): string[] {

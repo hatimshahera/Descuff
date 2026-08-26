@@ -147,6 +147,82 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("fails diff with a typed error when the drift baseline is missing", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-diff-missing-"));
+
+    try {
+      const result = await runCli(["node", "descuff", "diff", tempRoot]);
+      const report = await readFile(join(tempRoot, ".descuff", "drift-report.md"), "utf8");
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff diff fail");
+      expect(result.stderr).toContain("DRIFT_BASELINE_MISSING");
+      expect(report).toContain("DRIFT_BASELINE_MISSING");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails check with a typed error when the drift baseline is malformed", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-malformed-"));
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await mkdir(join(tempRoot, ".descuff"), { recursive: true });
+      await writeFile(
+        join(tempRoot, ".descuff", "drift-baseline.json"),
+        '{ "schemaVersion": "0.1.0" }\n'
+      );
+      process.env.DESCUFF_CHANGED_FILES = "README.md";
+
+      const result = await runCli(["node", "descuff", "check", tempRoot]);
+      const check = await readFile(join(tempRoot, ".descuff", "drift-check.json"), "utf8");
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff check fail");
+      expect(result.stderr).toContain("DRIFT_BASELINE_MALFORMED");
+      expect(check).toContain('"code": "DRIFT_BASELINE_MALFORMED"');
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails check when the drift baseline belongs to a different project root", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-mismatch-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      const baselinePath = join(projectRoot, ".descuff", "drift-baseline.json");
+      const baseline = JSON.parse(await readFile(baselinePath, "utf8")) as {
+        project: { rootDir: string };
+      };
+      baseline.project.rootDir = join(tempRoot, "other");
+      await writeFile(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`);
+      process.env.DESCUFF_CHANGED_FILES = "README.md";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff check fail");
+      expect(result.stderr).toContain("DRIFT_BASELINE_PROJECT_MISMATCH");
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("checks impacted changes with validation", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-"));
     const projectRoot = join(tempRoot, "ecommerce");

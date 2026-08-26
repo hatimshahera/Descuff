@@ -19,34 +19,26 @@ import {
 import { normalizePath, uniqueSorted } from "./shared.js";
 
 export interface DriftDiffInput {
-  baseline: DriftBaseline;
+  baseline: unknown;
   changedFiles: string[];
+  projectRoot?: string;
 }
 
 export function analyzeDrift(input: DriftDiffInput): DriftDiffResult {
-  const baselineIssues = validateDriftBaseline(input.baseline);
-  if (baselineIssues.length > 0) {
-    return {
-      schemaVersion: driftResultSchemaVersion,
-      status: "fail",
-      changedFiles: input.changedFiles.slice().sort(),
-      impacts: [],
-      affectedCapabilities: [],
-      affectedStandards: [],
-      validationDepth: "none",
-      failures: baselineIssues,
-      summary: "Drift baseline is not usable."
-    };
+  const baselineResult = validateDriftBaseline(input.baseline, input.projectRoot);
+  if (!baselineResult.valid) {
+    return createDriftFailureResult(input.changedFiles, baselineResult.failures);
   }
 
+  const baseline = baselineResult.baseline;
   const impacts = input.changedFiles
-    .map((file) => classifyChangedFile(input.baseline, normalizePath(file)))
+    .map((file) => classifyChangedFile(baseline, normalizePath(file)))
     .sort((a, b) => a.file.localeCompare(b.file));
   const relevantImpacts = impacts.filter((impact) => impact.kind !== "none");
   const affectedCapabilityIds = new Set(
     relevantImpacts.flatMap((impact) => impact.affectedCapabilityIds)
   );
-  const affectedCapabilities = input.baseline.capabilities.filter((capability) =>
+  const affectedCapabilities = baseline.capabilities.filter((capability) =>
     affectedCapabilityIds.has(capability.id)
   );
   const affectedStandards = uniqueSorted(
@@ -149,19 +141,119 @@ export function changedFilesFromFingerprints(
   return changed.sort();
 }
 
-function validateDriftBaseline(baseline: DriftBaseline): DriftFailure[] {
-  if (baseline.schemaVersion !== driftBaselineSchemaVersion) {
-    return [
-      {
-        code: "DRIFT_BASELINE_UNSUPPORTED",
-        message: `Unsupported drift baseline schema version: ${baseline.schemaVersion}`,
-        affectedStandards: [],
-        suggestedAction: "Regenerate the drift baseline with the current Descuff version."
-      }
-    ];
+export function createMissingDriftBaselineResult(changedFiles: string[] = []): DriftDiffResult {
+  return createDriftFailureResult(changedFiles, [
+    {
+      code: "DRIFT_BASELINE_MISSING",
+      message: "No drift baseline exists for this project.",
+      affectedStandards: [],
+      suggestedAction:
+        "Run `npx descuff start .` or `npx descuff finish .` after validation passes."
+    }
+  ]);
+}
+
+export function validateDriftBaseline(
+  baseline: unknown,
+  projectRoot?: string
+): { valid: true; baseline: DriftBaseline } | { valid: false; failures: DriftFailure[] } {
+  if (!isRecord(baseline)) {
+    return {
+      valid: false,
+      failures: [
+        {
+          code: "DRIFT_BASELINE_MALFORMED",
+          message: "Drift baseline must be a JSON object.",
+          affectedStandards: [],
+          suggestedAction: "Regenerate the drift baseline with the current Descuff version."
+        }
+      ]
+    };
   }
 
-  return [];
+  if (baseline.schemaVersion !== driftBaselineSchemaVersion) {
+    return {
+      valid: false,
+      failures: [
+        {
+          code: "DRIFT_BASELINE_UNSUPPORTED",
+          message: `Unsupported drift baseline schema version: ${String(baseline.schemaVersion)}`,
+          affectedStandards: [],
+          suggestedAction: "Regenerate the drift baseline with the current Descuff version."
+        }
+      ]
+    };
+  }
+
+  const requiredArrayFields = [
+    "routes",
+    "apis",
+    "capabilities",
+    "authBoundaries",
+    "standards",
+    "contractFingerprints",
+    "recommendedStandards"
+  ];
+  const malformedField = requiredArrayFields.find((field) => !Array.isArray(baseline[field]));
+  const project = baseline.project;
+  const sourceFingerprints = baseline.sourceFingerprints;
+  if (
+    malformedField !== undefined ||
+    !isRecord(project) ||
+    typeof project.rootDir !== "string" ||
+    typeof project.framework !== "string" ||
+    !isRecord(sourceFingerprints) ||
+    !Array.isArray(sourceFingerprints.files)
+  ) {
+    return {
+      valid: false,
+      failures: [
+        {
+          code: "DRIFT_BASELINE_MALFORMED",
+          message: "Drift baseline is missing required project, fingerprint, or index fields.",
+          affectedStandards: [],
+          suggestedAction: "Regenerate the drift baseline with the current Descuff version."
+        }
+      ]
+    };
+  }
+
+  if (projectRoot !== undefined && normalizePath(project.rootDir) !== normalizePath(projectRoot)) {
+    return {
+      valid: false,
+      failures: [
+        {
+          code: "DRIFT_BASELINE_PROJECT_MISMATCH",
+          message: `Drift baseline was recorded for ${project.rootDir}, not ${projectRoot}.`,
+          affectedStandards: [],
+          suggestedAction: "Regenerate the drift baseline from the current project root."
+        }
+      ]
+    };
+  }
+
+  return { valid: true, baseline: baseline as unknown as DriftBaseline };
+}
+
+function createDriftFailureResult(
+  changedFiles: string[],
+  failures: DriftFailure[]
+): DriftDiffResult {
+  return {
+    schemaVersion: driftResultSchemaVersion,
+    status: "fail",
+    changedFiles: changedFiles.map(normalizePath).sort(),
+    impacts: [],
+    affectedCapabilities: [],
+    affectedStandards: [],
+    validationDepth: "none",
+    failures,
+    summary: "Drift baseline is not usable."
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function classifyChangedFile(baseline: DriftBaseline, file: string): DriftImpact {

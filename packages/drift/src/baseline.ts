@@ -15,6 +15,7 @@ import {
   type DriftAuthBoundaryIndexEntry,
   type DriftBaseline,
   type DriftCapabilityIndexEntry,
+  type DriftContractFingerprintEntry,
   type DriftRouteIndexEntry,
   type DriftStandardIndexEntry
 } from "./types.js";
@@ -45,11 +46,33 @@ export function createDriftBaseline(input: DriftBaselineInput): DriftBaseline {
     capabilities: input.model.capabilities.map(indexCapability).sort(byId),
     authBoundaries: input.model.authentication.boundaries.map(indexAuthBoundary).sort(byId),
     standards: input.model.standards.map(indexStandard).sort(byId),
+    contractFingerprints: contractFingerprints(
+      input.model.standards,
+      input.sourceFingerprints
+    ).sort(byId),
     recommendedStandards: input.assessments
       .filter((assessment) => ["required", "recommended"].includes(assessment.applicability))
       .map((assessment) => assessment.standardId)
       .sort()
   };
+}
+
+function contractFingerprints(
+  standards: ExistingStandardModel[],
+  sourceFingerprints: SourceFingerprintManifest
+): DriftContractFingerprintEntry[] {
+  const sourceByPath = new Map(sourceFingerprints.files.map((file) => [file.path, file]));
+  return standards.map((standard) => {
+    const fingerprint = sourceByPath.get(normalizePath(standard.sourceFile));
+    return {
+      id: `contract:${standard.kind}:${standard.sourceFile}`,
+      kind: standard.kind,
+      sourceFile: standard.sourceFile,
+      sha256: fingerprint?.sha256 ?? null,
+      missing: fingerprint?.missing ?? true,
+      evidenceIds: evidenceIds(standard.evidence)
+    };
+  });
 }
 
 function indexRoute(route: Route): DriftRouteIndexEntry {

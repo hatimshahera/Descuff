@@ -30,6 +30,16 @@ describe("@descuff/drift", () => {
     expect(baseline.schemaVersion).toBe("0.1.0");
     expect(baseline.apis.map((api) => `${api.method} ${api.path}`)).toEqual(["GET /api/search"]);
     expect(baseline.capabilities[0]?.evidenceLocations).toEqual(["app/api/search/route.ts"]);
+    expect(baseline.contractFingerprints).toEqual([
+      {
+        id: "contract:openapi:openapi.json",
+        kind: "openapi",
+        sourceFile: "openapi.json",
+        sha256: "openapi",
+        missing: false,
+        evidenceIds: []
+      }
+    ]);
     expect(baseline.recommendedStandards).toEqual(["api-catalog", "openapi", "webmcp"]);
   });
 
@@ -75,6 +85,31 @@ describe("@descuff/drift", () => {
     expect(diff.failures[0]?.code).toBe("CAPABILITY_SECURITY_BOUNDARY_CHANGED");
   });
 
+  it("maps Server Action changes to WebMCP-sensitive drift", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["app/actions.ts"]
+    });
+
+    expect(diff.status).toBe("needs-validation");
+    expect(diff.validationDepth).toBe("targeted-static");
+    expect(diff.impacts[0]).toMatchObject({
+      kind: "server-action",
+      affectedStandards: ["webmcp"]
+    });
+  });
+
+  it("maps WebMCP metadata changes directly to the WebMCP standard", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: [".descuff/webmcp-implementation-plan.md"]
+    });
+
+    expect(diff.status).toBe("needs-validation");
+    expect(diff.validationDepth).toBe("targeted-static");
+    expect(diff.affectedStandards).toEqual(["webmcp"]);
+  });
+
   it("fails unsupported drift baselines instead of passing silently", () => {
     const baseline = { ...fixtureBaseline(), schemaVersion: "99.0.0" };
     const diff = analyzeDrift({
@@ -84,6 +119,27 @@ describe("@descuff/drift", () => {
 
     expect(diff.status).toBe("fail");
     expect(diff.failures[0]?.code).toBe("DRIFT_BASELINE_UNSUPPORTED");
+  });
+
+  it("fails malformed drift baselines instead of dereferencing missing fields", () => {
+    const diff = analyzeDrift({
+      baseline: { schemaVersion: "0.1.0" },
+      changedFiles: ["app/globals.css"]
+    });
+
+    expect(diff.status).toBe("fail");
+    expect(diff.failures[0]?.code).toBe("DRIFT_BASELINE_MALFORMED");
+  });
+
+  it("fails project-mismatched drift baselines", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["app/globals.css"],
+      projectRoot: "another/project"
+    });
+
+    expect(diff.status).toBe("fail");
+    expect(diff.failures[0]?.code).toBe("DRIFT_BASELINE_PROJECT_MISMATCH");
   });
 
   it("detects changed files from source fingerprints", () => {
@@ -99,6 +155,12 @@ describe("@descuff/drift", () => {
         {
           path: "middleware.ts",
           sha256: "def",
+          missing: false,
+          evidence: []
+        },
+        {
+          path: "openapi.json",
+          sha256: "openapi",
           missing: false,
           evidence: []
         }
@@ -274,6 +336,12 @@ function fixtureFingerprints(): SourceFingerprintManifest {
       {
         path: "middleware.ts",
         sha256: "def",
+        missing: false,
+        evidence: []
+      },
+      {
+        path: "openapi.json",
+        sha256: "openapi",
         missing: false,
         evidence: []
       }

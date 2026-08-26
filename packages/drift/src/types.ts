@@ -37,6 +37,7 @@ export interface DriftBaseline {
   capabilities: DriftCapabilityIndexEntry[];
   authBoundaries: DriftAuthBoundaryIndexEntry[];
   standards: DriftStandardIndexEntry[];
+  contractFingerprints: DriftContractFingerprintEntry[];
   recommendedStandards: string[];
 }
 
@@ -82,6 +83,15 @@ export interface DriftStandardIndexEntry {
   evidenceIds: string[];
 }
 
+export interface DriftContractFingerprintEntry {
+  id: string;
+  kind: string;
+  sourceFile: string;
+  sha256: string | null;
+  missing: boolean;
+  evidenceIds: string[];
+}
+
 export interface DriftDiffResult {
   schemaVersion: string;
   status: DriftStatus;
@@ -104,13 +114,28 @@ export interface DriftImpact {
 }
 
 export interface DriftFailure {
-  code: string;
+  code: DriftFailureCode | string;
   message: string;
   file?: string;
   capabilityId?: string;
   affectedStandards: string[];
   suggestedAction: string;
 }
+
+export type DriftFailureCode =
+  | "DRIFT_BASELINE_MISSING"
+  | "DRIFT_BASELINE_MALFORMED"
+  | "DRIFT_BASELINE_UNSUPPORTED"
+  | "DRIFT_BASELINE_PROJECT_MISMATCH"
+  | "DRIFT_BASELINE_STALE"
+  | "DRIFT_IMPACT_UNKNOWN"
+  | "AGENT_INTERFACE_DRIFT"
+  | "CAPABILITY_REMOVED"
+  | "CAPABILITY_SECURITY_BOUNDARY_CHANGED"
+  | "MACHINE_CONTRACT_STALE"
+  | "WEBMCP_TOOL_DISCONNECTED"
+  | "OPENAPI_BEHAVIOR_MISMATCH"
+  | "STRUCTURED_METADATA_STALE";
 
 export interface DriftCheckResult {
   schemaVersion: string;
