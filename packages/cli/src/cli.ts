@@ -43,7 +43,7 @@ import {
   type DriftBaseline,
   type DriftDiffResult,
   type DriftValidationPlan
-} from "@descuff/drift";
+} from "@descuff/drift-core";
 import {
   structuralAnalysisToApplicationModel,
   type ApplicationModel,

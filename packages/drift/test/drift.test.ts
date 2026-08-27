@@ -23,7 +23,7 @@ const evidence: EvidenceRef = {
   summary: "Search API route"
 };
 
-describe("@descuff/drift", () => {
+describe("@descuff/drift-core", () => {
   it("creates a versioned drift baseline from a known-good model", () => {
     const baseline = createDriftBaseline({
       model: fixtureModel(),

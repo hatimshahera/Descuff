@@ -6,6 +6,12 @@ All notable changes to Descuff will be documented in this file.
 
 ### Added
 
+## 0.1.15 - 2026-08-27 - Installable Drift Recovery
+
+### Fixed
+
+- Renamed the published drift runtime package to `@descuff/drift-core` and moved the CLI dependency to that package after npm accepted `@descuff/drift` publish metadata but did not serve its installable package document.
+
 ## 0.1.14 - 2026-08-27 - Registry Recovery Release
 
 ### Fixed

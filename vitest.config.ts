@@ -12,7 +12,7 @@ export default defineConfig({
       "@descuff/analyzer-runtime": fromRoot("./packages/analyzers/runtime/src/index.ts"),
       "@descuff/config": fromRoot("./packages/config/src/index.ts"),
       "@descuff/core": fromRoot("./packages/core/src/index.ts"),
-      "@descuff/drift": fromRoot("./packages/drift/src/index.ts"),
+      "@descuff/drift-core": fromRoot("./packages/drift/src/index.ts"),
       "@descuff/ir": fromRoot("./packages/ir/src/index.ts"),
       "@descuff/reporter": fromRoot("./packages/reporter/src/index.ts"),
       "@descuff/standard-api-catalog": fromRoot("./packages/standards/api-catalog/src/index.ts"),

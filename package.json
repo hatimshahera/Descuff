@@ -1,6 +1,6 @@
 {
   "name": "descuff-workspace",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Turn local Next.js websites into interfaces AI agents can understand and use.",
   "private": true,
   "license": "MIT",
