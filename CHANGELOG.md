@@ -6,6 +6,10 @@ All notable changes to Descuff will be documented in this file.
 
 ### Added
 
+## 0.1.13 - 2026-08-27 - Continuous Readiness Drift Detection
+
+### Added
+
 - Added initial continuous-readiness drift detection with `descuff diff`, `descuff check`, `.descuff/drift-baseline.json`, `.descuff/drift-diff.json`, `.descuff/drift-check.json`, and `.descuff/drift-report.md`.
 - Added drift baseline contract fingerprints and typed baseline failures for missing, malformed, unsupported, and project-mismatched baselines.
 - Added drift validation plans that identify affected validation suites and explicitly record when full validation is used as the safety fallback.
