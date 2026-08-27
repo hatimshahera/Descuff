@@ -143,6 +143,8 @@ Check:
 
 After a successful `start` or `finish`, Descuff writes `.descuff/drift-baseline.json`.
 
+Keep `.descuff/` local by default. The drift baseline is a generated last-known-good snapshot, so public repos usually should not commit it. In CI, either preserve `.descuff/drift-baseline.json` as a protected cache/artifact from the last successful main-branch run, or regenerate it from the base branch before running `check` on a pull request.
+
 Use `diff` to see whether a change can affect agent readiness:
 
 ```bash

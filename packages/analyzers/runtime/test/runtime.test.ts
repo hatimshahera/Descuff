@@ -111,14 +111,18 @@ describe("@descuff/analyzer-runtime", () => {
     );
   });
 
-  it("captures browser page and WebMCP evidence through an injected browser client", async () => {
+  it("captures browser page, API shape, and WebMCP evidence through an injected browser client", async () => {
     const analysis = await new RuntimeAnalyzer(
       async () => ({
         async get() {
           return { status: 200, headers: { "content-type": "text/html" } };
         },
         async fetch() {
-          return { status: 200, headers: {} };
+          return {
+            status: 200,
+            headers: { "content-type": "application/json" },
+            body: "[]"
+          };
         },
         async dispose() {
           return undefined;
@@ -182,7 +186,7 @@ describe("@descuff/analyzer-runtime", () => {
       runtime: {
         baseUrl: "http://example.test",
         routes: ["/"],
-        apiOperations: []
+        apiOperations: [{ method: "GET", path: "/api/products" }]
       }
     });
 
@@ -208,6 +212,15 @@ describe("@descuff/analyzer-runtime", () => {
         toolName: "search_products",
         status: "executed",
         resultShape: "object"
+      })
+    );
+    expect(analysis.runtimeApiOperations).toContainEqual(
+      expect.objectContaining({
+        path: "/api/products",
+        method: "GET",
+        status: 200,
+        responseShape: "array",
+        responseSummary: "[]"
       })
     );
     expect(validateStructuralAnalysis(analysis).valid).toBe(true);

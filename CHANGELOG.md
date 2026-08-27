@@ -12,6 +12,8 @@ All notable changes to Descuff will be documented in this file.
 - Added targeted `descuff check` execution for static metadata, source fingerprints, runtime observations, WebMCP behavior, security model, and capability-confidence suites.
 - Added drift-level repair mapping for stale baselines, WebMCP disconnections, OpenAPI/API behavior mismatches, stale machine contracts, and structured metadata drift.
 - Added fixture coverage for removed API capabilities and new-route structured metadata drift.
+- Added deterministic runtime analyzer coverage for browser-collected WebMCP tool results alongside API response-shape evidence.
+- Documented the default drift-baseline storage policy for local projects and CI.
 
 ## 0.1.12 - 2026-08-25 - Cursor Platform Install
 

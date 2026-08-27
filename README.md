@@ -103,6 +103,7 @@ Lower-level commands:
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `diff` compares changed files against `.descuff/drift-baseline.json` and writes `.descuff/drift-diff.json` plus `.descuff/drift-report.md`.
 - `check` performs the same drift analysis, fast-passes unrelated changes, writes a validation plan, and runs validation for changes that can affect routes, APIs, capabilities, auth boundaries, or published standards.
+- Drift baselines are generated local artifacts by default. Keep `.descuff/` ignored for public repos, and let CI preserve `.descuff/drift-baseline.json` as a protected cache/artifact or regenerate it from the base branch before checking a pull request.
 - `install --platform codex` installs the tested Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`; invoke it with `$descuff .`.
 - `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`; invoke it with `/descuff .`.
 - `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`; ask Cursor Agent to Descuff the app from that project.
