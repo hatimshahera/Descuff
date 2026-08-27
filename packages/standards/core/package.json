@@ -1,6 +1,6 @@
 {
   "name": "@descuff/standard-core",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "license": "MIT",
   "type": "module",
   "files": [
@@ -18,6 +18,6 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/ir": "^0.1.13"
+    "@descuff/ir": "^0.1.14"
   }
 }

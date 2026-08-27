@@ -6,6 +6,12 @@ All notable changes to Descuff will be documented in this file.
 
 ### Added
 
+## 0.1.14 - 2026-08-27 - Registry Recovery Release
+
+### Fixed
+
+- Republished the continuous-readiness release with all internal package ranges moved to `0.1.14` after `descuff@0.1.13` reached npm before `@descuff/drift@0.1.13` was publicly installable.
+
 ## 0.1.13 - 2026-08-27 - Continuous Readiness Drift Detection
 
 ### Added
