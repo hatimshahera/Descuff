@@ -1,6 +1,6 @@
 {
   "name": "descuff",
-  "version": "0.1.15",
+  "version": "0.13.1",
   "description": "Turn local Next.js websites into interfaces AI agents can understand and use.",
   "license": "MIT",
   "type": "module",
@@ -41,19 +41,19 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/agent-workflow": "^0.1.15",
-    "@descuff/analyzer-graphify": "^0.1.15",
-    "@descuff/analyzer-nextjs": "^0.1.15",
-    "@descuff/core": "^0.1.15",
-    "@descuff/ir": "^0.1.15",
-    "@descuff/reporter": "^0.1.15",
-    "@descuff/standard-api-catalog": "^0.1.15",
-    "@descuff/standard-core": "^0.1.15",
-    "@descuff/standard-llms-txt": "^0.1.15",
-    "@descuff/standard-openapi": "^0.1.15",
-    "@descuff/standard-schema-org": "^0.1.15",
-    "@descuff/standard-webmcp": "^0.1.15",
-    "@descuff/validator": "^0.1.15",
-    "@descuff/drift-core": "^0.1.15"
+    "@descuff/agent-workflow": "^0.13.1",
+    "@descuff/analyzer-graphify": "^0.13.1",
+    "@descuff/analyzer-nextjs": "^0.13.1",
+    "@descuff/core": "^0.13.1",
+    "@descuff/ir": "^0.13.1",
+    "@descuff/reporter": "^0.13.1",
+    "@descuff/standard-api-catalog": "^0.13.1",
+    "@descuff/standard-core": "^0.13.1",
+    "@descuff/standard-llms-txt": "^0.13.1",
+    "@descuff/standard-openapi": "^0.13.1",
+    "@descuff/standard-schema-org": "^0.13.1",
+    "@descuff/standard-webmcp": "^0.13.1",
+    "@descuff/validator": "^0.13.1",
+    "@descuff/drift-core": "^0.13.1"
   }
 }

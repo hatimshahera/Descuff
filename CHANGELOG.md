@@ -4,6 +4,8 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+## 0.13.1 - 2026-08-28 - Release Automation And Installability Hardening
+
 ### Added
 
 - Added host-agent instruction guidance to run `descuff check .` after ordinary edits in already-Descuffed apps, while reserving `descuff finish .` for explicit Descuff plan implementation.
@@ -16,6 +18,7 @@ All notable changes to Descuff will be documented in this file.
 - Documented public package-boundary rules and partial-publish recovery steps for contributors.
 - Added a manual GitHub Actions Trusted Publishing workflow and dependency-ordered publish script for npm releases.
 - Added an executable release recovery drill for simulated broken internal-package publish scenarios.
+- Added a release version preparation script that updates public package versions, internal ranges, README release text, and the changelog heading.
 
 ## 0.1.15 - 2026-08-27 - Installable Drift Recovery
 

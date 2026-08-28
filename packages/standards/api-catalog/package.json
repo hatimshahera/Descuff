@@ -1,6 +1,6 @@
 {
   "name": "@descuff/standard-api-catalog",
-  "version": "0.1.15",
+  "version": "0.13.1",
   "license": "MIT",
   "type": "module",
   "files": [
@@ -18,11 +18,11 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/ir": "^0.1.15",
-    "@descuff/standard-core": "^0.1.15"
+    "@descuff/ir": "^0.13.1",
+    "@descuff/standard-core": "^0.13.1"
   },
   "devDependencies": {
-    "@descuff/analyzer-nextjs": "^0.1.15",
-    "@descuff/core": "^0.1.15"
+    "@descuff/analyzer-nextjs": "^0.13.1",
+    "@descuff/core": "^0.13.1"
   }
 }

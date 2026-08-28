@@ -75,6 +75,7 @@ Descuff is intentionally split into packages where the boundary protects a real 
 Run the local release gates before publishing:
 
 ```bash
+pnpm run release:version -- <version> <short release title>
 pnpm run release:check
 pnpm run release:install-smoke
 pnpm run release:publish-plan -- <version>
@@ -112,7 +113,7 @@ The workflow runs on `workflow_dispatch`, requires a concrete version input, use
 
 Before publishing any package with internal dependencies, the publish script rechecks the dependency package packuments, latest dist tags, and tarball URLs from npm. After publishing each package, it waits until that package is publicly readable before moving to dependents. If any internal package is not publicly readable at the target version, the workflow stops before publishing its dependents.
 
-Do not run the publish workflow until every public package manifest already has the target version and all internal ranges point at that version.
+Do not run the publish workflow until every public package manifest already has the target version and all internal ranges point at that version. Use `pnpm run release:version -- <version> <short release title>` to prepare those changes.
 
 ## Publish Recovery
 

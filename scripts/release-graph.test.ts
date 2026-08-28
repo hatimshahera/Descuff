@@ -114,6 +114,30 @@ describe("release graph checks", () => {
       })
     );
   });
+
+  it("accepts single-quoted dependency keys in pnpm lockfiles", () => {
+    const packages = fixturePackages();
+    const result = validateReleaseGraph({
+      packages,
+      lockfileText: [
+        "importers:",
+        "  packages/ir: {}",
+        "  packages/core:",
+        "    dependencies:",
+        "      '@descuff/ir':",
+        "  packages/cli:",
+        "    dependencies:",
+        "      '@descuff/core':",
+        "      '@descuff/ir':"
+      ].join("\n")
+    });
+
+    expect(result.issues).not.toContainEqual(
+      expect.objectContaining({
+        code: "LOCKFILE_INTERNAL_DEPENDENCY_MISSING"
+      })
+    );
+  });
 });
 
 function fixturePackages() {

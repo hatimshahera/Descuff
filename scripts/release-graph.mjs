@@ -117,7 +117,7 @@ export function validateReleaseGraph(input) {
 
     for (const pkg of packages) {
       for (const dependencyName of internalRuntimeDependencies(pkg, byName)) {
-        if (!input.lockfileText.includes(`"${dependencyName}":`)) {
+        if (!hasLockfileDependencyKey(input.lockfileText, dependencyName)) {
           issues.push(
             issue(
               "LOCKFILE_INTERNAL_DEPENDENCY_MISSING",
@@ -199,6 +199,10 @@ function hasVitestAlias(configText, packageName) {
     return true;
   }
   return packageName === "descuff" && /\bdescuff\s*:/.test(configText);
+}
+
+function hasLockfileDependencyKey(lockfileText, packageName) {
+  return lockfileText.includes(`"${packageName}":`) || lockfileText.includes(`'${packageName}':`);
 }
 
 function issue(code, packageName, message) {
