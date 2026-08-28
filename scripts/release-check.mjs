@@ -2,31 +2,33 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import {
+  publicPackageJsonPaths,
+  readPublicPackages,
+  renderPublishOrder,
+  validateReleaseGraph
+} from "./release-graph.mjs";
 
-const packageJsonPaths = [
-  "packages/agent-workflow/package.json",
-  "packages/analyzers/graphify/package.json",
-  "packages/analyzers/nextjs/package.json",
-  "packages/analyzers/runtime/package.json",
-  "packages/cli/package.json",
-  "packages/config/package.json",
-  "packages/core/package.json",
-  "packages/drift/package.json",
-  "packages/ir/package.json",
-  "packages/reporter/package.json",
-  "packages/standards/api-catalog/package.json",
-  "packages/standards/core/package.json",
-  "packages/standards/llms-txt/package.json",
-  "packages/standards/openapi/package.json",
-  "packages/standards/schema-org/package.json",
-  "packages/standards/webmcp/package.json",
-  "packages/validator/package.json"
-];
+const packages = readPublicPackages();
+const graph = validateReleaseGraph({
+  packages,
+  vitestConfigText: readFileSync("vitest.config.ts", "utf8"),
+  lockfileText: readFileSync("pnpm-lock.yaml", "utf8")
+});
+
+if (!graph.passed) {
+  throw new Error(
+    [
+      "Release package graph check failed:",
+      ...graph.issues.map((issue) => `- [${issue.code}] ${issue.packageName}: ${issue.message}`)
+    ].join("\n")
+  );
+}
 
 const packRoot = mkdtempSync(join(tmpdir(), "descuff-release-check-"));
 
 try {
-  for (const packageJsonPath of packageJsonPaths) {
+  for (const packageJsonPath of publicPackageJsonPaths) {
     const packageDir = dirname(packageJsonPath);
     const manifest = JSON.parse(readFileSync(packageJsonPath, "utf8"));
     const packagePackDir = join(packRoot, manifest.name.replaceAll("/", "__"));
@@ -70,7 +72,10 @@ try {
     }
   }
 
-  console.log(`Release pack check passed for ${packageJsonPaths.length} packages.`);
+  console.log(`Release package graph check passed for ${packages.length} packages.`);
+  console.log("Dependency-first publish order:");
+  console.log(renderPublishOrder(packages));
+  console.log(`Release pack check passed for ${publicPackageJsonPaths.length} packages.`);
 } finally {
   rmSync(packRoot, { recursive: true, force: true });
 }

@@ -16,6 +16,7 @@ export default defineConfig({
       "@descuff/ir": fromRoot("./packages/ir/src/index.ts"),
       "@descuff/reporter": fromRoot("./packages/reporter/src/index.ts"),
       "@descuff/standard-api-catalog": fromRoot("./packages/standards/api-catalog/src/index.ts"),
+      "@descuff/standard-core": fromRoot("./packages/standards/core/src/index.ts"),
       "@descuff/standard-llms-txt": fromRoot("./packages/standards/llms-txt/src/index.ts"),
       "@descuff/standard-openapi": fromRoot("./packages/standards/openapi/src/index.ts"),
       "@descuff/standard-schema-org": fromRoot("./packages/standards/schema-org/src/index.ts"),

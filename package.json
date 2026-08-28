@@ -36,6 +36,7 @@
     "typecheck": "tsc -b tsconfig.packages.json --pretty false",
     "ci": "pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm smoke",
     "smoke": "node scripts/smoke-cli.mjs",
+    "release:graph": "node scripts/release-graph.mjs",
     "release:check": "pnpm build && node scripts/release-check.mjs"
   },
   "devDependencies": {
