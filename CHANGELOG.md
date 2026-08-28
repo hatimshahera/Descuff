@@ -15,6 +15,7 @@ All notable changes to Descuff will be documented in this file.
 - Added post-publish registry verification for packuments, latest dist-tags, tarball reachability, internal dependency resolution, and fresh public CLI install smoke tests.
 - Documented public package-boundary rules and partial-publish recovery steps for contributors.
 - Added a manual GitHub Actions Trusted Publishing workflow and dependency-ordered publish script for npm releases.
+- Added an executable release recovery drill for simulated broken internal-package publish scenarios.
 
 ## 0.1.15 - 2026-08-27 - Installable Drift Recovery
 

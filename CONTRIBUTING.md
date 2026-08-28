@@ -88,6 +88,12 @@ pnpm run release:registry -- <version>
 
 The registry check verifies package packuments, `latest` dist-tags, tarball reachability, internal dependency availability, and a fresh public `npm install descuff@<version>` plus `npx descuff --help`.
 
+Use the recovery drill to inspect the expected response to a simulated broken internal-package publish:
+
+```bash
+pnpm run release:recovery-drill
+```
+
 ## Trusted Publishing
 
 Releases should use GitHub Actions Trusted Publishing instead of local OTP/passkey publishing once npm is configured.
@@ -118,6 +124,7 @@ If a publish looks broken, do not hide it by silently publishing again.
 - If `latest` points to a broken version, move `latest` back to the last verified version or forward to a verified patch after the fix is published.
 - Deprecate broken versions with a short reason once a working replacement exists.
 - Record recovery notes in `CHANGELOG.md` so users can understand which version to install.
+- The executable recovery drill maps registry failures to the expected recovery class, so maintainers can verify the policy without breaking npm on purpose.
 
 ## Pull Requests
 
