@@ -417,6 +417,7 @@ describe("descuff CLI", () => {
       expect(codexInstructions).toContain("Use the compact evidence packet as the primary context");
       expect(codexInstructions).toContain("npx descuff start .");
       expect(codexInstructions).toContain("npx descuff finish .");
+      expect(codexInstructions).toContain("npx descuff check .");
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }
@@ -491,6 +492,7 @@ describe("descuff CLI", () => {
       expect(command).toContain("npx descuff start .");
       expect(command).toContain("npx descuff enrich .");
       expect(command).toContain("npx descuff finish .");
+      expect(command).toContain("npx descuff check .");
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }
@@ -510,6 +512,7 @@ describe("descuff CLI", () => {
       expect(rule).toContain("npx descuff start .");
       expect(rule).toContain("npx descuff enrich .");
       expect(rule).toContain("npx descuff finish .");
+      expect(rule).toContain("npx descuff check .");
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }
@@ -601,6 +604,7 @@ describe("descuff CLI", () => {
       expect(skill).toContain("npx descuff start .");
       expect(skill).toContain("npx descuff enrich .");
       expect(skill).toContain("npx descuff finish .");
+      expect(skill).toContain("npx descuff check .");
       expect(start.exitCode).toBe(0);
       expect(enrich.exitCode).toBe(0);
       expect(finish.exitCode).toBe(0);

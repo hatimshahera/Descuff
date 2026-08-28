@@ -948,6 +948,8 @@ function renderCodexPrompt(): string {
     "6. Do not expose private, sensitive, mutating, or high-consequence actions without explicit approval.",
     "7. Run the existing project tests.",
     "8. Run `npx descuff finish .` and include `.descuff/before-after.md` in the final report.",
+    "",
+    "For later ordinary website edits that are not explicitly implementing this Descuff plan, run `npx descuff check .` instead of `finish` before reporting success.",
     ""
   ].join("\n");
 }

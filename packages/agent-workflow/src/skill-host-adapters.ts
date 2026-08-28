@@ -60,7 +60,8 @@ export function renderSharedSkillCoreInstructions(packageName = "descuff"): stri
     "Keep proposed entities and capabilities as candidates until evidence-reference validation accepts them.",
     "Do not expose sensitive or high-consequence actions without explicit developer approval.",
     "Run Descuff validation after implementation and repair failures before reporting success.",
-    `Use ${packageName} CLI commands for scan, plan, start, finish, and validate.`
+    "After ordinary non-Descuff website edits, run continuous readiness drift detection before reporting success.",
+    `Use ${packageName} CLI commands for scan, plan, start, finish, diff, check, and validate.`
   ].join("\n");
 }
 
@@ -84,6 +85,13 @@ export function renderSkillHostInstructions(input: RenderSkillHostInstructionsIn
     `4. Run \`npx ${packageName} enrich .\` and inspect \`.descuff/semantic-enrichment-diff.md\` before implementation.`,
     "5. Implement only accepted plan items and preserve UI behavior unless explicitly approved.",
     `6. Run \`npx ${packageName} finish .\` and report the before/after result.`,
+    "",
+    "## Continuous Readiness",
+    "",
+    `After a normal website edit that is not explicitly implementing a Descuff plan, run \`npx ${packageName} check .\`, not \`finish\`.`,
+    "`finish` is for completing a Descuff implementation plan and refreshing the known-good drift baseline after validation passes.",
+    "`check` is for later edits; it compares the current code against the last known-good baseline and reports whether agent-facing routes, APIs, capabilities, standards, or security boundaries drifted.",
+    "If `check` reports drift, repair the affected interface or explain the blocker before reporting success.",
     "",
     "## Fallback",
     "",
@@ -119,6 +127,10 @@ export function renderCodexSkillFile(packageName = "descuff"): string {
     "5. Implement only accepted plan items. Preserve UI and behavior unless explicitly approved.",
     `6. Run \`npx ${packageName} finish .\`.`,
     "7. Report baseline, enrichment result, files changed, final validation, and remaining blockers.",
+    "",
+    "## Codex Continuous-Readiness Rule",
+    "",
+    `For later ordinary code edits in an already-Descuffed app, run \`npx ${packageName} check .\` before the final report. Use \`finish\` only when completing an explicit Descuff plan.`,
     "",
     "Do not treat domain labels as safety approval. Do not expose sensitive or high-consequence capabilities without explicit developer approval.",
     ""
