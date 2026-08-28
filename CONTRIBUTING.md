@@ -109,7 +109,7 @@ Manual npm setup is required before `.github/workflows/publish.yml` can publish:
 - Set the environment name to `npm-publish` if npm asks for one.
 - Allow `npm publish`.
 
-The workflow runs on `workflow_dispatch`, requires a concrete version input, uses Node 24 so npm supports OIDC publishing, disables package-manager caching for the release job, grants `id-token: write`, runs the release gates, publishes packages in dependency order, and then runs the public registry verifier.
+The workflow runs on `workflow_dispatch`, requires a concrete version input, uses Node 24 so npm supports OIDC publishing, disables package-manager caching for the release job, grants `id-token: write`, runs the release gates, publishes packages in dependency order without `NODE_AUTH_TOKEN`, and then runs the public registry verifier.
 
 Before publishing any package with internal dependencies, the publish script rechecks the dependency package packuments, latest dist tags, and tarball URLs from npm. After publishing each package, it waits until that package is publicly readable before moving to dependents. If any internal package is not publicly readable at the target version, the workflow stops before publishing its dependents.
 

@@ -24,12 +24,11 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - run: npm --version
       - run: pnpm install --frozen-lockfile
       - run: pnpm run ci
       - run: pnpm run release:check
       - run: pnpm run release:install-smoke
-      - run: pnpm run release:publish -- ${{ inputs.version }}
+      - run: env -u NODE_AUTH_TOKEN pnpm run release:publish -- ${{ inputs.version }}
       - run: pnpm run release:registry -- ${{ inputs.version }}

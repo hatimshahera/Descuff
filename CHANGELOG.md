@@ -19,6 +19,7 @@ All notable changes to Descuff will be documented in this file.
 - Added a manual GitHub Actions Trusted Publishing workflow and dependency-ordered publish script for npm releases.
 - Added an executable release recovery drill for simulated broken internal-package publish scenarios.
 - Added a release version preparation script that updates public package versions, internal ranges, README release text, and the changelog heading.
+- Fixed the Trusted Publishing workflow to avoid token auth during `npm publish` so npm can use OIDC.
 
 ## 0.1.15 - 2026-08-27 - Installable Drift Recovery
 
