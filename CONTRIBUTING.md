@@ -66,4 +66,5 @@ pnpm run ci
 - Call out safety implications, especially for generated standards, WebMCP browser-tool registration, authenticated routes, Server Actions, or mutating APIs.
 - Include before/after CLI output when changing command behavior.
 - Use a one-line release heading in `CHANGELOG.md` for dated entries: `## version - YYYY-MM-DD - Short Release Title`.
+- Use phase-based preview versions from the next release onward: `0.<phase>.<patch>`. For example, Phase 12 follow-ups use `0.12.1`, `0.12.2`, and Phase 13 starts at `0.13.1`. Already-published npm versions are never rewritten.
 - Keep unrelated formatting churn out of the diff.

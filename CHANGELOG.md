@@ -7,6 +7,7 @@ All notable changes to Descuff will be documented in this file.
 ### Added
 
 - Added host-agent instruction guidance to run `descuff check .` after ordinary edits in already-Descuffed apps, while reserving `descuff finish .` for explicit Descuff plan implementation.
+- Adopted phase-based preview versioning for future releases: `0.<phase>.<patch>`, starting from the next publish.
 
 ## 0.1.15 - 2026-08-27 - Installable Drift Recovery
 
