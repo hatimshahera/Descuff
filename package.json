@@ -36,9 +36,10 @@
     "typecheck": "tsc -b tsconfig.packages.json --pretty false",
     "ci": "pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm smoke",
     "smoke": "node scripts/smoke-cli.mjs",
+    "release:changelog": "node scripts/changelog-check.mjs",
     "release:graph": "node scripts/release-graph.mjs",
     "release:install-smoke": "pnpm build && node scripts/release-install-smoke.mjs",
-    "release:check": "pnpm build && node scripts/release-check.mjs"
+    "release:check": "pnpm build && node scripts/changelog-check.mjs && node scripts/release-check.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

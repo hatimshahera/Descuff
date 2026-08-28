@@ -10,6 +10,7 @@ All notable changes to Descuff will be documented in this file.
 - Adopted phase-based preview versioning for future releases: `0.<phase>.<patch>`, starting from the next publish.
 - Added release package graph validation and dependency-first publish-order reporting to harden release checks.
 - Added a packed CLI install smoke command that installs tarballs into a clean temp project and runs `descuff --help`, `start`, and `finish`.
+- Added changelog release heading validation for version, ISO date, and one-line release title.
 
 ## 0.1.15 - 2026-08-27 - Installable Drift Recovery
 
