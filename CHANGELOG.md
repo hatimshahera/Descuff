@@ -13,6 +13,7 @@ All notable changes to Descuff will be documented in this file.
 - Added changelog release heading validation for version, ISO date, and one-line release title.
 - Added npm environment diagnostics for root-owned cache entries and pnpm-only config warnings during release checks.
 - Added post-publish registry verification for packuments, latest dist-tags, tarball reachability, internal dependency resolution, and fresh public CLI install smoke tests.
+- Documented public package-boundary rules and partial-publish recovery steps for contributors.
 
 ## 0.1.15 - 2026-08-27 - Installable Drift Recovery
 

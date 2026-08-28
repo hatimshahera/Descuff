@@ -59,6 +59,45 @@ Run before submitting:
 pnpm run ci
 ```
 
+## Package Boundaries
+
+Descuff is intentionally split into packages where the boundary protects a real product concern:
+
+- Public runtime packages are allowed when the CLI imports them directly, users may reasonably import them later, or the package owns a stable boundary such as IR, validation, analyzers, standards, reporting, drift, or host-agent workflow.
+- Keep framework-specific code in analyzer packages and standard-specific code in `packages/standards/*`.
+- Prefer adding code to an existing package when the behavior is an implementation detail of that package.
+- Do not add a new public package only to organize files. A new public package adds npm publish, dependency graph, registry, and installability risk.
+- If a new public package is needed, update `scripts/release-graph.mjs`, `vitest.config.ts`, `tsconfig.packages.json`, package dependency ranges, tests, and release notes in the same change.
+- Consider bundling into the CLI only when the code is CLI-only, has no stable reusable contract, and would not be useful to validators, analyzers, standards adapters, or host-agent workflows.
+
+## Release Checks
+
+Run the local release gates before publishing:
+
+```bash
+pnpm run release:check
+pnpm run release:install-smoke
+```
+
+After publishing, verify npm registry state:
+
+```bash
+pnpm run release:registry -- <version>
+```
+
+The registry check verifies package packuments, `latest` dist-tags, tarball reachability, internal dependency availability, and a fresh public `npm install descuff@<version>` plus `npx descuff --help`.
+
+## Publish Recovery
+
+If a publish looks broken, do not hide it by silently publishing again.
+
+- Wait briefly only when npm publish succeeded but packuments or tarballs are still propagating.
+- Run `pnpm run release:registry -- <version>` before deciding that a version is usable.
+- If an internal package is missing or a dependency range is wrong, publish a patch version using the current phase convention instead of trying to rewrite the broken version.
+- If `latest` points to a broken version, move `latest` back to the last verified version or forward to a verified patch after the fix is published.
+- Deprecate broken versions with a short reason once a working replacement exists.
+- Record recovery notes in `CHANGELOG.md` so users can understand which version to install.
+
 ## Pull Requests
 
 - Explain the user-facing change.
