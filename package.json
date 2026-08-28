@@ -40,6 +40,8 @@
     "release:npm-env": "node scripts/npm-env-check.mjs",
     "release:graph": "node scripts/release-graph.mjs",
     "release:install-smoke": "pnpm build && node scripts/release-install-smoke.mjs",
+    "release:publish": "node scripts/release-publish.mjs",
+    "release:publish-plan": "node scripts/release-publish.mjs --dry-run",
     "release:registry": "node scripts/registry-check.mjs",
     "release:check": "pnpm build && node scripts/npm-env-check.mjs && node scripts/changelog-check.mjs && node scripts/release-check.mjs"
   },

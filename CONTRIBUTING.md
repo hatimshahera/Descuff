@@ -77,6 +77,7 @@ Run the local release gates before publishing:
 ```bash
 pnpm run release:check
 pnpm run release:install-smoke
+pnpm run release:publish-plan -- <version>
 ```
 
 After publishing, verify npm registry state:
@@ -86,6 +87,26 @@ pnpm run release:registry -- <version>
 ```
 
 The registry check verifies package packuments, `latest` dist-tags, tarball reachability, internal dependency availability, and a fresh public `npm install descuff@<version>` plus `npx descuff --help`.
+
+## Trusted Publishing
+
+Releases should use GitHub Actions Trusted Publishing instead of local OTP/passkey publishing once npm is configured.
+
+Manual npm setup is required before `.github/workflows/publish.yml` can publish:
+
+- Configure Trusted Publishing for every public Descuff package on npm.
+- Use GitHub Actions as the publisher.
+- Set the organization/user to `hatimshahera`.
+- Set the repository to `Descuff`.
+- Set the workflow filename to `publish.yml`.
+- Set the environment name to `npm-publish` if npm asks for one.
+- Allow `npm publish`.
+
+The workflow runs on `workflow_dispatch`, requires a concrete version input, uses Node 24 so npm supports OIDC publishing, disables package-manager caching for the release job, grants `id-token: write`, runs the release gates, publishes packages in dependency order, and then runs the public registry verifier.
+
+Before publishing any package with internal dependencies, the publish script rechecks the dependency package packuments, latest dist tags, and tarball URLs from npm. After publishing each package, it waits until that package is publicly readable before moving to dependents. If any internal package is not publicly readable at the target version, the workflow stops before publishing its dependents.
+
+Do not run the publish workflow until every public package manifest already has the target version and all internal ranges point at that version.
 
 ## Publish Recovery
 
