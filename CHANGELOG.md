@@ -12,6 +12,7 @@ All notable changes to Descuff will be documented in this file.
 - Added a packed CLI install smoke command that installs tarballs into a clean temp project and runs `descuff --help`, `start`, and `finish`.
 - Added changelog release heading validation for version, ISO date, and one-line release title.
 - Added npm environment diagnostics for root-owned cache entries and pnpm-only config warnings during release checks.
+- Added post-publish registry verification for packuments, latest dist-tags, tarball reachability, internal dependency resolution, and fresh public CLI install smoke tests.
 
 ## 0.1.15 - 2026-08-27 - Installable Drift Recovery
 
