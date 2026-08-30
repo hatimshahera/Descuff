@@ -22,7 +22,7 @@ npx descuff enrich .
 
 Keep `.descuff/` ignored in public repositories by default. For CI drift checks, preserve `.descuff/drift-baseline.json` as a protected cache/artifact from the last successful base-branch run, or regenerate it from the base branch before running `descuff check` on a pull request.
 
-`install --platform codex` installs the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`. `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`. `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`. `install all` still writes local preview skill instructions under `.descuff/skills/`.
+`install --platform codex` installs the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`. `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`. `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`. `install all` still writes local preview skill instructions under `.descuff/skills/`. Install output explains the exact invocation and reminds users to run `finish` after explicit Descuff plan implementation, or `check` for ordinary later edits.
 
 `enrich` deterministically validates `.descuff/semantic-enrichment.json` and writes a reviewable semantic diff.
 

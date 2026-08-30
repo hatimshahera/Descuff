@@ -252,6 +252,16 @@ describe("descuff CLI", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("descuff start completed");
     expect(result.stdout).toContain("Baseline readiness: 100/100");
+    expect(result.stdout).toContain("Domain profile: ecommerce");
+    expect(result.stdout).toContain("App type: ecommerce");
+    expect(result.stdout).toContain("Routes: 3");
+    expect(result.stdout).toContain("APIs: 3");
+    expect(result.stdout).toContain("Capabilities: 4");
+    expect(result.stdout).toContain("Forms:");
+    expect(result.stdout).toContain("Implemented:");
+    expect(result.stdout).toContain("Recommended:");
+    expect(result.stdout).toContain("Readiness notes:");
+    expect(result.stdout).toContain("none");
     expect(result.stdout).toContain("codex-prompt.md");
     expect(driftBaseline).toContain('"schemaVersion": "0.1.0"');
   });
@@ -506,6 +516,10 @@ describe("descuff CLI", () => {
       ) as Array<{ standardId: string }>;
 
       expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("APIs: 0");
+      expect(result.stdout).toContain(
+        "No API operations identified. This can be acceptable for intentionally static sites."
+      );
       expect(generatedChanges.map((change) => change.standardId).sort()).toEqual([
         "llms-txt",
         "schema-org"
@@ -545,6 +559,7 @@ describe("descuff CLI", () => {
       expect(result.stdout).toContain("skills/codex/SKILL.md");
       expect(result.stdout).toContain("skills/claude-code/.claude/commands/descuff.md");
       expect(result.stdout).toContain("skills/cursor/.cursor/rules/descuff.mdc");
+      expect(result.stdout).toContain("For ordinary later edits, run: npx descuff check .");
 
       const codexInstructions = await readFile(
         join(tempRoot, ".descuff", "skills", "codex", "SKILL.md"),
@@ -571,6 +586,7 @@ describe("descuff CLI", () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("Mode: global");
       expect(result.stdout).toContain("skills/descuff/SKILL.md");
+      expect(result.stdout).toContain("After explicit Descuff plan implementation");
       expect(skill).toContain("name: descuff");
       expect(skill).toContain("npx descuff enrich .");
     } finally {
@@ -624,6 +640,7 @@ describe("descuff CLI", () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("Mode: project");
       expect(result.stdout).toContain("Invoke it in Claude Code with: /descuff .");
+      expect(result.stdout).toContain("For ordinary later edits, run: npx descuff check .");
       expect(command).toContain("# Descuff Skill For Claude Code");
       expect(command).toContain("npx descuff start .");
       expect(command).toContain("npx descuff enrich .");
@@ -644,6 +661,7 @@ describe("descuff CLI", () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("Mode: project");
       expect(result.stdout).toContain("Invoke it in Cursor Agent");
+      expect(result.stdout).toContain("For ordinary later edits, run: npx descuff check .");
       expect(rule).toContain("# Descuff Skill For Cursor");
       expect(rule).toContain("npx descuff start .");
       expect(rule).toContain("npx descuff enrich .");

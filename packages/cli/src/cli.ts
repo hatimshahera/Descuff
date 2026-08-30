@@ -251,6 +251,8 @@ async function installCommand(projectRoot: string, args: InstallArgs): Promise<s
     ...written.map((path) => `  ${path}`),
     "",
     "These files are local preview artifacts. Manually inspect them before copying into host-specific Codex, Claude Code, or Cursor directories.",
+    "After explicit Descuff plan implementation, run: npx descuff finish .",
+    "For ordinary later edits, run: npx descuff check .",
     ""
   ].join("\n");
 }
@@ -273,6 +275,8 @@ async function installClaudeCodeProjectCommand(projectRoot: string): Promise<str
     `  ${commandPath}`,
     "",
     "Invoke it in Claude Code with: /descuff .",
+    "After explicit Descuff plan implementation, run: npx descuff finish .",
+    "For ordinary later edits, run: npx descuff check .",
     ""
   ].join("\n");
 }
@@ -295,6 +299,8 @@ async function installCursorProjectRule(projectRoot: string): Promise<string> {
     `  ${rulePath}`,
     "",
     "Invoke it in Cursor Agent by asking it to Descuff this app.",
+    "After explicit Descuff plan implementation, run: npx descuff finish .",
+    "For ordinary later edits, run: npx descuff check .",
     ""
   ].join("\n");
 }
@@ -317,6 +323,8 @@ async function installGlobalSkill(args: InstallArgs): Promise<string> {
     `  ${skillPath}`,
     "",
     "Invoke it in Codex with: $descuff .",
+    "After explicit Descuff plan implementation, run: npx descuff finish .",
+    "For ordinary later edits, run: npx descuff check .",
     ""
   ].join("\n");
 }
@@ -441,23 +449,7 @@ async function startCommand(projectRoot: string): Promise<string> {
   await writePlanArtifacts(projectRoot, artifacts);
   await writeArtifact(projectRoot, "codex-prompt.md", renderCodexPrompt());
 
-  return [
-    "descuff start completed",
-    `Baseline readiness: ${baseline.readiness.score}/${baseline.readiness.maxScore}`,
-    `Failures: ${baseline.validation.failures.length}`,
-    `Warnings: ${baseline.validation.warnings.length}`,
-    "",
-    "Generated:",
-    `  ${join(artifactDir(projectRoot), "baseline.json")}`,
-    `  ${join(artifactDir(projectRoot), "plan.md")}`,
-    `  ${join(artifactDir(projectRoot), "codex-prompt.md")}`,
-    "",
-    "Next:",
-    "  1. Give .descuff/codex-prompt.md to your coding agent.",
-    "  2. Implement the plan conservatively.",
-    "  3. Run: npx descuff finish .",
-    ""
-  ].join("\n");
+  return renderStartSummary(projectRoot, artifacts, baseline);
 }
 
 async function finishCommand(projectRoot: string): Promise<CommandResult> {
@@ -660,6 +652,94 @@ function renderDriftCommandOutput(
     `Report: ${join(artifactDir(projectRoot), "drift-report.md")}`,
     ""
   ].join("\n");
+}
+
+function renderStartSummary(
+  projectRoot: string,
+  artifacts: ScanArtifacts,
+  baseline: BaselineSnapshot
+): string {
+  const implementedStandards = baseline.implementedStandards.join(", ") || "none";
+  const recommendedStandards = baseline.recommendedStandards.join(", ") || "none";
+  const validationIssues = [
+    ...baseline.validation.failures.map((failure) => `failure ${failure.code}`),
+    ...baseline.validation.warnings.map((warning) => `warning ${warning.code}`)
+  ];
+
+  return [
+    "descuff start completed",
+    `Baseline readiness: ${baseline.readiness.score}/${baseline.readiness.maxScore}`,
+    "",
+    "Detected:",
+    `  Domain profile: ${artifacts.model.domainProfile.primaryDomain || "unknown"}`,
+    `  App type: ${artifacts.model.applicationType.type}`,
+    `  Routes: ${artifacts.model.routes.length}`,
+    `  APIs: ${artifacts.model.apis.length}`,
+    `  Capabilities: ${artifacts.model.capabilities.length}`,
+    `  Forms: ${artifacts.analysis.forms.length}`,
+    `  Auth boundaries: ${artifacts.analysis.authenticationBoundaries.length}`,
+    "",
+    "Standards:",
+    `  Implemented: ${implementedStandards}`,
+    `  Recommended: ${recommendedStandards}`,
+    "",
+    "Validation:",
+    `  Failures: ${baseline.validation.failures.length}`,
+    `  Warnings: ${baseline.validation.warnings.length}`,
+    ...(validationIssues.length === 0
+      ? ["  Issues: none"]
+      : validationIssues.slice(0, 3).map((issue) => `  ${issue}`)),
+    "",
+    "Readiness notes:",
+    ...renderReadinessLossLines(baseline.readiness.lostPoints),
+    "",
+    "Generated:",
+    `  ${join(artifactDir(projectRoot), "baseline.json")}`,
+    `  ${join(artifactDir(projectRoot), "plan.md")}`,
+    `  ${join(artifactDir(projectRoot), "codex-prompt.md")}`,
+    "",
+    "Next:",
+    "  1. Give .descuff/codex-prompt.md to your coding agent.",
+    "  2. Implement the plan conservatively.",
+    "  3. Run: npx descuff finish .",
+    ""
+  ].join("\n");
+}
+
+function renderReadinessLossLines(
+  lostPoints: BaselineSnapshot["readiness"]["lostPoints"]
+): string[] {
+  if (lostPoints.length === 0) {
+    return ["  none"];
+  }
+
+  return lostPoints.map(
+    (loss) =>
+      `  ${loss.category}: -${loss.pointsLost} (${loss.reason}${readinessLossContext(loss.reason)})`
+  );
+}
+
+function readinessLossContext(reason: string): string {
+  if (reason === "No API operations identified.") {
+    return " This can be acceptable for intentionally static sites.";
+  }
+  if (reason === "No capabilities identified.") {
+    return " This can be acceptable when the site has no agent-usable actions.";
+  }
+  if (reason === "No entities identified.") {
+    return " Add structured content only when the app has real products, articles, places, events, or similar entities.";
+  }
+  if (reason === "No existing standards detected.") {
+    return " The generated plan should add applicable public metadata.";
+  }
+  if (reason === "No Schema.org JSON-LD detected.") {
+    return " Add Schema.org only when there is public structured content to describe.";
+  }
+  if (reason === "No runtime evidence correlated with semantic model.") {
+    return " Runtime proof improves confidence but does not mean source analysis failed.";
+  }
+
+  return "";
 }
 
 async function discoverChangedFiles(

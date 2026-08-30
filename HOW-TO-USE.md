@@ -45,6 +45,8 @@ This creates `.descuff/` with:
 - `plan.md`: implementation plan
 - `codex-prompt.md`: prompt for your coding agent
 
+The terminal summary shows detected route/API/capability/form counts, standards status, validation failures and warnings, readiness notes, generated artifact paths, and the next command.
+
 ## 3. Give The Plan To Your Coding Agent
 
 For Codex, install the tested skill once:

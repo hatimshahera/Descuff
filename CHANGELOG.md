@@ -7,6 +7,8 @@ All notable changes to Descuff will be documented in this file.
 ### Added
 
 - Added `descuff doctor [project-root]` to diagnose supported Next.js roots, wrong-folder monorepos, writable `.descuff/` artifacts, optional Graphify state, Git availability, and typed first-run blockers before creating a baseline.
+- Improved `descuff start` output with detected app counts, standards status, validation status, readiness notes, generated artifact paths, and next-step guidance.
+- Improved `descuff install` completion output with explicit `finish` versus `check` guidance for Codex, Claude Code, Cursor, and local preview installs.
 
 ## 0.13.2 - 2026-08-30 - Package README And Publish Preflight
 

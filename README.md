@@ -41,6 +41,8 @@ Descuff writes:
 
 Give `.descuff/codex-prompt.md`, `.descuff/plan.md`, and the semantic enrichment artifacts to Codex, Cursor, Claude Code, or another coding agent. The agent writes `.descuff/semantic-enrichment.json`, runs `npx descuff enrich .`, reviews `.descuff/semantic-enrichment-diff.md`, then implements the accepted standards while preserving the existing UI and behavior.
 
+`start` prints the detected domain profile, route/API/capability/form counts, implemented/recommended standards, validation status, readiness notes, generated artifact paths, and next steps.
+
 After implementation:
 
 ```bash
@@ -116,6 +118,7 @@ Lower-level commands:
 - `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`; invoke it with `/descuff .`.
 - `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`; ask Cursor Agent to Descuff the app from that project.
 - `install all` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
+  Install output reminds users to run `finish` only after explicit Descuff plan implementation and `check` for ordinary later edits.
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
 - `fix` prints agent workflow instructions. It does not invoke an LLM and does not edit source directly.
