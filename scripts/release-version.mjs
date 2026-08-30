@@ -95,20 +95,23 @@ function updateReadme(version) {
 
 function updateChangelog(version, date, title) {
   const changelog = readFileSync("CHANGELOG.md", "utf8");
-  const unreleasedHeading = "## Unreleased - Next Changes";
   const releaseHeading = `## ${version} - ${date} - ${title}`;
+  const unreleasedHeadingMatch = changelog.match(/^## Unreleased - .+$/m);
 
   if (changelog.includes(releaseHeading)) {
     return;
   }
 
-  if (!changelog.includes(unreleasedHeading)) {
+  if (unreleasedHeadingMatch === null) {
     throw new Error("CHANGELOG.md is missing the Unreleased section.");
   }
 
   writeFileSync(
     "CHANGELOG.md",
-    changelog.replace(unreleasedHeading, `${unreleasedHeading}\n\n${releaseHeading}`),
+    changelog.replace(
+      unreleasedHeadingMatch[0],
+      `## Unreleased - Next Changes\n\n${releaseHeading}`
+    ),
     "utf8"
   );
 }

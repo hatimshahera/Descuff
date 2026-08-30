@@ -2,7 +2,9 @@
 
 All notable changes to Descuff will be documented in this file.
 
-## Unreleased - First-Run Doctor Diagnostics
+## Unreleased - Next Changes
+
+## 0.14.1 - 2026-08-30 - First-Run Doctor Diagnostics
 
 ### Added
 
