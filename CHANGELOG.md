@@ -10,6 +10,7 @@ All notable changes to Descuff will be documented in this file.
 - Added browser-agent scenario/result artifacts and readiness explanation artifacts that link score losses to affected scenarios, evidence surfaces, and repair guidance.
 - Added typed validation failures for browser-agent baseline failure, post-Descuff failure, scenario budget overruns, benchmark regression, and inconclusive results.
 - Added `READINESS_EXPLANATION_MISSING_EVIDENCE` validation so incomplete readiness explanations cannot publish without evidence, affected surfaces, or scenario context.
+- Added fixture and snapshot coverage for content-site readiness explanations, static-site acceptable gaps, API-contract browser-agent scenarios, and browser-agent result Markdown.
 
 ### Changed
 

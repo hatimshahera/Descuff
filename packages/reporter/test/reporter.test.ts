@@ -59,6 +59,25 @@ describe("@descuff/reporter", () => {
           evidence: [evidence]
         }
       ])
-    ).toContain("Evidence surfaces: dom, accessibility -> json-ld, openapi");
+    ).toBe(
+      [
+        "# Browser-Agent Benchmark",
+        "",
+        "These numbers compare browser-agent task effort from recorded local evidence. They are explanatory measurements, not readiness scores.",
+        "",
+        "## Search products",
+        "",
+        "- Status: improved",
+        "- Starting URL: https://example.test/",
+        "- Browser actions: 10 -> 3 (70% reduction)",
+        "- Screenshots: 2 -> 0 (100% reduction)",
+        "- DOM queries: 5 -> 1 (80% reduction)",
+        "- WebMCP tool calls: 0 -> 1",
+        "- Evidence surfaces: dom, accessibility -> json-ld, openapi",
+        "- Confidence: medium -> high",
+        "- Result: succeeded -> succeeded",
+        ""
+      ].join("\n")
+    );
   });
 });

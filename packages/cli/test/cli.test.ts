@@ -345,6 +345,9 @@ describe("descuff CLI", () => {
     expect(validation).toContain('"readinessExplanations"');
     expect(readinessExplanations).toContain('"category"');
     expect(readinessExplanationsMarkdown).toContain("# Readiness Explanations");
+    expect(readinessExplanationsMarkdown).toContain("## discoverability");
+    expect(readinessExplanationsMarkdown).toContain("- Status: complete");
+    expect(readinessExplanationsMarkdown).toContain("- Scenario impact:");
   });
 
   it("starts a baseline-to-agent workflow for a Next.js fixture", async () => {

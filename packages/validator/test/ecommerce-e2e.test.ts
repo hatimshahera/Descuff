@@ -126,6 +126,64 @@ describe("@descuff/validator ecommerce website fixture E2E", () => {
       warnings: []
     });
   });
+
+  it("keeps content fixture readiness tied to Schema.org and llms.txt evidence", async () => {
+    const analysis = await new NativeNextAnalyzer().analyze(
+      createProjectContext("fixtures/content")
+    );
+    const model = structuralAnalysisToApplicationModel(withSuccessfulRuntimeObservations(analysis));
+    const report = createValidationReadinessReport(model, []);
+
+    expect(model.applicationType.type).toBe("content");
+    expect(model.standards.map((standard) => standard.kind).sort()).toEqual([
+      "llms-txt",
+      "schema-org"
+    ]);
+    expect(report.readinessExplanations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: "discoverability",
+          affectedStandards: ["llms-txt", "schema-org"]
+        }),
+        expect.objectContaining({
+          category: "semantic-metadata",
+          affectedStandards: ["schema-org"]
+        })
+      ])
+    );
+  });
+
+  it("treats intentionally static sites as acceptable gaps instead of broken readiness", () => {
+    const staticModel: ApplicationModel = {
+      ...createStaticMarketingModel(),
+      apis: [],
+      capabilities: [],
+      entities: []
+    };
+
+    const report = createValidationReadinessReport(staticModel, []);
+
+    expect(report.readinessExplanations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: "api-quality",
+          status: "acceptable-gap",
+          message:
+            "No API operations were identified. This can be acceptable for intentionally static sites."
+        }),
+        expect.objectContaining({
+          category: "agent-actions",
+          status: "acceptable-gap",
+          message:
+            "No agent-usable capabilities were identified. This can be acceptable when the site is purely informational."
+        }),
+        expect.objectContaining({
+          category: "structured-content",
+          status: "acceptable-gap"
+        })
+      ])
+    );
+  });
 });
 
 async function scanEcommerceFixture(): Promise<StructuralAnalysis> {
@@ -162,5 +220,110 @@ function withSuccessfulRuntimeObservations(analysis: StructuralAnalysis): Struct
         status: 200,
         evidence: operation.evidence
       }))
+  };
+}
+
+function createStaticMarketingModel(): ApplicationModel {
+  return {
+    schemaVersion: "0.1.0",
+    project: {
+      rootDir: "/repo",
+      packageManager: "pnpm"
+    },
+    applicationType: {
+      type: "marketing",
+      confidence: "medium",
+      evidence: [
+        {
+          id: "source:page",
+          kind: "source",
+          location: "app/page.tsx",
+          confidence: "high",
+          summary: "Static marketing page."
+        }
+      ]
+    },
+    domainProfile: {
+      summary: "Static marketing site.",
+      primaryDomain: "marketing",
+      domains: ["marketing"],
+      confidence: "medium",
+      evidence: [
+        {
+          id: "source:page",
+          kind: "source",
+          location: "app/page.tsx",
+          confidence: "high",
+          summary: "Static marketing page."
+        }
+      ]
+    },
+    routes: [
+      {
+        id: "route:/",
+        path: "/",
+        routerKind: "next-app",
+        sourceFile: "app/page.tsx",
+        runtimeObserved: true,
+        evidence: [
+          {
+            id: "source:page",
+            kind: "source",
+            location: "app/page.tsx",
+            confidence: "high",
+            summary: "Static marketing page."
+          }
+        ]
+      }
+    ],
+    apis: [],
+    capabilities: [],
+    entities: [],
+    standards: [
+      {
+        id: "standard:llms-txt",
+        kind: "llms-txt",
+        sourceFile: "public/llms.txt",
+        evidence: [
+          {
+            id: "source:llms",
+            kind: "source",
+            location: "public/llms.txt",
+            confidence: "high",
+            summary: "Static marketing summary."
+          }
+        ]
+      }
+    ],
+    readiness: {
+      score: 0,
+      maxScore: 100,
+      categoryScores: {
+        discoverability: 0,
+        "structured-content": 0,
+        "agent-actions": 0,
+        "api-quality": 0,
+        "semantic-metadata": 0,
+        security: 0,
+        "runtime-correctness": 0
+      },
+      lostPoints: []
+    },
+    evidenceIndex: [
+      {
+        id: "source:page",
+        kind: "source",
+        location: "app/page.tsx",
+        confidence: "high",
+        summary: "Static marketing page."
+      },
+      {
+        id: "source:llms",
+        kind: "source",
+        location: "public/llms.txt",
+        confidence: "high",
+        summary: "Static marketing summary."
+      }
+    ]
   };
 }
