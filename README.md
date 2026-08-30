@@ -40,6 +40,16 @@ Descuff writes:
 .descuff/codex-prompt.md
 ```
 
+When `.descuff/runtime.json` includes browser-agent scenarios, scans can also write:
+
+```text
+.descuff/browser-agent-scenarios.json
+.descuff/browser-agent-results.json
+.descuff/browser-agent-results.md
+.descuff/readiness-explanations.json
+.descuff/readiness-explanations.md
+```
+
 Give `.descuff/codex-prompt.md`, `.descuff/plan.md`, and the semantic enrichment artifacts to Codex, Cursor, Claude Code, or another coding agent. The agent writes `.descuff/semantic-enrichment.json`, runs `npx descuff enrich .`, reviews `.descuff/semantic-enrichment-diff.md`, then implements the accepted standards while preserving the existing UI and behavior.
 
 `start` prints the detected domain profile, route/API/capability/form counts, implemented/recommended standards, validation status, readiness notes, generated artifact paths, and next steps.
@@ -65,7 +75,8 @@ Descuff rescans, validates, and writes:
 - Recommends agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP implementation plans for browser-registered public read tools.
 - Generates a conservative implementation plan for a developer-owned coding agent.
 - Validates standards, security boundaries, runtime evidence, readiness score, and structured readiness explanations.
-- Can use optional `.descuff/runtime.json` to inspect a running local app in the browser and execute only explicitly approved read-only WebMCP scenarios.
+- Can use optional `.descuff/runtime.json` to inspect a running local app in the browser, compare browser-agent task effort before/after standards, and execute only explicitly approved read-only WebMCP scenarios.
+- Links readiness explanations to configured browser-agent scenarios so teams can see which missing evidence affects real agent tasks.
 - Reports before/after improvement so teams can see what changed.
 - Tracks a local drift baseline so CI can fast-pass irrelevant changes and revalidate agent-facing changes before they ship.
 
@@ -124,7 +135,7 @@ Lower-level commands:
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
   The validation report includes `readinessExplanations` so tools can distinguish blockers, recommendations, acceptable gaps, and complete categories.
-- Optional `.descuff/runtime.json` lets `scan` and `validate` use a running local app for browser/runtime evidence. Without it, Descuff keeps using conservative synthetic runtime evidence.
+- Optional `.descuff/runtime.json` lets `scan` and `validate` use a running local app for browser/runtime evidence. It can include read-only `browserAgentScenarios` for standard-neutral task checks and explicit `webMcpToolScenarios` for safe tool execution. Without it, Descuff keeps using conservative synthetic runtime evidence.
 - `fix` prints agent workflow instructions. It does not invoke an LLM and does not edit source directly.
 - `apply-safe` is intentionally disabled for automatic source writes in this release.
 

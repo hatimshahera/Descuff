@@ -761,9 +761,19 @@ function renderBrowserAgentBenchmarkSummaryLines(analysis: StructuralAnalysis): 
   );
 
   return [
-    `  Browser-agent effort: ${averageActionReduction}% average browser-action reduction`,
+    `  Browser-agent effort: ${formatAverageBrowserActionDelta(averageActionReduction)}`,
     `  Browser-agent after evidence: ${evidenceSurfaces.join(", ") || "none"}`
   ];
+}
+
+function formatAverageBrowserActionDelta(percent: number): string {
+  if (percent > 0) {
+    return `${percent}% average browser-action reduction`;
+  }
+  if (percent < 0) {
+    return `${Math.abs(percent)}% average browser-action increase`;
+  }
+  return "no average browser-action change";
 }
 
 function renderReadinessLossLines(

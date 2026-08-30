@@ -69,6 +69,34 @@ To let Descuff inspect a running local app in the browser, start your app and cr
 }
 ```
 
+You can also add standard-neutral browser-agent scenarios. These measure whether Descuff's standards make a real browser task easier to complete without relying only on WebMCP:
+
+```json
+{
+  "baseUrl": "http://localhost:3000",
+  "routes": ["/products"],
+  "browserAgentScenarios": [
+    {
+      "id": "find-black-shirt",
+      "title": "Find a black shirt under 15 GBP",
+      "intent": "Find a matching product without checking out.",
+      "startRoute": "/products",
+      "allowedRoutes": ["/products"],
+      "expectedEvidenceSurfaces": ["json-ld", "llms-txt"],
+      "successCriteria": ["A matching product is identified."],
+      "budgets": {
+        "maxActions": 5,
+        "maxScreenshots": 0,
+        "maxDomQueries": 1,
+        "maxNetworkObservations": 0,
+        "maxToolCalls": 0
+      },
+      "risk": "read-only"
+    }
+  ]
+}
+```
+
 Then run:
 
 ```bash
@@ -76,7 +104,15 @@ npx descuff scan .
 npx descuff validate .
 ```
 
-If `runtime.json` is missing or malformed, Descuff falls back to synthetic runtime evidence and records a typed warning. WebMCP tool execution still requires an explicit read-only scenario; Descuff does not guess inputs or execute mutating/high-consequence actions.
+If runtime browser-agent scenarios are present, Descuff writes:
+
+- `.descuff/browser-agent-scenarios.json`: normalized scenario definitions
+- `.descuff/browser-agent-results.json`: machine-readable before/after task measurements
+- `.descuff/browser-agent-results.md`: human-readable browser-agent effort report
+- `.descuff/readiness-explanations.json`: structured readiness categories, score impact, evidence, and scenario links
+- `.descuff/readiness-explanations.md`: readable readiness repair guidance
+
+If `runtime.json` is missing or malformed, Descuff falls back to synthetic runtime evidence and records a typed warning. Browser-agent scenarios must be `read-only` in this release. WebMCP tool execution still requires an explicit read-only scenario; Descuff does not guess inputs or execute mutating/high-consequence actions.
 
 ## 4. Give The Plan To Your Coding Agent
 
@@ -343,6 +379,7 @@ npx descuff validate .
 Freshly rescan and validate the current app state.
 
 The `.descuff/validation.json` report includes `readinessExplanations` with structured statuses for complete categories, acceptable gaps, recommendations, and blockers.
+When runtime browser-agent scenarios are configured, validation also links readiness categories to the scenarios affected by each evidence gap.
 
 ## What To Commit
 

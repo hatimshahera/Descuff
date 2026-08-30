@@ -2,7 +2,17 @@
 
 All notable changes to Descuff will be documented in this file.
 
-## Unreleased - Next Changes
+## Unreleased - 2026-08-30 - Browser-Agent Validation And Readiness Explanations
+
+### Added
+
+- Added standard-neutral browser-agent runtime scenarios that compare baseline browser exploration against Descuff-assisted standards evidence.
+- Added browser-agent scenario/result artifacts and readiness explanation artifacts that link score losses to affected scenarios, evidence surfaces, and repair guidance.
+- Added typed validation failures for browser-agent baseline failure, post-Descuff failure, scenario budget overruns, benchmark regression, and inconclusive results.
+
+### Changed
+
+- Improved runtime proof summaries so CLI output reports browser-agent scenario counts, comparable effort changes, and after-path evidence surfaces.
 
 ## 0.15.2 - 2026-08-30 - Apache 2.0 License Metadata
 
