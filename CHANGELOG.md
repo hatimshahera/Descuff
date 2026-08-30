@@ -2,7 +2,9 @@
 
 All notable changes to Descuff will be documented in this file.
 
-## Unreleased - 2026-08-30 - Browser-Agent Validation And Readiness Explanations
+## Unreleased - Next Changes
+
+## 0.16.1 - 2026-08-30 - Browser-Agent Validation And Readiness Explanations
 
 ### Added
 

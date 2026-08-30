@@ -1,6 +1,6 @@
 {
   "name": "@descuff/standard-openapi",
-  "version": "0.15.2",
+  "version": "0.16.1",
   "license": "Apache-2.0",
   "type": "module",
   "files": [
@@ -18,12 +18,12 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/ir": "^0.15.2",
-    "@descuff/standard-core": "^0.15.2"
+    "@descuff/ir": "^0.16.1",
+    "@descuff/standard-core": "^0.16.1"
   },
   "devDependencies": {
-    "@descuff/analyzer-nextjs": "^0.15.2",
-    "@descuff/core": "^0.15.2"
+    "@descuff/analyzer-nextjs": "^0.16.1",
+    "@descuff/core": "^0.16.1"
   },
   "description": "OpenAPI standard adapter for Descuff.",
   "repository": {
