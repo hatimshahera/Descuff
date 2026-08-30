@@ -106,15 +106,23 @@ export interface ValidationReadinessReport {
 }
 
 export type ReadinessExplanationStatus =
-  "complete" | "acceptable-gap" | "recommendation" | "blocker";
+  "complete" | "acceptable-gap" | "recommendation" | "blocker" | "unsupported";
 
 export interface ReadinessExplanation {
   category: ReadinessCategory;
   status: ReadinessExplanationStatus;
   pointsLost: number;
+  scoreImpact: number;
+  confidence: "high" | "medium" | "low";
   message: string;
   action: string;
+  expectedImpact: string;
   evidenceIds: string[];
+  affectedRoutes: string[];
+  affectedApis: string[];
+  affectedCapabilities: string[];
+  affectedStandards: string[];
+  scenarioIds: string[];
 }
 
 export interface SourceFileFingerprint {

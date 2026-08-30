@@ -263,14 +263,22 @@ describe("@descuff/validator", () => {
     const report = createValidationReadinessReport(createReadyApplicationModel(), []);
 
     expect(report.readinessExplanations).toHaveLength(7);
-    expect(report.readinessExplanations).toContainEqual({
-      category: "api-quality",
-      status: "complete",
-      pointsLost: 0,
-      message: "This readiness category has the available evidence Descuff expects.",
-      action: "No action required.",
-      evidenceIds: []
-    });
+    expect(report.readinessExplanations).toContainEqual(
+      expect.objectContaining({
+        category: "api-quality",
+        status: "complete",
+        pointsLost: 0,
+        scoreImpact: 0,
+        confidence: "high",
+        message: "This readiness category has the available evidence Descuff expects.",
+        action: "No action required.",
+        expectedImpact: "No readiness points are currently lost for this category.",
+        evidenceIds: ["source:route"],
+        affectedApis: ["GET /api/products"],
+        affectedCapabilities: ["capability:search"],
+        affectedStandards: []
+      })
+    );
   });
 
   it("distinguishes acceptable readiness gaps from recommendations and blockers", () => {
@@ -294,6 +302,9 @@ describe("@descuff/validator", () => {
         expect.objectContaining({
           category: "structured-content",
           status: "acceptable-gap",
+          scoreImpact: -15,
+          expectedImpact:
+            "Could recover up to 15 readiness points if the app actually has evidence-backed public surface area for this category. No change is required for intentionally simple sites.",
           action:
             "Add evidence-backed structured content only if the app has real public entities to describe."
         }),

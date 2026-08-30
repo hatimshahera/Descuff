@@ -790,10 +790,19 @@ function renderReadinessExplanations(explanations: ReadinessExplanation[]): stri
       `- Points lost: ${explanation.pointsLost}`,
       `- Message: ${explanation.message}`,
       `- Action: ${explanation.action}`,
+      `- Expected impact: ${explanation.expectedImpact}`,
       `- Evidence: ${explanation.evidenceIds.length === 0 ? "none" : explanation.evidenceIds.join(", ")}`,
+      `- Affected routes: ${formatReadinessList(explanation.affectedRoutes)}`,
+      `- Affected APIs: ${formatReadinessList(explanation.affectedApis)}`,
+      `- Affected capabilities: ${formatReadinessList(explanation.affectedCapabilities)}`,
+      `- Affected standards: ${formatReadinessList(explanation.affectedStandards)}`,
       ""
     ])
   ].join("\n");
+}
+
+function formatReadinessList(values: string[]): string {
+  return values.length === 0 ? "none" : values.join(", ");
 }
 
 async function discoverChangedFiles(
