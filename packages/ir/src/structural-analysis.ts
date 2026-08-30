@@ -171,6 +171,7 @@ export interface BrowserAgentTaskPathObservation {
   webMcpToolCalls: number;
   result: "succeeded" | "failed" | "inconclusive";
   confidence: "high" | "medium" | "low";
+  limitExceeded?: string[];
   evidence: EvidenceRef[];
 }
 

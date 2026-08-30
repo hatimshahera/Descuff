@@ -636,13 +636,14 @@ function createStandardsBrowserAgentPath(
   const networkObservations = availableSurfaces.includes("network") ? 1 : 0;
   const webMcpToolCalls = 0;
   const browserActions = navigations + screenshots + domQueries + networkObservations;
-  const succeeded =
-    availableSurfaces.length > 0 &&
-    browserActions <= scenario.budgets.maxActions &&
-    screenshots <= scenario.budgets.maxScreenshots &&
-    domQueries <= scenario.budgets.maxDomQueries &&
-    networkObservations <= scenario.budgets.maxNetworkObservations &&
-    webMcpToolCalls <= scenario.budgets.maxToolCalls;
+  const limitExceeded = browserAgentPathBudgetOverruns(scenario, {
+    browserActions,
+    screenshots,
+    domQueries,
+    networkObservations,
+    webMcpToolCalls
+  });
+  const succeeded = availableSurfaces.length > 0 && limitExceeded.length === 0;
 
   return {
     id: `browser-agent-path:after:${scenario.id}`,
@@ -656,8 +657,40 @@ function createStandardsBrowserAgentPath(
     webMcpToolCalls,
     result: succeeded ? "succeeded" : "inconclusive",
     confidence: succeeded && availableSurfaces.length > 1 ? "high" : succeeded ? "medium" : "low",
+    ...(limitExceeded.length === 0 ? {} : { limitExceeded }),
     evidence
   };
+}
+
+function browserAgentPathBudgetOverruns(
+  scenario: BrowserAgentTaskScenario,
+  counters: {
+    browserActions: number;
+    screenshots: number;
+    domQueries: number;
+    networkObservations: number;
+    webMcpToolCalls: number;
+  }
+): string[] {
+  const overruns: string[] = [];
+
+  if (counters.browserActions > scenario.budgets.maxActions) {
+    overruns.push("maxActions");
+  }
+  if (counters.screenshots > scenario.budgets.maxScreenshots) {
+    overruns.push("maxScreenshots");
+  }
+  if (counters.domQueries > scenario.budgets.maxDomQueries) {
+    overruns.push("maxDomQueries");
+  }
+  if (counters.networkObservations > scenario.budgets.maxNetworkObservations) {
+    overruns.push("maxNetworkObservations");
+  }
+  if (counters.webMcpToolCalls > scenario.budgets.maxToolCalls) {
+    overruns.push("maxToolCalls");
+  }
+
+  return overruns;
 }
 
 function createWebMcpBrowserAgentPath(

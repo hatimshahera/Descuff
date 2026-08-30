@@ -553,6 +553,76 @@ describe("@descuff/analyzer-runtime", () => {
     );
   });
 
+  it("records browser-agent scenario budget overruns on standards-assisted paths", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: { "content-type": "text/html" } };
+        },
+        async fetch() {
+          return { status: 200, headers: {} };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      async () => ({
+        async visit() {
+          return {
+            url: "http://example.test/products",
+            status: 200,
+            headings: ["Products"],
+            formCount: 0,
+            jsonLdCount: 1,
+            origin: "http://example.test",
+            network: [],
+            webMcpSupported: false,
+            webMcpTools: [],
+            webMcpToolExecutions: []
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      })
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/products"],
+        apiOperations: [],
+        browserAgentScenarios: [
+          {
+            id: "tight-budget",
+            title: "Find products with an impossible budget",
+            intent: "Find product evidence.",
+            startRoute: "/products",
+            successCriteria: ["A product is identified."],
+            expectedEvidenceSurfaces: ["json-ld"],
+            budgets: {
+              maxActions: 0,
+              maxScreenshots: 0,
+              maxDomQueries: 0,
+              maxNetworkObservations: 0,
+              maxToolCalls: 0
+            }
+          }
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentBenchmarks).toContainEqual(
+      expect.objectContaining({
+        id: "browser-agent-benchmark:/products:tight-budget",
+        status: "inconclusive",
+        after: expect.objectContaining({
+          limitExceeded: ["maxActions"]
+        })
+      })
+    );
+  });
+
   it("records inconclusive browser-agent benchmark evidence when scenario execution is skipped", async () => {
     const analysis = await new RuntimeAnalyzer(
       async () => ({

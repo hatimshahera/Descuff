@@ -1217,7 +1217,7 @@ describe("@descuff/validator", () => {
     });
   });
 
-  it("fails runtime validation when a browser-agent benchmark is inconclusive", () => {
+  it("fails runtime validation when a browser-agent baseline path fails", () => {
     const analysis = createSuccessfulRuntimeAnalysis();
     analysis.browserAgentBenchmarks.push(
       browserAgentBenchmark({
@@ -1231,7 +1231,53 @@ describe("@descuff/validator", () => {
       passed: false,
       failures: [
         {
-          code: "BROWSER_AGENT_BENCHMARK_INCONCLUSIVE",
+          code: "BROWSER_AGENT_TASK_BASELINE_FAILED",
+          level: "runtime",
+          severity: "error",
+          source: "browser-agent-benchmark:search-products"
+        }
+      ]
+    });
+  });
+
+  it("fails runtime validation when a post-Descuff browser-agent path fails", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.browserAgentBenchmarks.push(
+      browserAgentBenchmark({
+        status: "inconclusive",
+        afterResult: "failed",
+        afterActions: 3
+      })
+    );
+
+    expect(validateRuntimeObservations(createReadyApplicationModel(), analysis)).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "BROWSER_AGENT_TASK_AFTER_FAILED",
+          level: "runtime",
+          severity: "error",
+          source: "browser-agent-benchmark:search-products"
+        }
+      ]
+    });
+  });
+
+  it("fails runtime validation when a browser-agent scenario exceeds its budget", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.browserAgentBenchmarks.push(
+      browserAgentBenchmark({
+        status: "inconclusive",
+        afterActions: 3,
+        limitExceeded: ["maxActions"]
+      })
+    );
+
+    expect(validateRuntimeObservations(createReadyApplicationModel(), analysis)).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "BROWSER_AGENT_SCENARIO_BUDGET_EXCEEDED",
           level: "runtime",
           severity: "error",
           source: "browser-agent-benchmark:search-products"
@@ -2078,8 +2124,10 @@ function runtimePage() {
 function browserAgentBenchmark(input: {
   status: "improved" | "unchanged" | "regressed" | "inconclusive";
   beforeResult?: "succeeded" | "failed" | "inconclusive";
+  afterResult?: "succeeded" | "failed" | "inconclusive";
   afterActions: number;
   browserActionReductionPercent?: number;
+  limitExceeded?: string[];
 }) {
   return {
     id: "browser-agent-benchmark:search-products",
@@ -2109,8 +2157,9 @@ function browserAgentBenchmark(input: {
       domQueries: 1,
       networkObservations: 0,
       webMcpToolCalls: 1,
-      result: "succeeded" as const,
+      result: input.afterResult ?? ("succeeded" as const),
       confidence: "high" as const,
+      ...(input.limitExceeded === undefined ? {} : { limitExceeded: input.limitExceeded }),
       evidence: [evidence]
     },
     improvement: {
