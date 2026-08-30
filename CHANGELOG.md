@@ -9,6 +9,7 @@ All notable changes to Descuff will be documented in this file.
 - Added standard-neutral browser-agent runtime scenarios that compare baseline browser exploration against Descuff-assisted standards evidence.
 - Added browser-agent scenario/result artifacts and readiness explanation artifacts that link score losses to affected scenarios, evidence surfaces, and repair guidance.
 - Added typed validation failures for browser-agent baseline failure, post-Descuff failure, scenario budget overruns, benchmark regression, and inconclusive results.
+- Added `READINESS_EXPLANATION_MISSING_EVIDENCE` validation so incomplete readiness explanations cannot publish without evidence, affected surfaces, or scenario context.
 
 ### Changed
 

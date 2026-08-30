@@ -408,6 +408,95 @@ describe("@descuff/analyzer-runtime", () => {
     expect(validateStructuralAnalysis(analysis).valid).toBe(true);
   });
 
+  it("records API standards and network assisted browser-agent benchmarks", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: { "content-type": "text/html" } };
+        },
+        async fetch() {
+          return {
+            status: 200,
+            headers: { "content-type": "application/json" },
+            body: '{"products":[{"name":"Black shirt","price":12}]}'
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      async () => ({
+        async visit() {
+          return {
+            url: "http://example.test/products",
+            status: 200,
+            title: "Products",
+            headings: ["Products"],
+            formCount: 1,
+            jsonLdCount: 0,
+            origin: "http://example.test",
+            network: [
+              {
+                url: "http://example.test/api/products?q=shirt",
+                method: "GET",
+                status: 200,
+                requestHeaders: { accept: "application/json" },
+                responseHeaders: { "content-type": "application/json" },
+                responseBody: '{"products":[{"name":"Black shirt","price":12}]}'
+              }
+            ],
+            webMcpSupported: false,
+            webMcpTools: [],
+            webMcpToolExecutions: []
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      })
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/products"],
+        apiOperations: [{ method: "GET", path: "/api/products" }],
+        implementedStandards: ["openapi", "api-catalog"],
+        browserAgentScenarios: [
+          {
+            id: "find-product-through-api-contract",
+            title: "Find a product through documented API evidence",
+            intent: "Find a matching product without visual exploration.",
+            startRoute: "/products",
+            successCriteria: ["A matching product is identified."],
+            expectedEvidenceSurfaces: ["openapi", "api-catalog", "network"],
+            budgets: {
+              maxActions: 4,
+              maxScreenshots: 0,
+              maxDomQueries: 0,
+              maxNetworkObservations: 1,
+              maxToolCalls: 0
+            }
+          }
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentBenchmarks).toContainEqual(
+      expect.objectContaining({
+        id: "browser-agent-benchmark:/products:find-product-through-api-contract",
+        status: "improved",
+        after: expect.objectContaining({
+          kind: "descuff-standards",
+          evidenceSurfaces: ["openapi", "api-catalog", "network"],
+          networkObservations: 1,
+          result: "succeeded"
+        })
+      })
+    );
+    expect(validateStructuralAnalysis(analysis).valid).toBe(true);
+  });
+
   it("skips unsafe browser-agent scenarios before runtime benchmark execution", async () => {
     const analysis = await new RuntimeAnalyzer(
       async () => ({

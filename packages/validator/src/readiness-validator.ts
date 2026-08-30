@@ -4,10 +4,11 @@ import {
   type ReadinessCategory,
   type ReadinessLossReason
 } from "@descuff/ir";
-import { mergeValidationSummaries } from "./summary.js";
+import { createValidationSummary, mergeValidationSummaries } from "./summary.js";
 import type {
   ReadinessExplanation,
   ReadinessExplanationStatus,
+  ValidationFailure,
   ValidationReadinessContext,
   ValidationReadinessReport,
   ValidationSummary
@@ -18,17 +19,46 @@ export function createValidationReadinessReport(
   summaries: ValidationSummary[],
   context: ValidationReadinessContext = {}
 ): ValidationReadinessReport {
-  const validation = mergeValidationSummaries(summaries);
   const readiness = scoreReadiness(model);
+  const readinessExplanations = explainReadiness(readiness, model, context);
+  const validation = mergeValidationSummaries([
+    ...summaries,
+    validateReadinessExplanations(readinessExplanations)
+  ]);
 
   return {
     schemaVersion: "0.1.0",
     readiness,
-    readinessExplanations: explainReadiness(readiness, model, context),
+    readinessExplanations,
     validation,
     ready: readiness.score === readiness.maxScore && validation.passed,
     blockers: validation.failures
   };
+}
+
+export function validateReadinessExplanations(
+  explanations: ReadinessExplanation[]
+): ValidationSummary {
+  const issues: ValidationFailure[] = [];
+
+  for (const explanation of explanations) {
+    if (readinessExplanationHasContext(explanation)) {
+      continue;
+    }
+
+    issues.push({
+      code: "READINESS_EXPLANATION_MISSING_EVIDENCE",
+      level: "static",
+      severity: "error",
+      message: `Readiness explanation ${explanation.category} has no evidence, affected surface, or scenario context.`,
+      source: explanation.category,
+      evidence: [],
+      suggestedAction:
+        "Attach source evidence, affected routes/APIs/capabilities/standards, or related browser-agent scenarios before publishing the readiness explanation."
+    });
+  }
+
+  return createValidationSummary(issues);
 }
 
 function explainReadiness(
@@ -351,6 +381,21 @@ function readinessScenarioImpact(category: ReadinessCategory, scenarioIds: strin
   }
 
   return `${scenarioIds.length} browser-agent scenario(s) use evidence related to this category.`;
+}
+
+function readinessExplanationHasContext(explanation: ReadinessExplanation): boolean {
+  if (explanation.status === "complete") {
+    return true;
+  }
+
+  return (
+    explanation.evidenceIds.length > 0 ||
+    explanation.affectedRoutes.length > 0 ||
+    explanation.affectedApis.length > 0 ||
+    explanation.affectedCapabilities.length > 0 ||
+    explanation.affectedStandards.length > 0 ||
+    explanation.scenarioIds.length > 0
+  );
 }
 
 function evidenceIds(evidence: Array<{ id: string }>): string[] {

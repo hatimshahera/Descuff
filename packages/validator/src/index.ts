@@ -32,7 +32,10 @@ export {
   createValidationSummary,
   mergeValidationSummaries
 } from "./summary.js";
-export { createValidationReadinessReport } from "./readiness-validator.js";
+export {
+  createValidationReadinessReport,
+  validateReadinessExplanations
+} from "./readiness-validator.js";
 export { renderValidationRepairGuide } from "./repair-guide.js";
 export { renderValidationSummaryDetails } from "./result-formatting.js";
 export { validateUiRegression } from "./regression-validator.js";

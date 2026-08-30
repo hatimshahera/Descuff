@@ -20,6 +20,7 @@ import {
   validateCommandResults,
   validateRuntimeConfig,
   validateRuntimeObservations,
+  validateReadinessExplanations,
   validateSecurityModel,
   validateSourceFingerprints,
   validateStaticGeneratedChanges,
@@ -381,6 +382,80 @@ describe("@descuff/validator", () => {
         })
       ])
     );
+  });
+
+  it("keeps generated readiness explanations backed by context", () => {
+    const report = createValidationReadinessReport(createReadyApplicationModel(), [], {
+      browserAgentScenarios: [
+        {
+          id: "find-product",
+          title: "Find a product",
+          intent: "Find a public product.",
+          startRoute: "/products",
+          allowedRoutes: ["/products"],
+          allowedOrigins: [],
+          blockedOrigins: [],
+          inputs: {},
+          successCriteria: ["A product is identified."],
+          expectedEvidenceSurfaces: ["json-ld"],
+          budgets: {
+            maxActions: 5,
+            maxScreenshots: 0,
+            maxDomQueries: 2,
+            maxNetworkObservations: 1,
+            maxToolCalls: 0
+          },
+          risk: "read-only",
+          evidence: [evidence]
+        }
+      ]
+    });
+
+    expect(validateReadinessExplanations(report.readinessExplanations)).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
+  it("fails readiness explanations that have no evidence or affected context", () => {
+    expect(
+      validateReadinessExplanations([
+        {
+          category: "discoverability",
+          status: "recommendation",
+          pointsLost: 10,
+          scoreImpact: -10,
+          confidence: "low",
+          message: "Missing discoverability context.",
+          action: "Add evidence.",
+          expectedImpact: "Could recover points.",
+          scenarioImpact: "No browser-agent scenarios are currently linked.",
+          evidenceIds: [],
+          affectedRoutes: [],
+          affectedApis: [],
+          affectedCapabilities: [],
+          affectedStandards: [],
+          scenarioIds: []
+        }
+      ])
+    ).toEqual({
+      passed: false,
+      failures: [
+        {
+          code: "READINESS_EXPLANATION_MISSING_EVIDENCE",
+          level: "static",
+          severity: "error",
+          message:
+            "Readiness explanation discoverability has no evidence, affected surface, or scenario context.",
+          source: "discoverability",
+          evidence: [],
+          suggestedAction:
+            "Attach source evidence, affected routes/APIs/capabilities/standards, or related browser-agent scenarios before publishing the readiness explanation."
+        }
+      ],
+      warnings: []
+    });
   });
 
   it("adapts standard validation issues into actionable static failures", () => {
