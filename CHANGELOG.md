@@ -13,6 +13,7 @@ All notable changes to Descuff will be documented in this file.
 - Added `BROWSER_AGENT_BENCHMARK_INCONCLUSIVE` runtime validation when benchmark evidence cannot prove both paths succeeded.
 - Added automatic browser-agent benchmark records for explicit WebMCP runtime scenarios observed during browser analysis.
 - Added runtime proof summaries to scan, start, validate, and finish output.
+- Documented runtime analyzer benchmark generation, reporter benchmark output, and validator benchmark checks in package READMEs.
 
 ### Changed
 

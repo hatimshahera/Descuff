@@ -8,4 +8,6 @@ This is a public runtime dependency of the `descuff` CLI. Most users should inst
 npx descuff validate .
 ```
 
+It validates static standards, runtime/browser evidence, WebMCP behavior, security boundaries, drift-sensitive source fingerprints, and browser-agent benchmark outcomes.
+
 Use this package directly only if you are building on Descuff internals.

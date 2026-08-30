@@ -8,4 +8,6 @@ This package supports runtime checks used by Descuff validation and release hard
 npx descuff start .
 ```
 
+It can inspect configured local routes in a browser, discover browser-registered WebMCP tools, execute only explicit read-only WebMCP scenarios, and produce browser-agent task benchmark observations from that evidence.
+
 Use this package directly only if you are building on Descuff internals.
