@@ -4,6 +4,10 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+### Fixed
+
+- Replaced the deprecated `pnpm/action-setup@v4` workflow setup with Corepack-pinned `pnpm@10.30.0` so CI and publish runs no longer emit Node 20 action deprecation warnings.
+
 ## 0.16.1 - 2026-08-30 - Browser-Agent Validation And Readiness Explanations
 
 ### Added
