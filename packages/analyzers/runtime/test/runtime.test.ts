@@ -469,6 +469,90 @@ describe("@descuff/analyzer-runtime", () => {
     );
   });
 
+  it("skips malformed browser-agent scenarios with typed diagnostics", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: {} };
+        },
+        async fetch() {
+          return { status: 200, headers: {} };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      null
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/"],
+        apiOperations: [],
+        browserAgentScenarios: [
+          {
+            id: "missing-fields",
+            title: "Missing fields",
+            intent: "This scenario is incomplete.",
+            startRoute: "/"
+          } as never
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentScenarios).toEqual([]);
+    expect(analysis.browserAgentBenchmarks).toEqual([]);
+    expect(analysis.warnings).toContainEqual(
+      expect.objectContaining({
+        code: "BROWSER_AGENT_SCENARIO_MALFORMED"
+      })
+    );
+  });
+
+  it("skips browser-agent scenarios with unsupported evidence surfaces", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: {} };
+        },
+        async fetch() {
+          return { status: 200, headers: {} };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      null
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/"],
+        apiOperations: [],
+        browserAgentScenarios: [
+          {
+            id: "unsupported-surface",
+            title: "Unsupported surface",
+            intent: "Use unsupported evidence.",
+            startRoute: "/",
+            successCriteria: ["A result is found."],
+            expectedEvidenceSurfaces: ["screenshots" as never]
+          }
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentScenarios).toEqual([]);
+    expect(analysis.browserAgentBenchmarks).toEqual([]);
+    expect(analysis.warnings).toContainEqual(
+      expect.objectContaining({
+        code: "BROWSER_AGENT_SCENARIO_UNSUPPORTED_EVIDENCE"
+      })
+    );
+  });
+
   it("records inconclusive browser-agent benchmark evidence when scenario execution is skipped", async () => {
     const analysis = await new RuntimeAnalyzer(
       async () => ({

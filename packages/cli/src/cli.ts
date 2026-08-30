@@ -730,6 +730,7 @@ function renderRuntimeProofLines(analysis: StructuralAnalysis): string[] {
   return [
     "Runtime proof:",
     `  Browser pages: ${analysis.runtimePages.length}`,
+    `  Browser-agent scenarios: ${analysis.browserAgentScenarios.length}`,
     `  WebMCP tools: ${analysis.runtimeWebMcpTools.length}`,
     `  WebMCP executions: ${executedCount}/${executionCount}`,
     `  Browser-agent benchmarks: ${benchmarkCount}${

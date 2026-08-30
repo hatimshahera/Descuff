@@ -251,6 +251,7 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("descuff scan completed");
     expect(result.stdout).toContain("Routes:");
     expect(result.stdout).toContain("Runtime proof:");
+    expect(result.stdout).toContain("Browser-agent scenarios:");
     expect(result.stdout).toContain("WebMCP tools:");
     expect(result.stdout).toContain("Generated changes:");
     expect(packet.deterministicSummary.applicationType).toBe("ecommerce");
@@ -340,6 +341,7 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("descuff validate passed");
     expect(result.stdout).toContain("Readiness: 100/100");
     expect(result.stdout).toContain("Runtime proof:");
+    expect(result.stdout).toContain("Browser-agent scenarios:");
     expect(validation).toContain('"readinessExplanations"');
     expect(readinessExplanations).toContain('"category"');
     expect(readinessExplanationsMarkdown).toContain("# Readiness Explanations");
@@ -365,6 +367,7 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("Recommended:");
     expect(result.stdout).toContain("Readiness notes:");
     expect(result.stdout).toContain("Runtime proof:");
+    expect(result.stdout).toContain("Browser-agent scenarios:");
     expect(result.stdout).toContain("none");
     expect(result.stdout).toContain("codex-prompt.md");
     expect(driftBaseline).toContain('"schemaVersion": "0.1.0"');
@@ -641,6 +644,7 @@ describe("descuff CLI", () => {
     expect(result.stdout).toContain("descuff finish passed");
     expect(result.stdout).toContain("Readiness: 100/100 -> 100/100");
     expect(result.stdout).toContain("Runtime proof:");
+    expect(result.stdout).toContain("Browser-agent scenarios:");
     expect(result.stdout).toContain("before-after.md");
   });
 

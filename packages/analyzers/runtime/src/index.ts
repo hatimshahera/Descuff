@@ -17,12 +17,7 @@ import {
   type RuntimeWebMcpToolObservation,
   type StructuralAnalysis
 } from "@descuff/ir";
-import type {
-  ProjectContext,
-  RuntimeBrowserAgentScenario,
-  RuntimeWebMcpToolScenario,
-  StructuralAnalyzer
-} from "@descuff/core";
+import type { ProjectContext, RuntimeWebMcpToolScenario, StructuralAnalyzer } from "@descuff/core";
 import { createBrowserAgentTaskBenchmark } from "./browser-agent-benchmark.js";
 import { correlateRuntimeEvidence } from "./correlation.js";
 import { runtimeEvidence } from "./runtime-evidence.js";
@@ -690,13 +685,28 @@ function createWebMcpBrowserAgentPath(
 }
 
 function normalizeBrowserAgentScenarios(
-  scenarios: RuntimeBrowserAgentScenario[],
+  scenarios: unknown[],
   limits: Required<RuntimeResourceLimits>,
   analysis: StructuralAnalysis
 ): BrowserAgentTaskScenario[] {
   const normalized: BrowserAgentTaskScenario[] = [];
 
-  for (const scenario of scenarios) {
+  for (const [index, rawScenario] of scenarios.entries()) {
+    const malformedEvidence = runtimeEvidence(
+      `browser-agent-scenario:${index}`,
+      `Configured browser-agent scenario at index ${index}.`
+    );
+    const scenario = parseBrowserAgentScenario(rawScenario);
+    if (scenario === undefined) {
+      analysis.warnings.push({
+        code: "BROWSER_AGENT_SCENARIO_MALFORMED",
+        message: `Browser-agent scenario at index ${index} was skipped because it is malformed.`,
+        evidence: [malformedEvidence]
+      });
+      analysis.evidence.items.push(malformedEvidence);
+      continue;
+    }
+
     const evidence = runtimeEvidence(
       `browser-agent-scenario:${scenario.id}`,
       `Configured browser-agent scenario ${scenario.title}.`
@@ -724,6 +734,9 @@ function normalizeBrowserAgentScenarios(
       analysis.evidence.items.push(evidence);
       continue;
     }
+    const expectedEvidenceSurfaces = scenario.expectedEvidenceSurfaces.filter(
+      isSupportedBrowserAgentEvidenceSurface
+    );
 
     normalized.push({
       id: scenario.id,
@@ -735,7 +748,7 @@ function normalizeBrowserAgentScenarios(
       blockedOrigins: scenario.blockedOrigins ?? limits.blockedOrigins,
       inputs: scenario.inputs ?? {},
       successCriteria: scenario.successCriteria,
-      expectedEvidenceSurfaces: scenario.expectedEvidenceSurfaces,
+      expectedEvidenceSurfaces,
       budgets: {
         maxActions: scenario.budgets?.maxActions ?? 10,
         maxScreenshots: scenario.budgets?.maxScreenshots ?? 1,
@@ -752,8 +765,133 @@ function normalizeBrowserAgentScenarios(
   return normalized;
 }
 
-function isSafeBrowserAgentScenario(scenario: RuntimeBrowserAgentScenario): boolean {
+interface ParsedBrowserAgentScenario {
+  id: string;
+  title: string;
+  intent: string;
+  startRoute: string;
+  allowedRoutes?: string[];
+  allowedOrigins?: string[];
+  blockedOrigins?: string[];
+  inputs?: Record<string, unknown>;
+  successCriteria: string[];
+  expectedEvidenceSurfaces: string[];
+  budgets?: {
+    maxActions?: number;
+    maxScreenshots?: number;
+    maxDomQueries?: number;
+    maxNetworkObservations?: number;
+    maxToolCalls?: number;
+  };
+  risk?: BrowserAgentTaskScenario["risk"];
+}
+
+function parseBrowserAgentScenario(value: unknown): ParsedBrowserAgentScenario | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.title) ||
+    !isNonEmptyString(value.intent) ||
+    !isNonEmptyString(value.startRoute) ||
+    !isNonEmptyStringArray(value.successCriteria) ||
+    !isNonEmptyStringArray(value.expectedEvidenceSurfaces)
+  ) {
+    return undefined;
+  }
+
+  if (
+    (value.allowedRoutes !== undefined && !isStringArray(value.allowedRoutes)) ||
+    (value.allowedOrigins !== undefined && !isStringArray(value.allowedOrigins)) ||
+    (value.blockedOrigins !== undefined && !isStringArray(value.blockedOrigins)) ||
+    (value.inputs !== undefined && !isRecord(value.inputs)) ||
+    (value.risk !== undefined && !isSupportedBrowserAgentRisk(value.risk)) ||
+    (value.budgets !== undefined && !isValidBrowserAgentBudgets(value.budgets))
+  ) {
+    return undefined;
+  }
+
+  const parsed: ParsedBrowserAgentScenario = {
+    id: value.id,
+    title: value.title,
+    intent: value.intent,
+    startRoute: value.startRoute,
+    successCriteria: value.successCriteria,
+    expectedEvidenceSurfaces: value.expectedEvidenceSurfaces
+  };
+  if (value.allowedRoutes !== undefined) {
+    parsed.allowedRoutes = value.allowedRoutes;
+  }
+  if (value.allowedOrigins !== undefined) {
+    parsed.allowedOrigins = value.allowedOrigins;
+  }
+  if (value.blockedOrigins !== undefined) {
+    parsed.blockedOrigins = value.blockedOrigins;
+  }
+  if (value.inputs !== undefined) {
+    parsed.inputs = value.inputs;
+  }
+  if (value.budgets !== undefined) {
+    parsed.budgets = value.budgets;
+  }
+  if (value.risk !== undefined) {
+    parsed.risk = value.risk;
+  }
+
+  return parsed;
+}
+
+function isSafeBrowserAgentScenario(scenario: ParsedBrowserAgentScenario): boolean {
   return scenario.risk === undefined || scenario.risk === "read-only";
+}
+
+function isSupportedBrowserAgentRisk(value: unknown): value is BrowserAgentTaskScenario["risk"] {
+  return (
+    value === "read-only" ||
+    value === "mutating" ||
+    value === "high-consequence" ||
+    value === "unknown"
+  );
+}
+
+function isValidBrowserAgentBudgets(
+  value: unknown
+): value is ParsedBrowserAgentScenario["budgets"] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return [
+    value.maxActions,
+    value.maxScreenshots,
+    value.maxDomQueries,
+    value.maxNetworkObservations,
+    value.maxToolCalls
+  ].every((entry) => entry === undefined || isNonNegativeInteger(entry));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+}
+
+function isNonEmptyStringArray(value: unknown): value is string[] {
+  return (
+    isStringArray(value) && value.length > 0 && value.every((entry) => entry.trim().length > 0)
+  );
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
 function isSupportedBrowserAgentEvidenceSurface(
