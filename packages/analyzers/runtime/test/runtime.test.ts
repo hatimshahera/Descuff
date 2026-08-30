@@ -643,6 +643,117 @@ describe("@descuff/analyzer-runtime", () => {
     );
   });
 
+  it("skips browser-agent scenarios whose start route is outside allowed routes", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: {} };
+        },
+        async fetch() {
+          return { status: 200, headers: {} };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      null
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/checkout"],
+        apiOperations: [],
+        browserAgentScenarios: [
+          {
+            id: "wrong-route",
+            title: "Inspect checkout",
+            intent: "Inspect checkout without submitting.",
+            startRoute: "/checkout",
+            allowedRoutes: ["/products"],
+            successCriteria: ["Checkout fields are identified."],
+            expectedEvidenceSurfaces: ["dom"]
+          }
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentScenarios).toEqual([]);
+    expect(analysis.browserAgentBenchmarks).toEqual([]);
+    expect(analysis.warnings).toContainEqual(
+      expect.objectContaining({
+        code: "BROWSER_AGENT_SCENARIO_ROUTE_BLOCKED"
+      })
+    );
+  });
+
+  it("skips browser-agent benchmarks when scenario origin boundaries reject the loaded page", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: { "content-type": "text/html" } };
+        },
+        async fetch() {
+          return { status: 200, headers: {} };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      async () => ({
+        async visit() {
+          return {
+            url: "http://example.test/products",
+            status: 200,
+            title: "Products",
+            headings: ["Products"],
+            formCount: 0,
+            jsonLdCount: 1,
+            origin: "http://example.test",
+            network: [],
+            webMcpSupported: false,
+            webMcpTools: [],
+            webMcpToolExecutions: []
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      })
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/products"],
+        apiOperations: [],
+        browserAgentScenarios: [
+          {
+            id: "origin-blocked",
+            title: "Find products",
+            intent: "Find products.",
+            startRoute: "/products",
+            allowedOrigins: ["http://other.test"],
+            successCriteria: ["A product is identified."],
+            expectedEvidenceSurfaces: ["json-ld"]
+          }
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentScenarios).toContainEqual(
+      expect.objectContaining({
+        id: "origin-blocked"
+      })
+    );
+    expect(analysis.browserAgentBenchmarks).toEqual([]);
+    expect(analysis.warnings).toContainEqual(
+      expect.objectContaining({
+        code: "BROWSER_AGENT_SCENARIO_ORIGIN_BLOCKED"
+      })
+    );
+  });
+
   it("records browser-agent scenario budget overruns on standards-assisted paths", async () => {
     const analysis = await new RuntimeAnalyzer(
       async () => ({

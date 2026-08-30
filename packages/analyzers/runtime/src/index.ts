@@ -237,6 +237,15 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
             for (const scenario of browserAgentScenarios.filter(
               (candidate) => candidate.startRoute === route
             )) {
+              if (!isOriginAllowedForBrowserAgentScenario(page.origin, scenario)) {
+                analysis.warnings.push({
+                  code: "BROWSER_AGENT_SCENARIO_ORIGIN_BLOCKED",
+                  message: `Browser-agent scenario ${scenario.id} was skipped because origin ${page.origin} is outside the scenario boundary.`,
+                  evidence: [pageEvidence, ...scenario.evidence]
+                });
+                continue;
+              }
+
               const benchmarkEvidence = runtimeEvidence(
                 `browser-agent-scenario:${route}:${scenario.id}`,
                 `Compared browser-agent UI/DOM effort with Descuff standards evidence for ${scenario.title}.`
@@ -770,13 +779,23 @@ function normalizeBrowserAgentScenarios(
     const expectedEvidenceSurfaces = scenario.expectedEvidenceSurfaces.filter(
       isSupportedBrowserAgentEvidenceSurface
     );
+    const allowedRoutes = scenario.allowedRoutes ?? [scenario.startRoute];
+    if (!allowedRoutes.includes(scenario.startRoute)) {
+      analysis.warnings.push({
+        code: "BROWSER_AGENT_SCENARIO_ROUTE_BLOCKED",
+        message: `Browser-agent scenario ${scenario.id} was skipped because start route ${scenario.startRoute} is not in allowedRoutes.`,
+        evidence: [evidence]
+      });
+      analysis.evidence.items.push(evidence);
+      continue;
+    }
 
     normalized.push({
       id: scenario.id,
       title: scenario.title,
       intent: scenario.intent,
       startRoute: scenario.startRoute,
-      allowedRoutes: scenario.allowedRoutes ?? [scenario.startRoute],
+      allowedRoutes,
       allowedOrigins: scenario.allowedOrigins ?? limits.allowedOrigins,
       blockedOrigins: scenario.blockedOrigins ?? limits.blockedOrigins,
       inputs: scenario.inputs ?? {},
@@ -878,6 +897,17 @@ function parseBrowserAgentScenario(value: unknown): ParsedBrowserAgentScenario |
 
 function isSafeBrowserAgentScenario(scenario: ParsedBrowserAgentScenario): boolean {
   return scenario.risk === undefined || scenario.risk === "read-only";
+}
+
+function isOriginAllowedForBrowserAgentScenario(
+  origin: string,
+  scenario: BrowserAgentTaskScenario
+): boolean {
+  if (scenario.blockedOrigins.includes(origin)) {
+    return false;
+  }
+
+  return scenario.allowedOrigins.length === 0 || scenario.allowedOrigins.includes(origin);
 }
 
 function isSupportedBrowserAgentRisk(value: unknown): value is BrowserAgentTaskScenario["risk"] {
