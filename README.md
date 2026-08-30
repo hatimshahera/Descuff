@@ -10,7 +10,7 @@ Descuff checks a local Next.js app, tells your coding agent what to add, then pr
 
 It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser/runtime WebMCP validation.
 
-Current release: `descuff@0.15.1` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
+Current release: `descuff@0.15.2` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
 Works today: local Next.js App Router and Pages Router projects.
 

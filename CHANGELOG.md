@@ -4,6 +4,12 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+## 0.15.2 - 2026-08-30 - Apache 2.0 License Metadata
+
+### Changed
+
+- Switched repository and package metadata from MIT to Apache-2.0 so npm package pages reflect the stronger contribution and patent-license posture.
+
 ## 0.15.1 - 2026-08-30 - Real WebMCP Execution Improvements
 
 ### Added
