@@ -1206,6 +1206,60 @@ describe("@descuff/validator", () => {
     });
   });
 
+  it("fails runtime validation when a browser-agent benchmark is inconclusive", () => {
+    const analysis = createSuccessfulRuntimeAnalysis();
+    analysis.browserAgentBenchmarks.push({
+      id: "browser-agent-benchmark:search-products",
+      taskName: "Find products",
+      startingUrl: "https://example.test/",
+      before: {
+        id: "browser-agent-path:before:search-products",
+        kind: "baseline-ui-dom",
+        browserActions: 8,
+        navigations: 1,
+        screenshots: 2,
+        domQueries: 4,
+        networkObservations: 1,
+        webMcpToolCalls: 0,
+        result: "failed",
+        confidence: "low",
+        evidence: [evidence]
+      },
+      after: {
+        id: "browser-agent-path:after:search-products",
+        kind: "descuff-webmcp",
+        browserActions: 3,
+        navigations: 1,
+        screenshots: 0,
+        domQueries: 1,
+        networkObservations: 1,
+        webMcpToolCalls: 1,
+        result: "succeeded",
+        confidence: "high",
+        evidence: [evidence]
+      },
+      improvement: {
+        browserActionReductionPercent: 63,
+        screenshotReductionPercent: 100,
+        domQueryReductionPercent: 75
+      },
+      status: "inconclusive",
+      evidence: [evidence]
+    });
+
+    expect(validateRuntimeObservations(createReadyApplicationModel(), analysis)).toMatchObject({
+      passed: false,
+      failures: [
+        {
+          code: "BROWSER_AGENT_BENCHMARK_INCONCLUSIVE",
+          level: "runtime",
+          severity: "error",
+          source: "browser-agent-benchmark:search-products"
+        }
+      ]
+    });
+  });
+
   it("validates browser page status, headings, JSON-LD, and network capture", () => {
     const analysis = createSuccessfulRuntimeAnalysis();
     analysis.runtimePages.push({

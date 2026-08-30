@@ -25,6 +25,7 @@ export {
   validateCommandResults
 } from "./command-validator.js";
 export { validateBrowserEvidence } from "./browser-evidence-validator.js";
+export { validateBrowserAgentBenchmarks } from "./browser-agent-benchmark-validator.js";
 export { validateCapabilityConfidence } from "./confidence-validator.js";
 export {
   createEmptyValidationSummary,

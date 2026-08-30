@@ -10,6 +10,7 @@ All notable changes to Descuff will be documented in this file.
 - Added a framework-neutral browser-agent task benchmark contract and pure effort comparison helper for Phase 15 evidence artifacts.
 - Added browser-agent benchmark JSON and Markdown artifact rendering for scans that produce benchmark evidence.
 - Added optional `.descuff/runtime.json` support so CLI scans can use real browser/runtime evidence instead of synthetic runtime evidence.
+- Added `BROWSER_AGENT_BENCHMARK_INCONCLUSIVE` runtime validation when benchmark evidence cannot prove both paths succeeded.
 
 ### Changed
 

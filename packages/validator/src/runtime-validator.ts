@@ -4,6 +4,7 @@ import {
   type HttpMethod,
   type StructuralAnalysis
 } from "@descuff/ir";
+import { validateBrowserAgentBenchmarks } from "./browser-agent-benchmark-validator.js";
 import { validateBrowserEvidence } from "./browser-evidence-validator.js";
 import { createValidationSummary } from "./summary.js";
 import type {
@@ -127,13 +128,16 @@ export function validateRuntimeObservations(
 
   const browserSummary = validateBrowserEvidence(model, analysis);
   const webMcpSummary = validateWebMcpBehavior(model, analysis);
+  const browserAgentBenchmarkSummary = validateBrowserAgentBenchmarks(analysis);
 
   return createValidationSummary([
     ...issues,
     ...browserSummary.failures,
     ...browserSummary.warnings,
     ...webMcpSummary.failures,
-    ...webMcpSummary.warnings
+    ...webMcpSummary.warnings,
+    ...browserAgentBenchmarkSummary.failures,
+    ...browserAgentBenchmarkSummary.warnings
   ]);
 }
 
