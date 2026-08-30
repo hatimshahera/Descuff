@@ -15,6 +15,20 @@ describe("release graph checks", () => {
     expect(renderPublishOrder(fixturePackages())).toContain("3. descuff@0.13.1");
   });
 
+  it("fails public packages without readmes when file checks are enabled", () => {
+    const result = validateReleaseGraph({
+      packages: fixturePackages(),
+      fileExists: () => false
+    });
+
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        code: "PUBLIC_PACKAGE_README_MISSING",
+        packageName: "@descuff/ir"
+      })
+    );
+  });
+
   it("passes a valid public package graph", () => {
     const packages = fixturePackages();
     const result = validateReleaseGraph({

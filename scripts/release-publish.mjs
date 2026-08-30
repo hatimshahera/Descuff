@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
   createPublishOrder,
@@ -67,6 +67,26 @@ export async function validatePublishedPackageSet(input) {
   });
 }
 
+export async function validateUnpublishedPackageSet(input) {
+  const issues = [];
+
+  for (const pkg of input.packages) {
+    const packument = await input.readPackument(pkg.name, input.version);
+    if (packument !== undefined) {
+      issues.push({
+        code: "PUBLISH_VERSION_ALREADY_EXISTS",
+        packageName: pkg.name,
+        message: `${pkg.name}@${input.version} is already published. npm versions are immutable. Prepare a new patch version.`
+      });
+    }
+  }
+
+  return {
+    passed: issues.length === 0,
+    issues
+  };
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
@@ -80,7 +100,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const graph = validateReleaseGraph({
     packages,
     vitestConfigText: readFileSync("vitest.config.ts", "utf8"),
-    lockfileText: readFileSync("pnpm-lock.yaml", "utf8")
+    lockfileText: readFileSync("pnpm-lock.yaml", "utf8"),
+    fileExists: existsSync
   });
 
   if (!graph.passed) {
@@ -100,6 +121,19 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const publishOrder = createPublishOrder(packages);
   console.log("Dependency-first publish order:");
   console.log(renderPublishOrder(packages));
+
+  if (!dryRun) {
+    const unpublished = await validateUnpublishedPackageSet({
+      packages,
+      version,
+      readPackument: async (packageName, packageVersion) =>
+        npmJsonOrUndefined(["view", `${packageName}@${packageVersion}`, "--json"])
+    });
+
+    if (!unpublished.passed) {
+      throw new Error(renderPublishRequestIssues(unpublished.issues));
+    }
+  }
 
   for (const pkg of publishOrder) {
     if (!dryRun) {

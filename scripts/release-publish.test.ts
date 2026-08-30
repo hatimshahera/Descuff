@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { validatePublishedPackageSet, validatePublishRequest } from "./release-publish.mjs";
+import {
+  validatePublishedPackageSet,
+  validatePublishRequest,
+  validateUnpublishedPackageSet
+} from "./release-publish.mjs";
 
 describe("release publish request checks", () => {
   it("passes when every public package matches the target version", () => {
@@ -128,6 +132,36 @@ describe("published package set validation", () => {
       expect.objectContaining({
         code: "TARBALL_UNREACHABLE",
         packageName: "@descuff/core"
+      })
+    );
+  });
+});
+
+describe("unpublished package set validation", () => {
+  it("passes when no package version is already readable from npm", async () => {
+    await expect(
+      validateUnpublishedPackageSet({
+        version: "0.13.2",
+        packages: [{ name: "descuff", version: "0.13.2" }],
+        readPackument: async () => undefined
+      })
+    ).resolves.toEqual({ passed: true, issues: [] });
+  });
+
+  it("fails before publish when a package version already exists", async () => {
+    const result = await validateUnpublishedPackageSet({
+      version: "0.13.1",
+      packages: [{ name: "@descuff/ir", version: "0.13.1" }],
+      readPackument: async (packageName: string) => ({
+        name: packageName,
+        version: "0.13.1"
+      })
+    });
+
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        code: "PUBLISH_VERSION_ALREADY_EXISTS",
+        packageName: "@descuff/ir"
       })
     );
   });

@@ -67,7 +67,8 @@ Descuff is intentionally split into packages where the boundary protects a real 
 - Keep framework-specific code in analyzer packages and standard-specific code in `packages/standards/*`.
 - Prefer adding code to an existing package when the behavior is an implementation detail of that package.
 - Do not add a new public package only to organize files. A new public package adds npm publish, dependency graph, registry, and installability risk.
-- If a new public package is needed, update `scripts/release-graph.mjs`, `vitest.config.ts`, `tsconfig.packages.json`, package dependency ranges, tests, and release notes in the same change.
+- Every public package must include a minimal `README.md` so npm does not present blank package pages. Internal runtime package READMEs should point most users to the `descuff` CLI instead of duplicating full product docs.
+- If a new public package is needed, update `scripts/release-graph.mjs`, `vitest.config.ts`, `tsconfig.packages.json`, package dependency ranges, package README, tests, and release notes in the same change.
 - Consider bundling into the CLI only when the code is CLI-only, has no stable reusable contract, and would not be useful to validators, analyzers, standards adapters, or host-agent workflows.
 
 ## Release Checks
@@ -111,7 +112,7 @@ Manual npm setup is required before `.github/workflows/publish.yml` can publish:
 
 The workflow runs on `workflow_dispatch`, requires a concrete version input, uses Node 24 so npm supports OIDC publishing, disables package-manager caching for the release job, grants `id-token: write`, runs the release gates, publishes packages in dependency order without `NODE_AUTH_TOKEN`, and then runs the public registry verifier.
 
-Before publishing any package with internal dependencies, the publish script rechecks the dependency package packuments, latest dist tags, and tarball URLs from npm. After publishing each package, it waits until that package is publicly readable before moving to dependents. If any internal package is not publicly readable at the target version, the workflow stops before publishing its dependents.
+Before publishing, the publish script checks whether the target version already exists for any public package and fails before calling `npm publish`, because npm versions are immutable. Before publishing any package with internal dependencies, the publish script rechecks the dependency package packuments, latest dist tags, and tarball URLs from npm. After publishing each package, it waits until that package is publicly readable before moving to dependents. If any internal package is not publicly readable at the target version, the workflow stops before publishing its dependents.
 
 Do not run the publish workflow until every public package manifest already has the target version and all internal ranges point at that version. Use `pnpm run release:version -- <version> <short release title>` to prepare those changes.
 

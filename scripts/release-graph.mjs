@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { dirname, relative } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const publicPackageJsonPaths = [
@@ -46,6 +46,16 @@ export function validateReleaseGraph(input) {
     if (pkg.manifest.private === true) {
       issues.push(
         issue("PUBLIC_PACKAGE_MARKED_PRIVATE", pkg.name, "Public release package is private.")
+      );
+    }
+
+    if (input.fileExists !== undefined && !input.fileExists(join(pkg.packageDir, "README.md"))) {
+      issues.push(
+        issue(
+          "PUBLIC_PACKAGE_README_MISSING",
+          pkg.name,
+          `${pkg.packageDir}/README.md is missing from a public npm package.`
+        )
       );
     }
 
@@ -218,7 +228,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const result = validateReleaseGraph({
     packages,
     vitestConfigText: readFileSync("vitest.config.ts", "utf8"),
-    lockfileText: readFileSync("pnpm-lock.yaml", "utf8")
+    lockfileText: readFileSync("pnpm-lock.yaml", "utf8"),
+    fileExists: existsSync
   });
 
   if (!result.passed) {
