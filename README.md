@@ -6,23 +6,24 @@
 
 Turn your existing website into an interface AI agents can understand and use.
 
-Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser-registered WebMCP planning.
+Descuff checks a local Next.js app, tells your coding agent what to add, then proves the before/after improvement.
+
+It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser/runtime WebMCP validation.
 
 Current release: `descuff@0.15.1` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
+Works today: local Next.js App Router and Pages Router projects.
+
 ## Quick Start
 
-Run Descuff inside a Next.js project:
+Run Descuff inside a local Next.js project:
 
 ```bash
 npx descuff doctor .
-```
-
-If `doctor` says the project is supported, create the baseline:
-
-```bash
 npx descuff start .
 ```
+
+`doctor` checks that you are in a supported project root. `start` creates the baseline, validation report, implementation plan, and coding-agent prompt.
 
 Descuff writes:
 
