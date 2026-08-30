@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { access, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
@@ -26,7 +27,7 @@ export interface DoctorResult {
     packageManager: "pnpm" | "npm" | "yarn" | "bun" | "unknown";
     nextIndicators: string[];
     candidateAppRoots: string[];
-    descuffArtifacts: "absent" | "present" | "malformed";
+    descuffArtifacts: "absent" | "present" | "malformed" | "stale";
     graphify: "absent" | "present" | "invalid";
     git: "available" | "unavailable";
     writableArtifacts: boolean;
@@ -132,6 +133,14 @@ export async function runDoctor(
         "Existing .descuff artifacts are present but one or more known JSON artifacts is malformed.",
       evidence: [".descuff"],
       nextSteps: ["Run npx descuff start . to refresh local artifacts."]
+    });
+  } else if (descuffArtifacts === "stale") {
+    issues.push({
+      code: "DESCUFF_ARTIFACTS_STALE",
+      severity: "warning",
+      message: "Existing .descuff source fingerprints no longer match the current source files.",
+      evidence: [".descuff/source-fingerprints.json"],
+      nextSteps: ["Run npx descuff start . to refresh the baseline before implementing a plan."]
     });
   }
 
@@ -397,7 +406,52 @@ async function detectDescuffArtifacts(
     }
   }
 
+  if (await hasStaleSourceFingerprints(projectRoot)) {
+    return "stale";
+  }
+
   return "present";
+}
+
+async function hasStaleSourceFingerprints(projectRoot: string): Promise<boolean> {
+  const path = join(projectRoot, ".descuff", "source-fingerprints.json");
+  if (!(await pathExists(path))) {
+    return false;
+  }
+
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(await readFile(path, "utf8")) as unknown;
+  } catch {
+    return true;
+  }
+  if (!isRecord(manifest) || !Array.isArray(manifest.files)) {
+    return true;
+  }
+
+  for (const file of manifest.files) {
+    if (!isRecord(file) || typeof file.path !== "string") {
+      return true;
+    }
+
+    const previousHash = typeof file.sha256 === "string" ? file.sha256 : null;
+    const currentHash = await sha256File(join(projectRoot, file.path));
+    if (currentHash !== previousHash) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function sha256File(path: string): Promise<string | null> {
+  try {
+    return createHash("sha256")
+      .update(await readFile(path))
+      .digest("hex");
+  } catch {
+    return null;
+  }
 }
 
 async function detectGraphifyState(

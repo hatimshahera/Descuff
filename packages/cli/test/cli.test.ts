@@ -127,6 +127,26 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("runs doctor with stale Descuff artifact diagnostics", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-stale-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      await appendFile(join(projectRoot, "app", "page.tsx"), "\n// stale doctor artifact test\n");
+
+      const result = await runCli(["node", "descuff", "doctor", projectRoot]);
+      const doctorJson = await readFile(join(projectRoot, ".descuff", "doctor.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Existing .descuff artifacts: stale");
+      expect(doctorJson).toContain('"code": "DESCUFF_ARTIFACTS_STALE"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("runs doctor with stale artifact and Graphify diagnostics", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-artifacts-"));
 
