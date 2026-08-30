@@ -29,6 +29,20 @@ describe("release graph checks", () => {
     );
   });
 
+  it("fails public packages without provenance-compatible repository metadata", () => {
+    const packages = fixturePackages();
+    packages[0]!.manifest.repository = { type: "git", url: "", directory: "packages/ir" };
+
+    const result = validateReleaseGraph({ packages });
+
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        code: "PUBLIC_PACKAGE_REPOSITORY_URL_MISMATCH",
+        packageName: "@descuff/ir"
+      })
+    );
+  });
+
   it("passes a valid public package graph", () => {
     const packages = fixturePackages();
     const result = validateReleaseGraph({
@@ -180,6 +194,11 @@ function packageInfo(name: string, packageDir: string, manifest: Record<string, 
     manifest: {
       name,
       version: "0.13.1",
+      repository: {
+        type: "git",
+        url: "https://github.com/hatimshahera/Descuff",
+        directory: packageDir
+      },
       ...manifest
     }
   };

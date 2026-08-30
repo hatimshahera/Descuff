@@ -23,6 +23,7 @@ export const publicPackageJsonPaths = [
 ];
 
 const runtimeDependencyFields = ["dependencies", "peerDependencies", "optionalDependencies"];
+const expectedRepositoryUrl = "https://github.com/hatimshahera/Descuff";
 
 export function readPublicPackages() {
   return publicPackageJsonPaths.map((packageJsonPath) => {
@@ -55,6 +56,26 @@ export function validateReleaseGraph(input) {
           "PUBLIC_PACKAGE_README_MISSING",
           pkg.name,
           `${pkg.packageDir}/README.md is missing from a public npm package.`
+        )
+      );
+    }
+
+    if (pkg.manifest.repository?.url !== expectedRepositoryUrl) {
+      issues.push(
+        issue(
+          "PUBLIC_PACKAGE_REPOSITORY_URL_MISMATCH",
+          pkg.name,
+          `repository.url is ${pkg.manifest.repository?.url ?? ""}; expected ${expectedRepositoryUrl}.`
+        )
+      );
+    }
+
+    if (pkg.manifest.repository?.directory !== pkg.packageDir) {
+      issues.push(
+        issue(
+          "PUBLIC_PACKAGE_REPOSITORY_DIRECTORY_MISMATCH",
+          pkg.name,
+          `repository.directory is ${pkg.manifest.repository?.directory ?? ""}; expected ${pkg.packageDir}.`
         )
       );
     }

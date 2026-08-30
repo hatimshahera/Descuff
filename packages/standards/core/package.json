@@ -19,5 +19,15 @@
   },
   "dependencies": {
     "@descuff/ir": "^0.13.2"
+  },
+  "description": "Shared standard adapter contracts and helpers for Descuff.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hatimshahera/Descuff",
+    "directory": "packages/standards/core"
+  },
+  "homepage": "https://github.com/hatimshahera/Descuff#readme",
+  "bugs": {
+    "url": "https://github.com/hatimshahera/Descuff/issues"
   }
 }

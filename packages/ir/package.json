@@ -16,5 +16,15 @@
     "build": "tsc -b",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run test"
+  },
+  "description": "Descuff-owned intermediate representation contracts.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hatimshahera/Descuff",
+    "directory": "packages/ir"
+  },
+  "homepage": "https://github.com/hatimshahera/Descuff#readme",
+  "bugs": {
+    "url": "https://github.com/hatimshahera/Descuff/issues"
   }
 }

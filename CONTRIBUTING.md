@@ -68,7 +68,8 @@ Descuff is intentionally split into packages where the boundary protects a real 
 - Prefer adding code to an existing package when the behavior is an implementation detail of that package.
 - Do not add a new public package only to organize files. A new public package adds npm publish, dependency graph, registry, and installability risk.
 - Every public package must include a minimal `README.md` so npm does not present blank package pages. Internal runtime package READMEs should point most users to the `descuff` CLI instead of duplicating full product docs.
-- If a new public package is needed, update `scripts/release-graph.mjs`, `vitest.config.ts`, `tsconfig.packages.json`, package dependency ranges, package README, tests, and release notes in the same change.
+- Every public package must include provenance-compatible repository metadata with `repository.url` set to `https://github.com/hatimshahera/Descuff` and `repository.directory` set to the package directory.
+- If a new public package is needed, update `scripts/release-graph.mjs`, `vitest.config.ts`, `tsconfig.packages.json`, package dependency ranges, package README, repository metadata, tests, and release notes in the same change.
 - Consider bundling into the CLI only when the code is CLI-only, has no stable reusable contract, and would not be useful to validators, analyzers, standards adapters, or host-agent workflows.
 
 ## Release Checks

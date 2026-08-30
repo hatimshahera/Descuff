@@ -19,5 +19,15 @@
   },
   "dependencies": {
     "@descuff/ir": "^0.13.2"
+  },
+  "description": "Configuration loading helpers for Descuff.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hatimshahera/Descuff",
+    "directory": "packages/config"
+  },
+  "homepage": "https://github.com/hatimshahera/Descuff#readme",
+  "bugs": {
+    "url": "https://github.com/hatimshahera/Descuff/issues"
   }
 }

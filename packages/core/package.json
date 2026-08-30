@@ -19,5 +19,15 @@
   },
   "dependencies": {
     "@descuff/ir": "^0.13.2"
+  },
+  "description": "Core analysis orchestration primitives for Descuff.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hatimshahera/Descuff",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/hatimshahera/Descuff#readme",
+  "bugs": {
+    "url": "https://github.com/hatimshahera/Descuff/issues"
   }
 }

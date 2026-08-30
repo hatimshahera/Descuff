@@ -14,6 +14,7 @@ All notable changes to Descuff will be documented in this file.
 
 - Added a release publish preflight that fails before `npm publish` when any target package version is already present on npm.
 - Increased the packed release install smoke timeout so slow clean npm installs do not fail a valid release candidate.
+- Added provenance-compatible repository metadata to every public package so npm Trusted Publishing can verify GitHub Actions provenance.
 
 ## 0.13.1 - 2026-08-28 - Release Automation And Installability Hardening
 
