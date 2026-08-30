@@ -4,6 +4,12 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+### Fixed
+
+- Fixed `descuff doctor` diagnostics so fresh projects report existing `.descuff` artifacts as absent before doctor writes its own artifacts.
+- Fixed `descuff doctor` timestamps to use the actual check time instead of the deterministic test epoch when no test clock is provided.
+- Fixed malformed `package.json` handling so invalid JSON is reported as `PACKAGE_JSON_MALFORMED` instead of `PACKAGE_JSON_MISSING`.
+
 ## 0.14.1 - 2026-08-30 - First-Run Doctor Diagnostics
 
 ### Added

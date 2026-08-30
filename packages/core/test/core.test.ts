@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   createExternalRepoAuditResult,
   createProjectContext,
@@ -48,7 +51,7 @@ describe("@descuff/core", () => {
     expect(result.supported).toBe(true);
     expect(result.checkedAt).toBe("2026-08-30T00:00:00.000Z");
     expect(result.detected.framework).toBe("nextjs");
-    expect(result.detected.packageJson).toBe(true);
+    expect(result.detected.packageJson).toBe("present");
     expect(result.detected.runtimePrerequisites.nodeSupported).toBe(true);
     expect(result.detected.runtimePrerequisites.browserRuntime).toBe("playwright-missing");
     expect(result.detected.runtimePrerequisites.browserLaunchChecked).toBe(false);
@@ -58,6 +61,36 @@ describe("@descuff/core", () => {
       "descuff doctor supported"
     );
     expect(renderDoctorMarkdown(result)).toContain("## Detected");
+  });
+
+  it("uses the current time for doctor checks when no test clock is provided", async () => {
+    const result = await runDoctor("fixtures/ecommerce", {
+      nodeVersion: "v22.0.0"
+    });
+
+    expect(result.checkedAt).not.toBe("1970-01-01T00:00:00.000Z");
+    expect(Date.parse(result.checkedAt)).not.toBeNaN();
+  });
+
+  it("reports malformed package.json separately from missing package.json", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-core-doctor-package-json-"));
+
+    try {
+      await mkdir(join(tempRoot, "app"), { recursive: true });
+      await writeFile(join(tempRoot, "package.json"), "{bad json");
+
+      const result = await runDoctor(tempRoot, {
+        now: new Date("2026-08-30T00:00:00.000Z"),
+        nodeVersion: "v22.0.0"
+      });
+
+      expect(result.supported).toBe(false);
+      expect(result.detected.packageJson).toBe("malformed");
+      expect(result.issues.map((issue) => issue.code)).toContain("PACKAGE_JSON_MALFORMED");
+      expect(result.issues.map((issue) => issue.code)).not.toContain("PACKAGE_JSON_MISSING");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("reports unsupported Node.js versions as diagnostic errors", async () => {

@@ -34,6 +34,7 @@ describe("descuff CLI", () => {
       expect(result.stdout).toContain("Browser launch checked: no");
       expect(result.stdout).toContain("Run: npx descuff start .");
       expect(doctorJson).toContain('"supported": true');
+      expect(doctorJson).toContain('"packageJson": "present"');
       expect(doctorJson).toContain('"browserLaunchChecked": false');
       expect(doctorMarkdown).toContain("# Descuff Doctor");
     } finally {
@@ -51,7 +52,29 @@ describe("descuff CLI", () => {
       expect(result.exitCode).toBe(1);
       expect(result.stdout).toContain("descuff doctor unsupported");
       expect(result.stderr).toContain("PACKAGE_JSON_MISSING");
+      expect(doctorJson).toContain('"packageJson": "missing"');
       expect(doctorJson).toContain('"code": "PACKAGE_JSON_MISSING"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs doctor on malformed package.json and reports a syntax blocker", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-malformed-package-"));
+
+    try {
+      await mkdir(join(tempRoot, "app"), { recursive: true });
+      await writeFile(join(tempRoot, "package.json"), "{bad json");
+
+      const result = await runCli(["node", "descuff", "doctor", tempRoot]);
+      const doctorJson = await readFile(join(tempRoot, ".descuff", "doctor.json"), "utf8");
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff doctor unsupported");
+      expect(result.stderr).toContain("PACKAGE_JSON_MALFORMED");
+      expect(result.stderr).not.toContain("PACKAGE_JSON_MISSING");
+      expect(doctorJson).toContain('"packageJson": "malformed"');
+      expect(doctorJson).toContain('"code": "PACKAGE_JSON_MALFORMED"');
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }
@@ -80,6 +103,28 @@ describe("descuff CLI", () => {
       expect(result.stdout).toContain("Framework: unknown");
       expect(result.stderr).toContain("SUPPORTED_PROJECT_NOT_FOUND");
       expect(doctorJson).toContain('"framework": "unknown"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports absent Descuff artifacts before writing doctor artifacts", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-fresh-artifacts-"));
+
+    try {
+      await mkdir(join(tempRoot, "app"), { recursive: true });
+      await writeFile(
+        join(tempRoot, "package.json"),
+        JSON.stringify({ name: "doctor-site", dependencies: { next: "15.0.0" } })
+      );
+      await writeFile(join(tempRoot, "app", "page.tsx"), "export default function Page() {}\n");
+
+      const result = await runCli(["node", "descuff", "doctor", tempRoot]);
+      const doctorJson = await readFile(join(tempRoot, ".descuff", "doctor.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Existing .descuff artifacts: absent");
+      expect(doctorJson).toContain('"descuffArtifacts": "absent"');
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
-import { access, mkdir, readFile, readdir, stat } from "node:fs/promises";
+import { access, readFile, readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 export const doctorSchemaVersion = "0.1.0";
@@ -22,7 +22,7 @@ export interface DoctorResult {
   supported: boolean;
   summary: string;
   detected: {
-    packageJson: boolean;
+    packageJson: "present" | "missing" | "malformed";
     framework: "nextjs" | "unknown";
     packageManager: "pnpm" | "npm" | "yarn" | "bun" | "unknown";
     nextIndicators: string[];
@@ -55,8 +55,8 @@ export async function runDoctor(
   const packageJson = await readPackageJson(projectRoot);
   const packageManager = await detectPackageManager(projectRoot);
   const candidateAppRoots = await detectCandidateAppRoots(projectRoot);
-  const writableArtifacts = await canWriteArtifactDirectory(projectRoot);
   const descuffArtifacts = await detectDescuffArtifacts(projectRoot);
+  const writableArtifacts = await canWriteArtifactDirectory(projectRoot);
   const graphify = await detectGraphifyState(projectRoot);
   const git = (await pathExists(join(projectRoot, ".git"))) ? "available" : "unavailable";
   const hasNextDependency = hasDependency(packageJson.value, "next");
@@ -71,7 +71,7 @@ export async function runDoctor(
     browserLaunchChecked: false as const
   };
   const framework = hasNextDependency || nextIndicators.length > 0 ? "nextjs" : "unknown";
-  const supported = packageJson.exists && framework === "nextjs";
+  const supported = packageJson.status === "present" && framework === "nextjs";
 
   if (!runtimePrerequisites.nodeSupported) {
     issues.push({
@@ -83,7 +83,7 @@ export async function runDoctor(
     });
   }
 
-  if (!packageJson.exists) {
+  if (packageJson.status === "missing") {
     issues.push({
       code: "PACKAGE_JSON_MISSING",
       severity: "unsupported",
@@ -92,6 +92,14 @@ export async function runDoctor(
         candidateAppRoots.length > 0
           ? candidateAppRoots.map((root) => `Run Descuff from ${root}.`)
           : ["Run Descuff from the root of a local Next.js app."]
+    });
+  } else if (packageJson.status === "malformed") {
+    issues.push({
+      code: "PACKAGE_JSON_MALFORMED",
+      severity: "unsupported",
+      message: "package.json exists, but it is not valid JSON.",
+      evidence: ["package.json"],
+      nextSteps: ["Fix package.json syntax before running Descuff."]
     });
   } else if (!hasNextDependency && nextIndicators.length === 0) {
     issues.push({
@@ -194,14 +202,14 @@ export async function runDoctor(
 
   return {
     schemaVersion: doctorSchemaVersion,
-    checkedAt: (options.now ?? new Date(0)).toISOString(),
+    checkedAt: (options.now ?? new Date()).toISOString(),
     projectRoot,
     supported,
     summary: supported
       ? "Descuff can analyze this local Next.js project."
       : "Descuff cannot confidently analyze this project from the current root.",
     detected: {
-      packageJson: packageJson.exists,
+      packageJson: packageJson.status,
       framework,
       packageManager,
       nextIndicators,
@@ -229,7 +237,7 @@ export function renderDoctorMarkdown(result: DoctorResult): string {
     "",
     `- Framework: ${result.detected.framework}`,
     `- Package manager: ${result.detected.packageManager}`,
-    `- package.json: ${result.detected.packageJson ? "present" : "missing"}`,
+    `- package.json: ${result.detected.packageJson}`,
     `- .descuff writable: ${result.detected.writableArtifacts ? "yes" : "no"}`,
     `- Existing .descuff artifacts: ${result.detected.descuffArtifacts}`,
     `- Graphify: ${result.detected.graphify}`,
@@ -381,8 +389,12 @@ function shouldSkipDirectory(name: string): boolean {
 async function canWriteArtifactDirectory(projectRoot: string): Promise<boolean> {
   try {
     const dir = join(projectRoot, ".descuff");
-    await mkdir(dir, { recursive: true });
-    await access(dir, constants.W_OK);
+    if (await pathExists(dir)) {
+      await access(dir, constants.W_OK);
+      return true;
+    }
+
+    await access(projectRoot, constants.W_OK);
     return true;
   } catch {
     return false;
@@ -467,13 +479,20 @@ async function detectGraphifyState(
   }
 }
 
-async function readPackageJson(projectRoot: string): Promise<{ exists: boolean; value?: unknown }> {
+async function readPackageJson(
+  projectRoot: string
+): Promise<{ status: "present" | "missing" | "malformed"; value?: unknown }> {
+  const path = join(projectRoot, "package.json");
   try {
-    const path = join(projectRoot, "package.json");
     await stat(path);
-    return { exists: true, value: JSON.parse(await readFile(path, "utf8")) };
   } catch {
-    return { exists: false };
+    return { status: "missing" };
+  }
+
+  try {
+    return { status: "present", value: JSON.parse(await readFile(path, "utf8")) };
+  } catch {
+    return { status: "malformed" };
   }
 }
 
