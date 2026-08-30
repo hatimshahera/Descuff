@@ -8,7 +8,7 @@ Turn your existing website into an interface AI agents can understand and use.
 
 Descuff is an open-source developer tool that scans a local app, measures how ready it is for AI agents, writes a conservative implementation plan, and validates the before/after improvement. It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser-registered WebMCP planning.
 
-Current release: `descuff@0.14.2` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
+Current release: `descuff@0.15.1` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
 ## Quick Start
 

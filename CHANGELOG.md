@@ -4,6 +4,8 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+## 0.15.1 - 2026-08-30 - Real WebMCP Execution Improvements
+
 ### Added
 
 - Added explicit WebMCP runtime execution scenarios so browser-discovered read-only tools are only executed with approved validation inputs.
