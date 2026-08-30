@@ -3,7 +3,7 @@
   "version": "0.15.1",
   "description": "Turn local Next.js websites into interfaces AI agents can understand and use.",
   "private": true,
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "repository": {
     "type": "git",

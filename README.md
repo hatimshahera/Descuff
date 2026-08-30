@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/descuff.svg)](https://www.npmjs.com/package/descuff)
 [![CI](https://github.com/hatimshahera/Descuff/actions/workflows/ci.yml/badge.svg)](https://github.com/hatimshahera/Descuff/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
 
 Turn your existing website into an interface AI agents can understand and use.
 

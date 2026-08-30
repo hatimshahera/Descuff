@@ -26,6 +26,16 @@ pnpm lint
 - Preserve public CLI behavior unless the change intentionally updates it and documents the migration.
 - Do not commit generated artifacts such as `.descuff/`, `graphify-out/`, `dist/`, `node_modules/`, coverage reports, or local build output.
 
+## Contribution License
+
+Descuff is licensed under the Apache License 2.0.
+
+By opening a pull request or otherwise intentionally submitting a contribution to this repository, you agree that your contribution is licensed under Apache-2.0, unless you clearly mark it as "Not a Contribution" before it is reviewed or merged.
+
+Do not submit code, generated output, images, copied documentation, or other material unless you have the right to license it to the project under Apache-2.0. If a contribution depends on third-party code or assets, disclose that dependency in the pull request.
+
+The maintainers retain control over what is merged, when releases are cut, which npm packages are published, and which repository or npm permissions are granted.
+
 ## Architecture Boundaries
 
 - Preserve Descuff-owned IR and evidence contracts independent of framework, standard, runtime, and Graphify storage formats.
