@@ -14,6 +14,7 @@ All notable changes to Descuff will be documented in this file.
 - Added automatic browser-agent benchmark records for explicit WebMCP runtime scenarios observed during browser analysis.
 - Added runtime proof summaries to scan, start, validate, and finish output.
 - Documented runtime analyzer benchmark generation, reporter benchmark output, and validator benchmark checks in package READMEs.
+- Added `BROWSER_AGENT_BENCHMARK_REGRESSED` runtime validation when browser-agent effort gets worse after Descuff.
 
 ### Changed
 

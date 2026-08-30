@@ -21,6 +21,20 @@ export function validateBrowserAgentBenchmarks(analysis: StructuralAnalysis): Va
         suggestedAction:
           "Record successful evidence for both the baseline UI/DOM path and the Descuff WebMCP path before reporting benchmark improvement."
       });
+      continue;
+    }
+
+    if (benchmark.status === "regressed") {
+      issues.push({
+        code: "BROWSER_AGENT_BENCHMARK_REGRESSED",
+        level: "runtime",
+        severity: "error",
+        message: `Browser-agent benchmark ${benchmark.taskName} required more browser-agent effort after Descuff.`,
+        source: benchmark.id,
+        evidence: benchmark.evidence,
+        suggestedAction:
+          "Review the WebMCP tool, metadata, and task scenario before reporting browser-agent effort improvement."
+      });
     }
   }
 
