@@ -19,7 +19,7 @@ export function validateBrowserAgentBenchmarks(analysis: StructuralAnalysis): Va
         source: benchmark.id,
         evidence: benchmark.evidence,
         suggestedAction:
-          "Record successful evidence for both the baseline UI/DOM path and the Descuff WebMCP path before reporting benchmark improvement."
+          "Record successful evidence for both the baseline UI/DOM path and the Descuff standards-assisted path before reporting benchmark improvement."
       });
       continue;
     }
@@ -33,7 +33,7 @@ export function validateBrowserAgentBenchmarks(analysis: StructuralAnalysis): Va
         source: benchmark.id,
         evidence: benchmark.evidence,
         suggestedAction:
-          "Review the WebMCP tool, metadata, and task scenario before reporting browser-agent effort improvement."
+          "Review the standards evidence, optional WebMCP tool, and task scenario before reporting browser-agent effort improvement."
       });
     }
   }

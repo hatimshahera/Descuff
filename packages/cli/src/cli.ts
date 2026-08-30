@@ -67,6 +67,7 @@ import {
   mergeValidationSummaries,
   renderValidationRepairGuide,
   renderValidationSummaryDetails,
+  type ReadinessExplanation,
   runStandardValidation,
   type ValidationReadinessReport,
   type ValidationSummary,
@@ -775,6 +776,25 @@ function readinessLossContext(reason: string): string {
   return "";
 }
 
+function renderReadinessExplanations(explanations: ReadinessExplanation[]): string {
+  return [
+    "# Readiness Explanations",
+    "",
+    "Readiness is a comparison aid, not a universal grade. These notes explain what Descuff could prove and what remains optional, blocked, or unsupported.",
+    "",
+    ...explanations.flatMap((explanation) => [
+      `## ${explanation.category}`,
+      "",
+      `- Status: ${explanation.status}`,
+      `- Points lost: ${explanation.pointsLost}`,
+      `- Message: ${explanation.message}`,
+      `- Action: ${explanation.action}`,
+      `- Evidence: ${explanation.evidenceIds.length === 0 ? "none" : explanation.evidenceIds.join(", ")}`,
+      ""
+    ])
+  ].join("\n");
+}
+
 async function discoverChangedFiles(
   projectRoot: string,
   baseline: DriftBaseline
@@ -880,6 +900,12 @@ async function validateArtifacts(
   ]);
   const report = createValidationReadinessReport(artifacts.model, [summary]);
   await writeJson(projectRoot, "validation.json", report);
+  await writeJson(projectRoot, "readiness-explanations.json", report.readinessExplanations);
+  await writeArtifact(
+    projectRoot,
+    "readiness-explanations.md",
+    renderReadinessExplanations(report.readinessExplanations)
+  );
   await writeArtifact(projectRoot, "validation-repair.md", renderValidationRepairGuide(summary));
 
   return { summary, report };
@@ -940,6 +966,12 @@ async function validateArtifactsForDriftPlan(
   const summary = mergeValidationSummaries(summaries);
   const report = createValidationReadinessReport(artifacts.model, [summary]);
   await writeJson(projectRoot, "validation.json", report);
+  await writeJson(projectRoot, "readiness-explanations.json", report.readinessExplanations);
+  await writeArtifact(
+    projectRoot,
+    "readiness-explanations.md",
+    renderReadinessExplanations(report.readinessExplanations)
+  );
   await writeArtifact(projectRoot, "validation-repair.md", renderValidationRepairGuide(summary));
 
   return { summary, report };
@@ -1022,7 +1054,24 @@ async function writeScanArtifacts(projectRoot: string, artifacts: ScanArtifacts)
   await writeJson(projectRoot, "assessments.json", artifacts.assessments);
   await writeJson(projectRoot, "generated-changes.json", artifacts.generatedChanges);
   await writeJson(projectRoot, "source-fingerprints.json", artifacts.sourceFingerprints);
+  if (artifacts.analysis.browserAgentScenarios.length > 0) {
+    await writeJson(
+      projectRoot,
+      "browser-agent-scenarios.json",
+      artifacts.analysis.browserAgentScenarios
+    );
+  }
   if (artifacts.analysis.browserAgentBenchmarks.length > 0) {
+    await writeJson(
+      projectRoot,
+      "browser-agent-results.json",
+      artifacts.analysis.browserAgentBenchmarks
+    );
+    await writeArtifact(
+      projectRoot,
+      "browser-agent-results.md",
+      renderBrowserAgentBenchmarkReport(artifacts.analysis.browserAgentBenchmarks)
+    );
     await writeJson(
       projectRoot,
       "browser-agent-benchmark.json",
@@ -1217,11 +1266,29 @@ async function readRuntimeProjectContext(
   const runtime: NonNullable<ProjectContext["runtime"]> = {
     baseUrl: raw.baseUrl,
     routes: parseRuntimeRoutes(raw.routes, analysis),
-    apiOperations: parseRuntimeApiOperations(raw.apiOperations, analysis)
+    apiOperations: parseRuntimeApiOperations(raw.apiOperations, analysis),
+    implementedStandards: analysis.existingStandards.flatMap((standard) => {
+      if (standard.kind === "schema-org") {
+        return ["json-ld" as const];
+      }
+      if (
+        standard.kind === "llms-txt" ||
+        standard.kind === "openapi" ||
+        standard.kind === "api-catalog" ||
+        standard.kind === "webmcp"
+      ) {
+        return [standard.kind];
+      }
+      return [];
+    })
   };
 
   if (Array.isArray(raw.webMcpToolScenarios)) {
     runtime.webMcpToolScenarios = raw.webMcpToolScenarios;
+  }
+
+  if (Array.isArray(raw.browserAgentScenarios)) {
+    runtime.browserAgentScenarios = raw.browserAgentScenarios;
   }
 
   if (isRecord(raw.limits)) {
@@ -1278,6 +1345,7 @@ function mergeRuntimeAnalysis(
     runtimePages: runtimeAnalysis.runtimePages,
     runtimeWebMcpTools: runtimeAnalysis.runtimeWebMcpTools,
     runtimeWebMcpToolExecutions: runtimeAnalysis.runtimeWebMcpToolExecutions,
+    browserAgentScenarios: runtimeAnalysis.browserAgentScenarios,
     browserAgentBenchmarks: runtimeAnalysis.browserAgentBenchmarks,
     evidence: {
       ...analysis.evidence,

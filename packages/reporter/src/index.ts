@@ -33,11 +33,16 @@ export function renderBrowserAgentBenchmarkReport(benchmarks: BrowserAgentTaskBe
       `- Screenshots: ${benchmark.before.screenshots} -> ${benchmark.after.screenshots} (${formatReduction(benchmark.improvement.screenshotReductionPercent)})`,
       `- DOM queries: ${benchmark.before.domQueries} -> ${benchmark.after.domQueries} (${formatReduction(benchmark.improvement.domQueryReductionPercent)})`,
       `- WebMCP tool calls: ${benchmark.before.webMcpToolCalls} -> ${benchmark.after.webMcpToolCalls}`,
+      `- Evidence surfaces: ${formatEvidenceSurfaces(benchmark.before.evidenceSurfaces)} -> ${formatEvidenceSurfaces(benchmark.after.evidenceSurfaces)}`,
       `- Confidence: ${benchmark.before.confidence} -> ${benchmark.after.confidence}`,
       `- Result: ${benchmark.before.result} -> ${benchmark.after.result}`,
       ""
     ])
   ].join("\n");
+}
+
+function formatEvidenceSurfaces(surfaces: string[] | undefined): string {
+  return surfaces === undefined || surfaces.length === 0 ? "none" : surfaces.join(", ");
 }
 
 function formatReduction(percent: number): string {

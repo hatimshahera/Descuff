@@ -9,6 +9,7 @@ import {
 } from "@playwright/test";
 import {
   type BrowserAgentTaskPathObservation,
+  type BrowserAgentTaskScenario,
   createEmptyStructuralAnalysis,
   type HttpMethod,
   type RuntimePageObservation,
@@ -16,7 +17,12 @@ import {
   type RuntimeWebMcpToolObservation,
   type StructuralAnalysis
 } from "@descuff/ir";
-import type { ProjectContext, RuntimeWebMcpToolScenario, StructuralAnalyzer } from "@descuff/core";
+import type {
+  ProjectContext,
+  RuntimeBrowserAgentScenario,
+  RuntimeWebMcpToolScenario,
+  StructuralAnalyzer
+} from "@descuff/core";
 import { createBrowserAgentTaskBenchmark } from "./browser-agent-benchmark.js";
 import { correlateRuntimeEvidence } from "./correlation.js";
 import { runtimeEvidence } from "./runtime-evidence.js";
@@ -127,6 +133,13 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
 
     const context = await this.createClient(project.runtime.baseUrl);
     const limits = normalizeRuntimeLimits(project.runtime.limits);
+    const browserAgentScenarios = normalizeBrowserAgentScenarios(
+      project.runtime.browserAgentScenarios ?? [],
+      limits,
+      analysis
+    );
+    analysis.browserAgentScenarios.push(...browserAgentScenarios);
+    const implementedStandards = new Set(project.runtime.implementedStandards ?? []);
 
     try {
       for (const route of project.runtime.routes.slice(0, limits.maxRoutes)) {
@@ -225,6 +238,32 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
               renderRuntimePageObservation(route, page, sanitizedNetwork, [pageEvidence])
             );
             analysis.evidence.items.push(pageEvidence);
+
+            for (const scenario of browserAgentScenarios.filter(
+              (candidate) => candidate.startRoute === route
+            )) {
+              const benchmarkEvidence = runtimeEvidence(
+                `browser-agent-scenario:${route}:${scenario.id}`,
+                `Compared browser-agent UI/DOM effort with Descuff standards evidence for ${scenario.title}.`
+              );
+              analysis.browserAgentBenchmarks.push(
+                createBrowserAgentTaskBenchmark({
+                  id: `browser-agent-benchmark:${route}:${scenario.id}`,
+                  taskName: scenario.title,
+                  startingUrl: page.url,
+                  before: createBaselineBrowserAgentPath(route, page, [
+                    pageEvidence,
+                    benchmarkEvidence
+                  ]),
+                  after: createStandardsBrowserAgentPath(scenario, page, implementedStandards, [
+                    pageEvidence,
+                    benchmarkEvidence
+                  ]),
+                  evidence: [benchmarkEvidence]
+                })
+              );
+              analysis.evidence.items.push(benchmarkEvidence);
+            }
 
             if (page.network.length > limits.maxNetworkRequests) {
               analysis.warnings.push({
@@ -569,6 +608,11 @@ function createBaselineBrowserAgentPath(
   return {
     id: `browser-agent-path:before:${route}`,
     kind: "baseline-ui-dom",
+    evidenceSurfaces: [
+      "dom",
+      "accessibility",
+      ...(page.network.length > 0 ? ["network" as const] : [])
+    ],
     browserActions: navigations + screenshots + domQueries + networkObservations,
     navigations,
     screenshots,
@@ -577,6 +621,46 @@ function createBaselineBrowserAgentPath(
     webMcpToolCalls: 0,
     result: page.status >= 200 && page.status < 400 ? "succeeded" : "failed",
     confidence: page.headings.length > 0 || page.formCount > 0 ? "medium" : "low",
+    evidence
+  };
+}
+
+function createStandardsBrowserAgentPath(
+  scenario: BrowserAgentTaskScenario,
+  page: RuntimeBrowserPageResult,
+  implementedStandards: Set<BrowserAgentTaskScenario["expectedEvidenceSurfaces"][number]>,
+  evidence: BrowserAgentTaskPathObservation["evidence"]
+): BrowserAgentTaskPathObservation {
+  const availableSurfaces = scenario.expectedEvidenceSurfaces.filter((surface) =>
+    isEvidenceSurfaceAvailable(surface, page, implementedStandards)
+  );
+  const navigations = 1;
+  const screenshots = 0;
+  const domQueries =
+    availableSurfaces.includes("dom") || availableSurfaces.includes("accessibility") ? 1 : 0;
+  const networkObservations = availableSurfaces.includes("network") ? 1 : 0;
+  const webMcpToolCalls = 0;
+  const browserActions = navigations + screenshots + domQueries + networkObservations;
+  const succeeded =
+    availableSurfaces.length > 0 &&
+    browserActions <= scenario.budgets.maxActions &&
+    screenshots <= scenario.budgets.maxScreenshots &&
+    domQueries <= scenario.budgets.maxDomQueries &&
+    networkObservations <= scenario.budgets.maxNetworkObservations &&
+    webMcpToolCalls <= scenario.budgets.maxToolCalls;
+
+  return {
+    id: `browser-agent-path:after:${scenario.id}`,
+    kind: "descuff-standards",
+    evidenceSurfaces: availableSurfaces,
+    browserActions,
+    navigations,
+    screenshots,
+    domQueries,
+    networkObservations,
+    webMcpToolCalls,
+    result: succeeded ? "succeeded" : "inconclusive",
+    confidence: succeeded && availableSurfaces.length > 1 ? "high" : succeeded ? "medium" : "low",
     evidence
   };
 }
@@ -592,6 +676,7 @@ function createWebMcpBrowserAgentPath(
   return {
     id: `browser-agent-path:after:${execution.toolName}`,
     kind: "descuff-webmcp",
+    evidenceSurfaces: ["webmcp"],
     browserActions: navigations + domQueries + webMcpToolCalls,
     navigations,
     screenshots: 0,
@@ -602,6 +687,110 @@ function createWebMcpBrowserAgentPath(
     confidence: execution.status === "executed" ? "high" : "low",
     evidence
   };
+}
+
+function normalizeBrowserAgentScenarios(
+  scenarios: RuntimeBrowserAgentScenario[],
+  limits: Required<RuntimeResourceLimits>,
+  analysis: StructuralAnalysis
+): BrowserAgentTaskScenario[] {
+  const normalized: BrowserAgentTaskScenario[] = [];
+
+  for (const scenario of scenarios) {
+    const evidence = runtimeEvidence(
+      `browser-agent-scenario:${scenario.id}`,
+      `Configured browser-agent scenario ${scenario.title}.`
+    );
+
+    if (!isSafeBrowserAgentScenario(scenario)) {
+      analysis.warnings.push({
+        code: "BROWSER_AGENT_SCENARIO_UNSAFE",
+        message: `Browser-agent scenario ${scenario.id} was skipped because it is not explicitly read-only.`,
+        evidence: [evidence]
+      });
+      analysis.evidence.items.push(evidence);
+      continue;
+    }
+
+    const unsupportedSurfaces = scenario.expectedEvidenceSurfaces.filter(
+      (surface) => !isSupportedBrowserAgentEvidenceSurface(surface)
+    );
+    if (unsupportedSurfaces.length > 0) {
+      analysis.warnings.push({
+        code: "BROWSER_AGENT_SCENARIO_UNSUPPORTED_EVIDENCE",
+        message: `Browser-agent scenario ${scenario.id} uses unsupported evidence surface(s): ${unsupportedSurfaces.join(", ")}.`,
+        evidence: [evidence]
+      });
+      analysis.evidence.items.push(evidence);
+      continue;
+    }
+
+    normalized.push({
+      id: scenario.id,
+      title: scenario.title,
+      intent: scenario.intent,
+      startRoute: scenario.startRoute,
+      allowedRoutes: scenario.allowedRoutes ?? [scenario.startRoute],
+      allowedOrigins: scenario.allowedOrigins ?? limits.allowedOrigins,
+      blockedOrigins: scenario.blockedOrigins ?? limits.blockedOrigins,
+      inputs: scenario.inputs ?? {},
+      successCriteria: scenario.successCriteria,
+      expectedEvidenceSurfaces: scenario.expectedEvidenceSurfaces,
+      budgets: {
+        maxActions: scenario.budgets?.maxActions ?? 10,
+        maxScreenshots: scenario.budgets?.maxScreenshots ?? 1,
+        maxDomQueries: scenario.budgets?.maxDomQueries ?? 5,
+        maxNetworkObservations: scenario.budgets?.maxNetworkObservations ?? 5,
+        maxToolCalls: scenario.budgets?.maxToolCalls ?? 0
+      },
+      risk: scenario.risk ?? "read-only",
+      evidence: [evidence]
+    });
+    analysis.evidence.items.push(evidence);
+  }
+
+  return normalized;
+}
+
+function isSafeBrowserAgentScenario(scenario: RuntimeBrowserAgentScenario): boolean {
+  return scenario.risk === undefined || scenario.risk === "read-only";
+}
+
+function isSupportedBrowserAgentEvidenceSurface(
+  surface: string
+): surface is BrowserAgentTaskScenario["expectedEvidenceSurfaces"][number] {
+  return [
+    "dom",
+    "accessibility",
+    "json-ld",
+    "llms-txt",
+    "openapi",
+    "api-catalog",
+    "network",
+    "webmcp"
+  ].includes(surface);
+}
+
+function isEvidenceSurfaceAvailable(
+  surface: BrowserAgentTaskScenario["expectedEvidenceSurfaces"][number],
+  page: RuntimeBrowserPageResult,
+  implementedStandards: Set<BrowserAgentTaskScenario["expectedEvidenceSurfaces"][number]>
+): boolean {
+  switch (surface) {
+    case "dom":
+    case "accessibility":
+      return page.headings.length > 0 || page.formCount > 0;
+    case "json-ld":
+      return page.jsonLdCount > 0;
+    case "network":
+      return page.network.length > 0;
+    case "webmcp":
+      return page.webMcpTools.length > 0;
+    case "llms-txt":
+    case "openapi":
+    case "api-catalog":
+      return implementedStandards.has(surface);
+  }
 }
 
 export async function collectWebMcpToolExecutions(

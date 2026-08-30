@@ -10,6 +10,8 @@ export interface RuntimeProjectContext {
   routes: string[];
   apiOperations: RuntimeApiTarget[];
   webMcpToolScenarios?: RuntimeWebMcpToolScenario[];
+  browserAgentScenarios?: RuntimeBrowserAgentScenario[];
+  implementedStandards?: RuntimeBrowserAgentEvidenceSurface[];
   limits?: RuntimeResourceLimits;
 }
 
@@ -23,6 +25,39 @@ export interface RuntimeWebMcpToolScenario {
   input: unknown;
   expectedApi?: RuntimeApiTarget;
   description?: string;
+}
+
+export type RuntimeBrowserAgentEvidenceSurface =
+  | "dom"
+  | "accessibility"
+  | "json-ld"
+  | "llms-txt"
+  | "openapi"
+  | "api-catalog"
+  | "network"
+  | "webmcp";
+
+export type RuntimeBrowserAgentTaskRisk = "read-only" | "mutating" | "high-consequence" | "unknown";
+
+export interface RuntimeBrowserAgentScenario {
+  id: string;
+  title: string;
+  intent: string;
+  startRoute: string;
+  allowedRoutes?: string[];
+  allowedOrigins?: string[];
+  blockedOrigins?: string[];
+  inputs?: Record<string, unknown>;
+  successCriteria: string[];
+  expectedEvidenceSurfaces: RuntimeBrowserAgentEvidenceSurface[];
+  budgets?: {
+    maxActions?: number;
+    maxScreenshots?: number;
+    maxDomQueries?: number;
+    maxNetworkObservations?: number;
+    maxToolCalls?: number;
+  };
+  risk?: RuntimeBrowserAgentTaskRisk;
 }
 
 export interface RuntimeResourceLimits {

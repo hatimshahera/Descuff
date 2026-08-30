@@ -324,6 +324,151 @@ describe("@descuff/analyzer-runtime", () => {
     expect(analysis.browserAgentBenchmarks).toEqual([]);
   });
 
+  it("records standard-neutral browser-agent scenario benchmarks without requiring WebMCP", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: { "content-type": "text/html" } };
+        },
+        async fetch() {
+          return { status: 200, headers: {} };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      async () => ({
+        async visit() {
+          return {
+            url: "http://example.test/products",
+            status: 200,
+            title: "Products",
+            headings: ["Black shirts"],
+            formCount: 0,
+            jsonLdCount: 1,
+            origin: "http://example.test",
+            network: [],
+            webMcpSupported: false,
+            webMcpTools: [],
+            webMcpToolExecutions: []
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      })
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/products"],
+        apiOperations: [],
+        implementedStandards: ["llms-txt"],
+        browserAgentScenarios: [
+          {
+            id: "find-black-shirt",
+            title: "Find a black shirt under 15 GBP",
+            intent: "Find a matching product without checking out.",
+            startRoute: "/products",
+            successCriteria: ["A matching product is identified."],
+            expectedEvidenceSurfaces: ["json-ld", "llms-txt"],
+            budgets: {
+              maxActions: 5,
+              maxScreenshots: 0,
+              maxDomQueries: 1,
+              maxNetworkObservations: 0,
+              maxToolCalls: 0
+            }
+          }
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentScenarios).toContainEqual(
+      expect.objectContaining({
+        id: "find-black-shirt",
+        risk: "read-only",
+        expectedEvidenceSurfaces: ["json-ld", "llms-txt"]
+      })
+    );
+    expect(analysis.browserAgentBenchmarks).toContainEqual(
+      expect.objectContaining({
+        id: "browser-agent-benchmark:/products:find-black-shirt",
+        taskName: "Find a black shirt under 15 GBP",
+        status: "improved",
+        after: expect.objectContaining({
+          kind: "descuff-standards",
+          evidenceSurfaces: ["json-ld", "llms-txt"],
+          webMcpToolCalls: 0
+        })
+      })
+    );
+    expect(validateStructuralAnalysis(analysis).valid).toBe(true);
+  });
+
+  it("skips unsafe browser-agent scenarios before runtime benchmark execution", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: {} };
+        },
+        async fetch() {
+          return { status: 200, headers: {} };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      async () => ({
+        async visit() {
+          return {
+            url: "http://example.test/checkout",
+            status: 200,
+            headings: ["Checkout"],
+            formCount: 1,
+            jsonLdCount: 0,
+            origin: "http://example.test",
+            network: [],
+            webMcpSupported: false,
+            webMcpTools: [],
+            webMcpToolExecutions: []
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      })
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/checkout"],
+        apiOperations: [],
+        browserAgentScenarios: [
+          {
+            id: "buy-shirt",
+            title: "Buy a shirt",
+            intent: "Complete checkout.",
+            startRoute: "/checkout",
+            successCriteria: ["Order is placed."],
+            expectedEvidenceSurfaces: ["dom"],
+            risk: "high-consequence"
+          }
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentScenarios).toEqual([]);
+    expect(analysis.browserAgentBenchmarks).toEqual([]);
+    expect(analysis.warnings).toContainEqual(
+      expect.objectContaining({
+        code: "BROWSER_AGENT_SCENARIO_UNSAFE"
+      })
+    );
+  });
+
   it("records inconclusive browser-agent benchmark evidence when scenario execution is skipped", async () => {
     const analysis = await new RuntimeAnalyzer(
       async () => ({
@@ -602,6 +747,7 @@ describe("@descuff/analyzer-runtime", () => {
     const before: BrowserAgentTaskPathObservation = {
       id: "browser-agent-path:before:search-products",
       kind: "baseline-ui-dom",
+      evidenceSurfaces: ["dom", "accessibility", "network"],
       browserActions: 12,
       navigations: 2,
       screenshots: 3,
@@ -615,6 +761,7 @@ describe("@descuff/analyzer-runtime", () => {
     const after: BrowserAgentTaskPathObservation = {
       id: "browser-agent-path:after:search-products",
       kind: "descuff-webmcp",
+      evidenceSurfaces: ["webmcp"],
       browserActions: 4,
       navigations: 1,
       screenshots: 0,
@@ -656,6 +803,7 @@ describe("@descuff/analyzer-runtime", () => {
     const before: BrowserAgentTaskPathObservation = {
       id: "browser-agent-path:before:search-products",
       kind: "baseline-ui-dom",
+      evidenceSurfaces: ["dom", "accessibility", "network"],
       browserActions: 5,
       navigations: 1,
       screenshots: 1,
@@ -669,6 +817,7 @@ describe("@descuff/analyzer-runtime", () => {
     const after: BrowserAgentTaskPathObservation = {
       id: "browser-agent-path:after:search-products",
       kind: "descuff-webmcp",
+      evidenceSurfaces: ["webmcp"],
       browserActions: 2,
       navigations: 1,
       screenshots: 0,

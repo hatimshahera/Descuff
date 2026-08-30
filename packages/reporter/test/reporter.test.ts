@@ -25,6 +25,7 @@ describe("@descuff/reporter", () => {
           before: {
             id: "browser-agent-path:before:search",
             kind: "baseline-ui-dom",
+            evidenceSurfaces: ["dom", "accessibility"],
             browserActions: 10,
             navigations: 1,
             screenshots: 2,
@@ -37,7 +38,8 @@ describe("@descuff/reporter", () => {
           },
           after: {
             id: "browser-agent-path:after:search",
-            kind: "descuff-webmcp",
+            kind: "descuff-standards",
+            evidenceSurfaces: ["json-ld", "openapi"],
             browserActions: 3,
             navigations: 1,
             screenshots: 0,
@@ -57,6 +59,6 @@ describe("@descuff/reporter", () => {
           evidence: [evidence]
         }
       ])
-    ).toContain("Browser actions: 10 -> 3 (70% reduction)");
+    ).toContain("Evidence surfaces: dom, accessibility -> json-ld, openapi");
   });
 });

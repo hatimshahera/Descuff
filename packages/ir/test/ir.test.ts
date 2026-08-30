@@ -45,6 +45,7 @@ describe("@descuff/ir", () => {
       before: {
         id: "browser-agent-path:before:search",
         kind: "baseline-ui-dom",
+        evidenceSurfaces: ["dom", "accessibility"],
         browserActions: 8,
         navigations: 1,
         screenshots: 2,
@@ -57,7 +58,8 @@ describe("@descuff/ir", () => {
       },
       after: {
         id: "browser-agent-path:after:search",
-        kind: "descuff-webmcp",
+        kind: "descuff-standards",
+        evidenceSurfaces: ["json-ld"],
         browserActions: 3,
         navigations: 1,
         screenshots: 0,
@@ -84,6 +86,41 @@ describe("@descuff/ir", () => {
           code: "BROWSER_AGENT_BENCHMARK_EVIDENCE_MISSING",
           message:
             "Browser-agent benchmark browser-agent-benchmark:search must include benchmark, before-path, and after-path evidence."
+        }
+      ]
+    });
+  });
+
+  it("requires evidence on browser-agent scenarios", () => {
+    const analysis = createEmptyStructuralAnalysis("/repo");
+    analysis.browserAgentScenarios.push({
+      id: "find-product",
+      title: "Find a product",
+      intent: "Find a public product.",
+      startRoute: "/products",
+      allowedRoutes: ["/products"],
+      allowedOrigins: [],
+      blockedOrigins: [],
+      inputs: {},
+      successCriteria: ["A product is identified."],
+      expectedEvidenceSurfaces: ["json-ld"],
+      budgets: {
+        maxActions: 5,
+        maxScreenshots: 0,
+        maxDomQueries: 2,
+        maxNetworkObservations: 0,
+        maxToolCalls: 0
+      },
+      risk: "read-only",
+      evidence: []
+    });
+
+    expect(validateStructuralAnalysis(analysis)).toEqual({
+      valid: false,
+      issues: [
+        {
+          code: "BROWSER_AGENT_SCENARIO_EVIDENCE_MISSING",
+          message: "Browser-agent scenario find-product must include configuration evidence."
         }
       ]
     });

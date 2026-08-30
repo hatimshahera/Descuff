@@ -2077,6 +2077,7 @@ function browserAgentBenchmark(input: {
     before: {
       id: "browser-agent-path:before:search-products",
       kind: "baseline-ui-dom" as const,
+      evidenceSurfaces: ["dom", "accessibility"] as const,
       browserActions: 8,
       navigations: 1,
       screenshots: 2,
@@ -2090,6 +2091,7 @@ function browserAgentBenchmark(input: {
     after: {
       id: "browser-agent-path:after:search-products",
       kind: "descuff-webmcp" as const,
+      evidenceSurfaces: ["webmcp"] as const,
       browserActions: input.afterActions,
       navigations: 1,
       screenshots: 0,

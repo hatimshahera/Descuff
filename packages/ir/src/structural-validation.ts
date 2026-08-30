@@ -62,6 +62,15 @@ export function validateStructuralAnalysis(
     }
   }
 
+  for (const scenario of analysis.browserAgentScenarios) {
+    if (scenario.evidence.length === 0) {
+      issues.push({
+        code: "BROWSER_AGENT_SCENARIO_EVIDENCE_MISSING",
+        message: `Browser-agent scenario ${scenario.id} must include configuration evidence.`
+      });
+    }
+  }
+
   return {
     valid: issues.length === 0,
     issues

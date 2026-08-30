@@ -327,12 +327,22 @@ describe("descuff CLI", () => {
   it("validates a Next.js fixture", async () => {
     const result = await runCli(["node", "descuff", "validate", fixtureRoot]);
     const validation = await readFile(join(fixtureRoot, ".descuff", "validation.json"), "utf8");
+    const readinessExplanations = await readFile(
+      join(fixtureRoot, ".descuff", "readiness-explanations.json"),
+      "utf8"
+    );
+    const readinessExplanationsMarkdown = await readFile(
+      join(fixtureRoot, ".descuff", "readiness-explanations.md"),
+      "utf8"
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("descuff validate passed");
     expect(result.stdout).toContain("Readiness: 100/100");
     expect(result.stdout).toContain("Runtime proof:");
     expect(validation).toContain('"readinessExplanations"');
+    expect(readinessExplanations).toContain('"category"');
+    expect(readinessExplanationsMarkdown).toContain("# Readiness Explanations");
   });
 
   it("starts a baseline-to-agent workflow for a Next.js fixture", async () => {

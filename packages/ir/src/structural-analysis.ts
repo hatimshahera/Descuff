@@ -123,11 +123,46 @@ export interface RuntimeWebMcpToolExecutionObservation {
   evidence: EvidenceRef[];
 }
 
-export type BrowserAgentTaskPathKind = "baseline-ui-dom" | "descuff-webmcp";
+export type BrowserAgentEvidenceSurface =
+  | "dom"
+  | "accessibility"
+  | "json-ld"
+  | "llms-txt"
+  | "openapi"
+  | "api-catalog"
+  | "network"
+  | "webmcp";
+
+export type BrowserAgentTaskRisk = "read-only" | "mutating" | "high-consequence" | "unknown";
+
+export interface BrowserAgentTaskScenario {
+  id: string;
+  title: string;
+  intent: string;
+  startRoute: string;
+  allowedRoutes: string[];
+  allowedOrigins: string[];
+  blockedOrigins: string[];
+  inputs: Record<string, unknown>;
+  successCriteria: string[];
+  expectedEvidenceSurfaces: BrowserAgentEvidenceSurface[];
+  budgets: {
+    maxActions: number;
+    maxScreenshots: number;
+    maxDomQueries: number;
+    maxNetworkObservations: number;
+    maxToolCalls: number;
+  };
+  risk: BrowserAgentTaskRisk;
+  evidence: EvidenceRef[];
+}
+
+export type BrowserAgentTaskPathKind = "baseline-ui-dom" | "descuff-standards" | "descuff-webmcp";
 
 export interface BrowserAgentTaskPathObservation {
   id: string;
   kind: BrowserAgentTaskPathKind;
+  evidenceSurfaces: BrowserAgentEvidenceSurface[];
   browserActions: number;
   navigations: number;
   screenshots: number;
@@ -185,6 +220,7 @@ export interface StructuralAnalysis {
   runtimePages: RuntimePageObservation[];
   runtimeWebMcpTools: RuntimeWebMcpToolObservation[];
   runtimeWebMcpToolExecutions: RuntimeWebMcpToolExecutionObservation[];
+  browserAgentScenarios: BrowserAgentTaskScenario[];
   browserAgentBenchmarks: BrowserAgentTaskBenchmark[];
   correlations: EvidenceCorrelation[];
   evidence: EvidenceIndex;
@@ -211,6 +247,7 @@ export function createEmptyStructuralAnalysis(projectRoot: string): StructuralAn
     runtimePages: [],
     runtimeWebMcpTools: [],
     runtimeWebMcpToolExecutions: [],
+    browserAgentScenarios: [],
     browserAgentBenchmarks: [],
     correlations: [],
     evidence: {
