@@ -38,7 +38,7 @@ export function validateWebMcpBehavior(
 
   if (claimsWebMcp && observedTools.length === 0) {
     issues.push({
-      code: "WEBMCP_TOOL_NOT_REGISTERED",
+      code: "WEBMCP_METADATA_ONLY",
       level: "runtime",
       severity: "error",
       message: "WebMCP metadata exists, but no browser-registered WebMCP tools were discovered.",
@@ -56,7 +56,7 @@ export function validateWebMcpBehavior(
     if (observed === undefined) {
       if (claimsWebMcp) {
         issues.push({
-          code: "WEBMCP_EXPECTED_TOOL_MISSING",
+          code: "WEBMCP_TOOL_MISSING",
           level: "runtime",
           severity: "error",
           message: `Expected WebMCP tool ${expectedName} for GET ${candidate.api.path} was not discovered in the browser.`,

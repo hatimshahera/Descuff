@@ -1299,13 +1299,13 @@ describe("@descuff/validator", () => {
       passed: false,
       failures: [
         {
-          code: "WEBMCP_TOOL_NOT_REGISTERED",
+          code: "WEBMCP_METADATA_ONLY",
           level: "runtime",
           severity: "error",
           source: "webmcp"
         },
         {
-          code: "WEBMCP_EXPECTED_TOOL_MISSING",
+          code: "WEBMCP_TOOL_MISSING",
           level: "runtime",
           severity: "error",
           source: "capability:search"
