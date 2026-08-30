@@ -4,6 +4,8 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+## 0.13.2 - 2026-08-30 - Package README And Publish Preflight
+
 ### Added
 
 - Added minimal npm READMEs for public internal runtime packages so users know to install `descuff` unless they are building on Descuff internals.
@@ -11,6 +13,7 @@ All notable changes to Descuff will be documented in this file.
 ### Fixed
 
 - Added a release publish preflight that fails before `npm publish` when any target package version is already present on npm.
+- Increased the packed release install smoke timeout so slow clean npm installs do not fail a valid release candidate.
 
 ## 0.13.1 - 2026-08-28 - Release Automation And Installability Hardening
 

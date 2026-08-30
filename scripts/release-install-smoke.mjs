@@ -62,7 +62,7 @@ try {
   run("npm", ["install", "--ignore-scripts", "--package-lock=false", "--no-audit", "--no-fund"], {
     cwd: installDir,
     env: releaseEnv(),
-    timeout: 120_000
+    timeout: 300_000
   });
 
   console.log("Running packed CLI help...");
