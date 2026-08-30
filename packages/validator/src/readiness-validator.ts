@@ -8,13 +8,15 @@ import { mergeValidationSummaries } from "./summary.js";
 import type {
   ReadinessExplanation,
   ReadinessExplanationStatus,
+  ValidationReadinessContext,
   ValidationReadinessReport,
   ValidationSummary
 } from "./types.js";
 
 export function createValidationReadinessReport(
   model: ApplicationModel,
-  summaries: ValidationSummary[]
+  summaries: ValidationSummary[],
+  context: ValidationReadinessContext = {}
 ): ValidationReadinessReport {
   const validation = mergeValidationSummaries(summaries);
   const readiness = scoreReadiness(model);
@@ -22,7 +24,7 @@ export function createValidationReadinessReport(
   return {
     schemaVersion: "0.1.0",
     readiness,
-    readinessExplanations: explainReadiness(readiness, model),
+    readinessExplanations: explainReadiness(readiness, model, context),
     validation,
     ready: readiness.score === readiness.maxScore && validation.passed,
     blockers: validation.failures
@@ -31,7 +33,8 @@ export function createValidationReadinessReport(
 
 function explainReadiness(
   readiness: ReturnType<typeof scoreReadiness>,
-  model: ApplicationModel
+  model: ApplicationModel,
+  validationContext: ValidationReadinessContext
 ): ReadinessExplanation[] {
   const lossesByCategory = new Map(
     readiness.lostPoints.map((loss) => [loss.category, loss] as const)
@@ -40,6 +43,7 @@ function explainReadiness(
   return (Object.keys(readiness.categoryScores) as ReadinessCategory[]).map((category) => {
     const loss = lossesByCategory.get(category);
     const context = readinessContextForCategory(category, model);
+    const scenarioIds = readinessScenarioIdsForCategory(category, validationContext);
     if (loss === undefined) {
       return {
         category,
@@ -50,12 +54,13 @@ function explainReadiness(
         message: "This readiness category has the available evidence Descuff expects.",
         action: "No action required.",
         expectedImpact: "No readiness points are currently lost for this category.",
+        scenarioImpact: readinessScenarioImpact(category, scenarioIds),
         evidenceIds: context.evidenceIds,
         affectedRoutes: context.affectedRoutes,
         affectedApis: context.affectedApis,
         affectedCapabilities: context.affectedCapabilities,
         affectedStandards: context.affectedStandards,
-        scenarioIds: []
+        scenarioIds
       };
     }
 
@@ -68,12 +73,13 @@ function explainReadiness(
       message: readinessMessageForLoss(loss),
       action: readinessActionForLoss(loss),
       expectedImpact: readinessExpectedImpactForLoss(loss),
+      scenarioImpact: readinessScenarioImpact(category, scenarioIds),
       evidenceIds: loss.evidenceIds.length > 0 ? loss.evidenceIds : context.evidenceIds,
       affectedRoutes: context.affectedRoutes,
       affectedApis: context.affectedApis,
       affectedCapabilities: context.affectedCapabilities,
       affectedStandards: context.affectedStandards,
-      scenarioIds: []
+      scenarioIds
     };
   });
 }
@@ -277,6 +283,74 @@ function readinessExpectedImpactForLoss(loss: ReadinessLossReason): string {
   }
 
   return `Could recover ${loss.pointsLost} readiness points after the recommended evidence-backed repair is implemented and validated.`;
+}
+
+function readinessScenarioIdsForCategory(
+  category: ReadinessCategory,
+  context: ValidationReadinessContext
+): string[] {
+  const benchmarks = context.browserAgentBenchmarks ?? [];
+  const scenarios = context.browserAgentScenarios ?? [];
+  const scenarioIds = new Set<string>();
+  const relevantSurfaces = evidenceSurfacesForReadinessCategory(category);
+
+  for (const benchmark of benchmarks) {
+    if (category === "runtime-correctness") {
+      scenarioIds.add(scenarioIdForBenchmark(benchmark.id));
+      continue;
+    }
+
+    if (benchmark.after.evidenceSurfaces.some((surface) => relevantSurfaces.has(surface))) {
+      scenarioIds.add(scenarioIdForBenchmark(benchmark.id));
+    }
+  }
+
+  for (const scenario of scenarios) {
+    if (category === "runtime-correctness") {
+      scenarioIds.add(scenario.id);
+      continue;
+    }
+
+    if (scenario.expectedEvidenceSurfaces.some((surface) => relevantSurfaces.has(surface))) {
+      scenarioIds.add(scenario.id);
+    }
+  }
+
+  return [...scenarioIds].sort();
+}
+
+function evidenceSurfacesForReadinessCategory(category: ReadinessCategory): Set<string> {
+  switch (category) {
+    case "discoverability":
+      return new Set(["llms-txt", "json-ld", "openapi", "api-catalog", "webmcp"]);
+    case "structured-content":
+    case "semantic-metadata":
+      return new Set(["json-ld"]);
+    case "agent-actions":
+      return new Set(["openapi", "api-catalog", "webmcp"]);
+    case "api-quality":
+      return new Set(["openapi", "api-catalog", "network"]);
+    case "security":
+      return new Set(["webmcp", "openapi", "api-catalog"]);
+    case "runtime-correctness":
+      return new Set(["dom", "accessibility", "json-ld", "network", "webmcp"]);
+  }
+}
+
+function scenarioIdForBenchmark(benchmarkId: string): string {
+  return benchmarkId.split(":").at(-1) ?? benchmarkId;
+}
+
+function readinessScenarioImpact(category: ReadinessCategory, scenarioIds: string[]): string {
+  if (scenarioIds.length === 0) {
+    return "No browser-agent scenarios are currently linked to this readiness category.";
+  }
+
+  if (category === "runtime-correctness") {
+    return `${scenarioIds.length} browser-agent scenario(s) depend on runtime evidence for this category.`;
+  }
+
+  return `${scenarioIds.length} browser-agent scenario(s) use evidence related to this category.`;
 }
 
 function evidenceIds(evidence: Array<{ id: string }>): string[] {

@@ -1,4 +1,11 @@
-import type { EvidenceRef, HttpMethod, ReadinessCategory, ReadinessScore } from "@descuff/ir";
+import type {
+  BrowserAgentTaskBenchmark,
+  BrowserAgentTaskScenario,
+  EvidenceRef,
+  HttpMethod,
+  ReadinessCategory,
+  ReadinessScore
+} from "@descuff/ir";
 
 export type ValidationLevel =
   "static" | "build" | "existing-tests" | "runtime" | "security" | "regression";
@@ -105,6 +112,11 @@ export interface ValidationReadinessReport {
   blockers: ValidationFailure[];
 }
 
+export interface ValidationReadinessContext {
+  browserAgentScenarios?: BrowserAgentTaskScenario[];
+  browserAgentBenchmarks?: BrowserAgentTaskBenchmark[];
+}
+
 export type ReadinessExplanationStatus =
   "complete" | "acceptable-gap" | "recommendation" | "blocker" | "unsupported";
 
@@ -117,6 +129,7 @@ export interface ReadinessExplanation {
   message: string;
   action: string;
   expectedImpact: string;
+  scenarioImpact: string;
   evidenceIds: string[];
   affectedRoutes: string[];
   affectedApis: string[];

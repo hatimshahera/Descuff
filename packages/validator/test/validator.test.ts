@@ -273,6 +273,8 @@ describe("@descuff/validator", () => {
         message: "This readiness category has the available evidence Descuff expects.",
         action: "No action required.",
         expectedImpact: "No readiness points are currently lost for this category.",
+        scenarioImpact:
+          "No browser-agent scenarios are currently linked to this readiness category.",
         evidenceIds: ["source:route"],
         affectedApis: ["GET /api/products"],
         affectedCapabilities: ["capability:search"],
@@ -324,6 +326,58 @@ describe("@descuff/validator", () => {
           status: "blocker",
           action:
             "Add an explicit safe validation scenario or keep the capability out of public agent-facing standards."
+        })
+      ])
+    );
+  });
+
+  it("links readiness explanations to browser-agent scenario impact", () => {
+    const report = createValidationReadinessReport(createReadyApplicationModel(), [], {
+      browserAgentScenarios: [
+        {
+          id: "find-product",
+          title: "Find a product",
+          intent: "Find a public product.",
+          startRoute: "/products",
+          allowedRoutes: ["/products"],
+          allowedOrigins: [],
+          blockedOrigins: [],
+          inputs: {},
+          successCriteria: ["A product is identified."],
+          expectedEvidenceSurfaces: ["json-ld", "openapi"],
+          budgets: {
+            maxActions: 5,
+            maxScreenshots: 0,
+            maxDomQueries: 2,
+            maxNetworkObservations: 1,
+            maxToolCalls: 0
+          },
+          risk: "read-only",
+          evidence: [evidence]
+        }
+      ],
+      browserAgentBenchmarks: [
+        browserAgentBenchmark({
+          status: "improved",
+          afterKind: "descuff-standards",
+          afterEvidenceSurfaces: ["json-ld", "openapi"],
+          afterActions: 3
+        })
+      ]
+    });
+
+    expect(report.readinessExplanations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: "api-quality",
+          scenarioIds: ["find-product", "search-products"],
+          scenarioImpact: "2 browser-agent scenario(s) use evidence related to this category."
+        }),
+        expect.objectContaining({
+          category: "runtime-correctness",
+          scenarioIds: ["find-product", "search-products"],
+          scenarioImpact:
+            "2 browser-agent scenario(s) depend on runtime evidence for this category."
         })
       ])
     );
@@ -2125,6 +2179,8 @@ function browserAgentBenchmark(input: {
   status: "improved" | "unchanged" | "regressed" | "inconclusive";
   beforeResult?: "succeeded" | "failed" | "inconclusive";
   afterResult?: "succeeded" | "failed" | "inconclusive";
+  afterKind?: "descuff-standards" | "descuff-webmcp";
+  afterEvidenceSurfaces?: Array<"json-ld" | "openapi" | "webmcp">;
   afterActions: number;
   browserActionReductionPercent?: number;
   limitExceeded?: string[];
@@ -2149,8 +2205,8 @@ function browserAgentBenchmark(input: {
     },
     after: {
       id: "browser-agent-path:after:search-products",
-      kind: "descuff-webmcp" as const,
-      evidenceSurfaces: ["webmcp"] as const,
+      kind: input.afterKind ?? ("descuff-webmcp" as const),
+      evidenceSurfaces: input.afterEvidenceSurfaces ?? (["webmcp"] as const),
       browserActions: input.afterActions,
       navigations: 1,
       screenshots: 0,

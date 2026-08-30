@@ -737,7 +737,32 @@ function renderRuntimeProofLines(analysis: StructuralAnalysis): string[] {
       benchmarkCount === 0
         ? ""
         : ` (${improvedBenchmarkCount} improved, ${inconclusiveBenchmarkCount} inconclusive)`
-    }`
+    }`,
+    ...renderBrowserAgentBenchmarkSummaryLines(analysis)
+  ];
+}
+
+function renderBrowserAgentBenchmarkSummaryLines(analysis: StructuralAnalysis): string[] {
+  const comparable = analysis.browserAgentBenchmarks.filter(
+    (benchmark) => benchmark.before.result === "succeeded" && benchmark.after.result === "succeeded"
+  );
+  if (comparable.length === 0) {
+    return [];
+  }
+
+  const averageActionReduction = Math.round(
+    comparable.reduce(
+      (total, benchmark) => total + benchmark.improvement.browserActionReductionPercent,
+      0
+    ) / comparable.length
+  );
+  const evidenceSurfaces = uniqueSorted(
+    comparable.flatMap((benchmark) => benchmark.after.evidenceSurfaces)
+  );
+
+  return [
+    `  Browser-agent effort: ${averageActionReduction}% average browser-action reduction`,
+    `  Browser-agent after evidence: ${evidenceSurfaces.join(", ") || "none"}`
   ];
 }
 
@@ -791,6 +816,8 @@ function renderReadinessExplanations(explanations: ReadinessExplanation[]): stri
       `- Message: ${explanation.message}`,
       `- Action: ${explanation.action}`,
       `- Expected impact: ${explanation.expectedImpact}`,
+      `- Scenario impact: ${explanation.scenarioImpact}`,
+      `- Scenario IDs: ${formatReadinessList(explanation.scenarioIds)}`,
       `- Evidence: ${explanation.evidenceIds.length === 0 ? "none" : explanation.evidenceIds.join(", ")}`,
       `- Affected routes: ${formatReadinessList(explanation.affectedRoutes)}`,
       `- Affected APIs: ${formatReadinessList(explanation.affectedApis)}`,
@@ -908,7 +935,10 @@ async function validateArtifacts(
       await createSourceFingerprintManifest(projectRoot, artifacts.analysis)
     )
   ]);
-  const report = createValidationReadinessReport(artifacts.model, [summary]);
+  const report = createValidationReadinessReport(artifacts.model, [summary], {
+    browserAgentScenarios: artifacts.analysis.browserAgentScenarios,
+    browserAgentBenchmarks: artifacts.analysis.browserAgentBenchmarks
+  });
   await writeJson(projectRoot, "validation.json", report);
   await writeJson(projectRoot, "readiness-explanations.json", report.readinessExplanations);
   await writeArtifact(
@@ -974,7 +1004,10 @@ async function validateArtifactsForDriftPlan(
   }
 
   const summary = mergeValidationSummaries(summaries);
-  const report = createValidationReadinessReport(artifacts.model, [summary]);
+  const report = createValidationReadinessReport(artifacts.model, [summary], {
+    browserAgentScenarios: artifacts.analysis.browserAgentScenarios,
+    browserAgentBenchmarks: artifacts.analysis.browserAgentBenchmarks
+  });
   await writeJson(projectRoot, "validation.json", report);
   await writeJson(projectRoot, "readiness-explanations.json", report.readinessExplanations);
   await writeArtifact(

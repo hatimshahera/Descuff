@@ -400,6 +400,7 @@ describe("@descuff/analyzer-runtime", () => {
         after: expect.objectContaining({
           kind: "descuff-standards",
           evidenceSurfaces: ["json-ld", "llms-txt"],
+          result: "succeeded",
           webMcpToolCalls: 0
         })
       })
