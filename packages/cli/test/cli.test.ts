@@ -30,8 +30,11 @@ describe("descuff CLI", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("descuff doctor supported");
+      expect(result.stdout).toContain("Browser runtime: playwright-missing");
+      expect(result.stdout).toContain("Browser launch checked: no");
       expect(result.stdout).toContain("Run: npx descuff start .");
       expect(doctorJson).toContain('"supported": true');
+      expect(doctorJson).toContain('"browserLaunchChecked": false');
       expect(doctorMarkdown).toContain("# Descuff Doctor");
     } finally {
       await rm(tempRoot, { recursive: true, force: true });

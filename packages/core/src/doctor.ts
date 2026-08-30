@@ -31,6 +31,11 @@ export interface DoctorResult {
     git: "available" | "unavailable";
     writableArtifacts: boolean;
     nodeVersion: string;
+    runtimePrerequisites: {
+      nodeSupported: boolean;
+      browserRuntime: "playwright-present" | "playwright-missing";
+      browserLaunchChecked: false;
+    };
   };
   issues: DiagnosticIssue[];
 }
@@ -54,8 +59,28 @@ export async function runDoctor(
   const graphify = await detectGraphifyState(projectRoot);
   const git = (await pathExists(join(projectRoot, ".git"))) ? "available" : "unavailable";
   const hasNextDependency = hasDependency(packageJson.value, "next");
+  const nodeVersion = options.nodeVersion ?? process.version;
+  const runtimePrerequisites = {
+    nodeSupported: isSupportedNodeVersion(nodeVersion),
+    browserRuntime:
+      hasDependency(packageJson.value, "@playwright/test") ||
+      hasDependency(packageJson.value, "playwright")
+        ? ("playwright-present" as const)
+        : ("playwright-missing" as const),
+    browserLaunchChecked: false as const
+  };
   const framework = hasNextDependency || nextIndicators.length > 0 ? "nextjs" : "unknown";
   const supported = packageJson.exists && framework === "nextjs";
+
+  if (!runtimePrerequisites.nodeSupported) {
+    issues.push({
+      code: "NODE_VERSION_UNSUPPORTED",
+      severity: "error",
+      message: "The current Node.js version is below Descuff's supported runtime.",
+      evidence: [nodeVersion],
+      nextSteps: ["Use Node.js 20.11.0 or newer before running Descuff."]
+    });
+  }
 
   if (!packageJson.exists) {
     issues.push({
@@ -136,6 +161,18 @@ export async function runDoctor(
     });
   }
 
+  if (runtimePrerequisites.browserRuntime === "playwright-missing") {
+    issues.push({
+      code: "BROWSER_RUNTIME_NOT_CONFIGURED",
+      severity: "info",
+      message: "Project-level Playwright dependencies were not detected.",
+      nextSteps: [
+        "No action is required for static Descuff analysis.",
+        "Browser runtime and WebMCP execution validation require Playwright-backed runtime configuration."
+      ]
+    });
+  }
+
   if (supported) {
     issues.unshift({
       code: "NEXTJS_PROJECT_SUPPORTED",
@@ -164,7 +201,8 @@ export async function runDoctor(
       graphify,
       git,
       writableArtifacts,
-      nodeVersion: options.nodeVersion ?? process.version
+      nodeVersion,
+      runtimePrerequisites
     },
     issues
   };
@@ -188,6 +226,9 @@ export function renderDoctorMarkdown(result: DoctorResult): string {
     `- Graphify: ${result.detected.graphify}`,
     `- Git: ${result.detected.git}`,
     `- Node: ${result.detected.nodeVersion}`,
+    `- Node supported: ${result.detected.runtimePrerequisites.nodeSupported ? "yes" : "no"}`,
+    `- Browser runtime: ${result.detected.runtimePrerequisites.browserRuntime}`,
+    `- Browser launch checked: ${result.detected.runtimePrerequisites.browserLaunchChecked ? "yes" : "no"}`,
     "",
     "## Issues",
     "",
@@ -224,6 +265,8 @@ export function renderDoctorSummary(result: DoctorResult, artifactDir: string): 
     `  Candidate app roots: ${result.detected.candidateAppRoots.join(", ") || "none"}`,
     `  Graphify: ${result.detected.graphify}`,
     `  Existing .descuff artifacts: ${result.detected.descuffArtifacts}`,
+    `  Browser runtime: ${result.detected.runtimePrerequisites.browserRuntime}`,
+    `  Browser launch checked: ${result.detected.runtimePrerequisites.browserLaunchChecked ? "yes" : "no"}`,
     "",
     `Issues: ${result.issues.length}`,
     `Blockers: ${blockers.length}`,
@@ -394,6 +437,18 @@ function hasDependency(packageJson: unknown, dependencyName: string): boolean {
     }
   }
   return false;
+}
+
+function isSupportedNodeVersion(version: string): boolean {
+  const match = version.match(/^v?(\d+)\.(\d+)\.(\d+)/);
+  if (match === null) {
+    return false;
+  }
+
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+
+  return major > 20 || (major === 20 && minor >= 11);
 }
 
 async function pathExists(path: string): Promise<boolean> {

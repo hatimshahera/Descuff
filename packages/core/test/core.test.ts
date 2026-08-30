@@ -49,12 +49,27 @@ describe("@descuff/core", () => {
     expect(result.checkedAt).toBe("2026-08-30T00:00:00.000Z");
     expect(result.detected.framework).toBe("nextjs");
     expect(result.detected.packageJson).toBe(true);
+    expect(result.detected.runtimePrerequisites.nodeSupported).toBe(true);
+    expect(result.detected.runtimePrerequisites.browserRuntime).toBe("playwright-missing");
+    expect(result.detected.runtimePrerequisites.browserLaunchChecked).toBe(false);
     expect(result.detected.nextIndicators).toContain("app");
     expect(result.issues[0]?.code).toBe("NEXTJS_PROJECT_SUPPORTED");
     expect(renderDoctorSummary(result, "fixtures/ecommerce/.descuff")).toContain(
       "descuff doctor supported"
     );
     expect(renderDoctorMarkdown(result)).toContain("## Detected");
+  });
+
+  it("reports unsupported Node.js versions as diagnostic errors", async () => {
+    const result = await runDoctor("fixtures/ecommerce", {
+      now: new Date("2026-08-30T00:00:00.000Z"),
+      nodeVersion: "v20.10.0"
+    });
+
+    expect(result.supported).toBe(true);
+    expect(result.detected.runtimePrerequisites.nodeSupported).toBe(false);
+    expect(result.issues.map((issue) => issue.code)).toContain("NODE_VERSION_UNSUPPORTED");
+    expect(renderDoctorSummary(result, "fixtures/ecommerce/.descuff")).toContain("Blockers: 1");
   });
 
   it("reports unsupported roots with nested Next.js candidates", async () => {
