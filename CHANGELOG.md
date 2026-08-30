@@ -8,6 +8,7 @@ All notable changes to Descuff will be documented in this file.
 
 - Added explicit WebMCP runtime execution scenarios so browser-discovered read-only tools are only executed with approved validation inputs.
 - Added a framework-neutral browser-agent task benchmark contract and pure effort comparison helper for Phase 15 evidence artifacts.
+- Added browser-agent benchmark JSON and Markdown artifact rendering for scans that produce benchmark evidence.
 
 ### Changed
 

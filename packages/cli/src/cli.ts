@@ -53,7 +53,7 @@ import {
   type EvidenceRef,
   type StructuralAnalysis
 } from "@descuff/ir";
-import { renderStructuralSummary } from "@descuff/reporter";
+import { renderBrowserAgentBenchmarkReport, renderStructuralSummary } from "@descuff/reporter";
 import type { GeneratedChange, StandardAdapter, StandardAssessment } from "@descuff/standard-core";
 import { ApiCatalogAdapter } from "@descuff/standard-api-catalog";
 import { LlmsTxtAdapter } from "@descuff/standard-llms-txt";
@@ -985,6 +985,18 @@ async function writeScanArtifacts(projectRoot: string, artifacts: ScanArtifacts)
   await writeJson(projectRoot, "assessments.json", artifacts.assessments);
   await writeJson(projectRoot, "generated-changes.json", artifacts.generatedChanges);
   await writeJson(projectRoot, "source-fingerprints.json", artifacts.sourceFingerprints);
+  if (artifacts.analysis.browserAgentBenchmarks.length > 0) {
+    await writeJson(
+      projectRoot,
+      "browser-agent-benchmark.json",
+      artifacts.analysis.browserAgentBenchmarks
+    );
+    await writeArtifact(
+      projectRoot,
+      "browser-agent-benchmark.md",
+      renderBrowserAgentBenchmarkReport(artifacts.analysis.browserAgentBenchmarks)
+    );
+  }
   await writeJson(projectRoot, "skill-evidence-packet.json", skillEvidencePacket);
   await writeArtifact(
     projectRoot,
