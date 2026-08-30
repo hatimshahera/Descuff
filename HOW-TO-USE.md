@@ -5,13 +5,31 @@ Descuff is an early public preview for local Next.js codebases. Run it from the 
 Install is optional. The easiest path is:
 
 ```bash
+npx descuff doctor .
 npx descuff start .
 ```
 
-## 1. Start With A Baseline
+## 1. Check The Project Root
 
 ```bash
 cd my-nextjs-app
+npx descuff doctor .
+```
+
+This writes `.descuff/doctor.json` and `.descuff/doctor.md`.
+
+Use `doctor` when:
+
+- you are running Descuff for the first time
+- you are unsure whether you are in the right folder
+- a monorepo may contain the app under a nested folder such as `apps/web`
+- you want to confirm `.descuff/`, Git, and optional Graphify state before starting
+
+If the current root is unsupported, `doctor` exits non-zero with typed blocker codes and next steps. It does not edit application source, install dependencies, call an LLM, launch a browser, submit forms, or run mutating flows.
+
+## 2. Start With A Baseline
+
+```bash
 npx descuff start .
 ```
 
@@ -27,7 +45,7 @@ This creates `.descuff/` with:
 - `plan.md`: implementation plan
 - `codex-prompt.md`: prompt for your coding agent
 
-## 2. Give The Plan To Your Coding Agent
+## 3. Give The Plan To Your Coding Agent
 
 For Codex, install the tested skill once:
 
@@ -98,7 +116,7 @@ Also run the project checks that exist, such as lint, build, and tests.
 Return a final report with baseline score, files changed, standards added, final score, before/after comparison, remaining blockers, and confirmation that UI behavior was preserved.
 ```
 
-## 3. Finish And Compare
+## 4. Finish And Compare
 
 After the coding agent implements the plan:
 
@@ -122,7 +140,7 @@ Warnings: 0 -> 0
 Before/after report: .descuff/before-after.md
 ```
 
-## 4. Read The Result
+## 5. Read The Result
 
 Open:
 
@@ -139,7 +157,7 @@ Check:
 - remaining lost readiness points
 - whether sensitive or mutating capabilities were preserved safely
 
-## 5. Keep Readiness From Drifting
+## 6. Keep Readiness From Drifting
 
 After a successful `start` or `finish`, Descuff writes `.descuff/drift-baseline.json`.
 
@@ -206,6 +224,12 @@ npx descuff start .
 ```
 
 Baseline, validate, plan, and write a coding-agent prompt.
+
+```bash
+npx descuff doctor .
+```
+
+Diagnose the current root, support status, `.descuff/` artifact state, optional Graphify state, Git availability, and likely nested app roots.
 
 ```bash
 npx descuff finish .

@@ -6,6 +6,7 @@ export const descuffCommands = [
   "finish",
   "diff",
   "check",
+  "doctor",
   "fix",
   "install",
   "enrich",

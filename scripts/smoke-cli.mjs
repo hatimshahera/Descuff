@@ -10,6 +10,7 @@ const commands = [
   "finish",
   "diff",
   "check",
+  "doctor",
   "fix",
   "install",
   "apply-safe",
@@ -67,13 +68,15 @@ for (const command of commands) {
                   ? "descuff diff pass"
                   : command === "check"
                     ? "descuff check pass"
-                    : command === "install"
-                      ? "descuff install completed"
-                      : command === "enrich"
-                        ? "descuff enrich passed"
-                        : command === "validate"
-                          ? "descuff validate passed"
-                          : "no automatic file writes are enabled";
+                    : command === "doctor"
+                      ? "descuff doctor supported"
+                      : command === "install"
+                        ? "descuff install completed"
+                        : command === "enrich"
+                          ? "descuff enrich passed"
+                          : command === "validate"
+                            ? "descuff validate passed"
+                            : "no automatic file writes are enabled";
 
   if (!result.stdout.includes(expectedOutput)) {
     console.error(`descuff ${command} produced unexpected output`);

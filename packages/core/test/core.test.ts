@@ -7,8 +7,11 @@ import {
   isDescuffCommand,
   phase10CompletedExternalAuditResults,
   phase10ExternalAuditCandidates,
+  renderDoctorMarkdown,
+  renderDoctorSummary,
   renderExternalRepoAuditMarkdown,
-  renderExternalRepoCoverageMatrix
+  renderExternalRepoCoverageMatrix,
+  runDoctor
 } from "../src/index.js";
 
 describe("@descuff/core", () => {
@@ -21,6 +24,7 @@ describe("@descuff/core", () => {
       "finish",
       "diff",
       "check",
+      "doctor",
       "fix",
       "install",
       "enrich",
@@ -33,6 +37,40 @@ describe("@descuff/core", () => {
 
   it("creates explicit project contexts", () => {
     expect(createProjectContext("/repo")).toEqual({ rootDir: "/repo", cwd: "/repo" });
+  });
+
+  it("diagnoses a supported Next.js project root", async () => {
+    const result = await runDoctor("fixtures/ecommerce", {
+      now: new Date("2026-08-30T00:00:00.000Z"),
+      nodeVersion: "v22.0.0"
+    });
+
+    expect(result.supported).toBe(true);
+    expect(result.checkedAt).toBe("2026-08-30T00:00:00.000Z");
+    expect(result.detected.framework).toBe("nextjs");
+    expect(result.detected.packageJson).toBe(true);
+    expect(result.detected.nextIndicators).toContain("app");
+    expect(result.issues[0]?.code).toBe("NEXTJS_PROJECT_SUPPORTED");
+    expect(renderDoctorSummary(result, "fixtures/ecommerce/.descuff")).toContain(
+      "descuff doctor supported"
+    );
+    expect(renderDoctorMarkdown(result)).toContain("## Detected");
+  });
+
+  it("reports unsupported roots with nested Next.js candidates", async () => {
+    const result = await runDoctor("fixtures/monorepo-next", {
+      now: new Date("2026-08-30T00:00:00.000Z"),
+      nodeVersion: "v22.0.0"
+    });
+
+    expect(result.supported).toBe(false);
+    expect(result.detected.candidateAppRoots).toEqual(["apps/web"]);
+    expect(result.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(["SUPPORTED_PROJECT_NOT_FOUND", "CANDIDATE_APP_ROOTS_FOUND"])
+    );
+    expect(renderDoctorSummary(result, "fixtures/monorepo-next/.descuff")).toContain(
+      "Try: npx descuff doctor apps/web"
+    );
   });
 
   it("records external repository audit results with stable benchmark fields", () => {

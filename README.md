@@ -15,6 +15,12 @@ Current release: `descuff@0.13.2` on npm. Descuff is an early public preview for
 Run Descuff inside a Next.js project:
 
 ```bash
+npx descuff doctor .
+```
+
+If `doctor` says the project is supported, create the baseline:
+
+```bash
 npx descuff start .
 ```
 
@@ -79,6 +85,7 @@ npx descuff report [project-root]
 npx descuff plan [project-root]
 npx descuff diff [project-root]
 npx descuff check [project-root]
+npx descuff doctor [project-root]
 npx descuff install [codex|claude-code|cursor|all] [project-root]
 npx descuff install --platform codex
 npx descuff install --platform claude-code [project-root]
@@ -103,6 +110,7 @@ Lower-level commands:
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `diff` compares changed files against `.descuff/drift-baseline.json` and writes `.descuff/drift-diff.json` plus `.descuff/drift-report.md`.
 - `check` performs the same drift analysis, fast-passes unrelated changes, writes a validation plan, and runs validation for changes that can affect routes, APIs, capabilities, auth boundaries, or published standards.
+- `doctor` diagnoses the current root before first use, writes `.descuff/doctor.json` and `.descuff/doctor.md`, and suggests a likely nested app root when Descuff was run from the wrong folder.
 - Drift baselines are generated local artifacts by default. Keep `.descuff/` ignored for public repos, and let CI preserve `.descuff/drift-baseline.json` as a protected cache/artifact or regenerate it from the base branch before checking a pull request.
 - `install --platform codex` installs the tested Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`; invoke it with `$descuff .`.
 - `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`; invoke it with `/descuff .`.

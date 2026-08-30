@@ -30,6 +30,9 @@ import {
   createProjectContext,
   descuffCommands,
   isDescuffCommand,
+  renderDoctorMarkdown,
+  renderDoctorSummary,
+  runDoctor,
   type CommandResult
 } from "@descuff/core";
 import {
@@ -84,6 +87,7 @@ Usage:
   descuff install codex --global
   descuff diff [project-root]
   descuff check [project-root]
+  descuff doctor [project-root]
 
 Commands:
   ${descuffCommands.join("\n  ")}
@@ -155,6 +159,8 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
         return await diffCommand(projectRoot);
       case "check":
         return await checkCommand(projectRoot);
+      case "doctor":
+        return await doctorCommand(projectRoot);
       case "fix":
         return {
           exitCode: 0,
@@ -617,6 +623,22 @@ async function validateCommand(projectRoot: string): Promise<CommandResult> {
     exitCode: validation.summary.passed ? 0 : 1,
     stdout,
     stderr: ""
+  };
+}
+
+async function doctorCommand(projectRoot: string): Promise<CommandResult> {
+  const result = await runDoctor(projectRoot, { nodeVersion: process.version });
+  await writeJson(projectRoot, "doctor.json", result);
+  await writeArtifact(projectRoot, "doctor.md", renderDoctorMarkdown(result));
+
+  const blockers = result.issues.filter((issue) =>
+    ["error", "unsupported"].includes(issue.severity)
+  );
+
+  return {
+    exitCode: blockers.length === 0 ? 0 : 1,
+    stdout: renderDoctorSummary(result, artifactDir(projectRoot)),
+    stderr: blockers.length === 0 ? "" : `${blockers.map((issue) => issue.code).join("\n")}\n`
   };
 }
 

@@ -2,7 +2,11 @@
 
 All notable changes to Descuff will be documented in this file.
 
-## Unreleased - Next Changes
+## Unreleased - First-Run Doctor Diagnostics
+
+### Added
+
+- Added `descuff doctor [project-root]` to diagnose supported Next.js roots, wrong-folder monorepos, writable `.descuff/` artifacts, optional Graphify state, Git availability, and typed first-run blockers before creating a baseline.
 
 ## 0.13.2 - 2026-08-30 - Package README And Publish Preflight
 

@@ -3,6 +3,7 @@
 Command-line entry point for Descuff, an open-source tool that helps developers turn local Next.js apps into websites AI agents can understand and use.
 
 ```bash
+npx descuff doctor .
 npx descuff start .
 npx descuff finish .
 npx descuff diff .
@@ -12,6 +13,8 @@ npx descuff install --platform claude-code .
 npx descuff install --platform cursor .
 npx descuff enrich .
 ```
+
+`doctor` diagnoses the current root before first use, writes `.descuff/doctor.json` and `.descuff/doctor.md`, and suggests likely nested app roots when Descuff was run from the wrong folder.
 
 `start` creates a baseline, plan, and coding-agent prompt in `.descuff/`. `finish` rescans after implementation and writes the before/after validation report.
 

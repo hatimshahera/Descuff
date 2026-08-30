@@ -14,6 +14,142 @@ describe("descuff CLI", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Usage:");
     expect(result.stdout).toContain("descuff install --platform [codex|claude-code|cursor]");
+    expect(result.stdout).toContain("descuff doctor [project-root]");
+  });
+
+  it("runs doctor on a supported Next.js fixture", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-supported-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+
+      const result = await runCli(["node", "descuff", "doctor", projectRoot]);
+      const doctorJson = await readFile(join(projectRoot, ".descuff", "doctor.json"), "utf8");
+      const doctorMarkdown = await readFile(join(projectRoot, ".descuff", "doctor.md"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff doctor supported");
+      expect(result.stdout).toContain("Run: npx descuff start .");
+      expect(doctorJson).toContain('"supported": true');
+      expect(doctorMarkdown).toContain("# Descuff Doctor");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs doctor on an unsupported root and preserves typed blockers", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-unsupported-"));
+
+    try {
+      const result = await runCli(["node", "descuff", "doctor", tempRoot]);
+      const doctorJson = await readFile(join(tempRoot, ".descuff", "doctor.json"), "utf8");
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff doctor unsupported");
+      expect(result.stderr).toContain("PACKAGE_JSON_MISSING");
+      expect(doctorJson).toContain('"code": "PACKAGE_JSON_MISSING"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs doctor on an unsupported React app without pretending it is Next.js", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-react-"));
+
+    try {
+      await writeFile(
+        join(tempRoot, "package.json"),
+        JSON.stringify({
+          name: "react-app",
+          dependencies: {
+            "@vitejs/plugin-react": "latest",
+            vite: "latest",
+            react: "latest"
+          }
+        })
+      );
+
+      const result = await runCli(["node", "descuff", "doctor", tempRoot]);
+      const doctorJson = await readFile(join(tempRoot, ".descuff", "doctor.json"), "utf8");
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("Framework: unknown");
+      expect(result.stderr).toContain("SUPPORTED_PROJECT_NOT_FOUND");
+      expect(doctorJson).toContain('"framework": "unknown"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs doctor on a monorepo root and suggests the nested app root", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-monorepo-"));
+    const projectRoot = join(tempRoot, "monorepo-next");
+
+    try {
+      await cp("fixtures/monorepo-next", projectRoot, { recursive: true });
+
+      const result = await runCli(["node", "descuff", "doctor", projectRoot]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("Candidate app roots: apps/web");
+      expect(result.stdout).toContain("Try: npx descuff doctor apps/web");
+      expect(result.stderr).toContain("SUPPORTED_PROJECT_NOT_FOUND");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs doctor with valid Graphify output present", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-graphify-"));
+
+    try {
+      await mkdir(join(tempRoot, "app"), { recursive: true });
+      await mkdir(join(tempRoot, "graphify-out"), { recursive: true });
+      await writeFile(
+        join(tempRoot, "package.json"),
+        JSON.stringify({ name: "doctor-site", dependencies: { next: "15.0.0" } })
+      );
+      await writeFile(join(tempRoot, "app", "page.tsx"), "export default function Page() {}\n");
+      await writeFile(join(tempRoot, "graphify-out", "graph.json"), "{}\n");
+
+      const result = await runCli(["node", "descuff", "doctor", tempRoot]);
+      const doctorJson = await readFile(join(tempRoot, ".descuff", "doctor.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Graphify: present");
+      expect(doctorJson).toContain('"graphify": "present"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs doctor with stale artifact and Graphify diagnostics", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-artifacts-"));
+
+    try {
+      await mkdir(join(tempRoot, "app"), { recursive: true });
+      await mkdir(join(tempRoot, ".descuff"), { recursive: true });
+      await mkdir(join(tempRoot, "graphify-out"), { recursive: true });
+      await writeFile(
+        join(tempRoot, "package.json"),
+        JSON.stringify({ name: "doctor-site", dependencies: { next: "15.0.0" } })
+      );
+      await writeFile(join(tempRoot, "app", "page.tsx"), "export default function Page() {}\n");
+      await writeFile(join(tempRoot, ".descuff", "baseline.json"), "{bad json");
+      await writeFile(join(tempRoot, "graphify-out", "graph.json"), "{bad json");
+
+      const result = await runCli(["node", "descuff", "doctor", tempRoot]);
+      const doctorJson = await readFile(join(tempRoot, ".descuff", "doctor.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Existing .descuff artifacts: malformed");
+      expect(result.stdout).toContain("Graphify: invalid");
+      expect(doctorJson).toContain('"code": "DESCUFF_ARTIFACTS_MALFORMED"');
+      expect(doctorJson).toContain('"code": "GRAPHIFY_OUTPUT_INVALID"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("runs scan on a Next.js fixture and writes artifacts", async () => {
@@ -665,6 +801,7 @@ describe("descuff CLI", () => {
       "finish",
       "diff",
       "check",
+      "doctor",
       "fix",
       "install",
       "enrich",
