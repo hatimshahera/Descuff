@@ -395,6 +395,7 @@ async function scanCommand(projectRoot: string): Promise<string> {
     "descuff scan completed",
     "",
     renderStructuralSummary(artifacts.analysis),
+    ...renderRuntimeProofLines(artifacts.analysis),
     `Generated changes: ${artifacts.generatedChanges.length}`,
     `Artifacts: ${artifactDir(projectRoot)}`,
     ""
@@ -482,6 +483,7 @@ async function finishCommand(projectRoot: string): Promise<CommandResult> {
     `Readiness: ${baseline.readiness.score}/${baseline.readiness.maxScore} -> ${finalSnapshot.readiness.score}/${finalSnapshot.readiness.maxScore}`,
     `Failures: ${baseline.validation.failures.length} -> ${finalSnapshot.validation.failures.length}`,
     `Warnings: ${baseline.validation.warnings.length} -> ${finalSnapshot.validation.warnings.length}`,
+    ...renderRuntimeProofLines(artifacts.analysis),
     `Before/after report: ${join(artifactDir(projectRoot), "before-after.md")}`,
     renderValidationSummaryDetails(validation.summary).trimEnd()
   ]
@@ -607,6 +609,7 @@ async function validateCommand(projectRoot: string): Promise<CommandResult> {
     `Readiness: ${validation.report.readiness.score}/${validation.report.readiness.maxScore}`,
     `Failures: ${validation.summary.failures.length}`,
     `Warnings: ${validation.summary.warnings.length}`,
+    ...renderRuntimeProofLines(artifacts.analysis),
     `Artifacts: ${artifactDir(projectRoot)}`,
     renderValidationSummaryDetails(validation.summary).trimEnd()
   ]
@@ -692,6 +695,8 @@ function renderStartSummary(
       ? ["  Issues: none"]
       : validationIssues.slice(0, 3).map((issue) => `  ${issue}`)),
     "",
+    ...renderRuntimeProofLines(artifacts.analysis),
+    "",
     "Readiness notes:",
     ...renderReadinessLossLines(baseline.readiness.lostPoints),
     "",
@@ -706,6 +711,32 @@ function renderStartSummary(
     "  3. Run: npx descuff finish .",
     ""
   ].join("\n");
+}
+
+function renderRuntimeProofLines(analysis: StructuralAnalysis): string[] {
+  const executionCount = analysis.runtimeWebMcpToolExecutions.length;
+  const executedCount = analysis.runtimeWebMcpToolExecutions.filter(
+    (execution) => execution.status === "executed"
+  ).length;
+  const benchmarkCount = analysis.browserAgentBenchmarks.length;
+  const improvedBenchmarkCount = analysis.browserAgentBenchmarks.filter(
+    (benchmark) => benchmark.status === "improved"
+  ).length;
+  const inconclusiveBenchmarkCount = analysis.browserAgentBenchmarks.filter(
+    (benchmark) => benchmark.status === "inconclusive"
+  ).length;
+
+  return [
+    "Runtime proof:",
+    `  Browser pages: ${analysis.runtimePages.length}`,
+    `  WebMCP tools: ${analysis.runtimeWebMcpTools.length}`,
+    `  WebMCP executions: ${executedCount}/${executionCount}`,
+    `  Browser-agent benchmarks: ${benchmarkCount}${
+      benchmarkCount === 0
+        ? ""
+        : ` (${improvedBenchmarkCount} improved, ${inconclusiveBenchmarkCount} inconclusive)`
+    }`
+  ];
 }
 
 function renderReadinessLossLines(
