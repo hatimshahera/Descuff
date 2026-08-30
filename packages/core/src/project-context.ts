@@ -9,12 +9,20 @@ export interface RuntimeProjectContext {
   baseUrl: string;
   routes: string[];
   apiOperations: RuntimeApiTarget[];
+  webMcpToolScenarios?: RuntimeWebMcpToolScenario[];
   limits?: RuntimeResourceLimits;
 }
 
 export interface RuntimeApiTarget {
   path: string;
   method: string;
+}
+
+export interface RuntimeWebMcpToolScenario {
+  toolName: string;
+  input: unknown;
+  expectedApi?: RuntimeApiTarget;
+  description?: string;
 }
 
 export interface RuntimeResourceLimits {

@@ -15,11 +15,11 @@ import {
   type RuntimeWebMcpToolObservation,
   type StructuralAnalysis
 } from "@descuff/ir";
-import type { ProjectContext, StructuralAnalyzer } from "@descuff/core";
+import type { ProjectContext, RuntimeWebMcpToolScenario, StructuralAnalyzer } from "@descuff/core";
 import { correlateRuntimeEvidence } from "./correlation.js";
 import { runtimeEvidence } from "./runtime-evidence.js";
 import { createDocumentModelContextRuntime } from "./webmcp-runtime.js";
-import type { DiscoveredWebMcpTool } from "./webmcp-runtime.js";
+import type { DiscoveredWebMcpTool, WebMcpRuntime } from "./webmcp-runtime.js";
 
 export interface RuntimeHttpResponse {
   status: number;
@@ -66,7 +66,11 @@ export interface RuntimeWebMcpToolExecutionResult {
 }
 
 export interface RuntimeBrowserClient {
-  visit(path: string, limits: Required<RuntimeResourceLimits>): Promise<RuntimeBrowserPageResult>;
+  visit(
+    path: string,
+    limits: Required<RuntimeResourceLimits>,
+    webMcpToolScenarios?: RuntimeWebMcpToolScenario[]
+  ): Promise<RuntimeBrowserPageResult>;
   dispose(): Promise<void>;
 }
 
@@ -185,7 +189,7 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
           for (const route of project.runtime.routes.slice(0, limits.maxRoutes)) {
             let page: RuntimeBrowserPageResult;
             try {
-              page = await browser.visit(route, limits);
+              page = await browser.visit(route, limits, project.runtime.webMcpToolScenarios ?? []);
             } catch (error) {
               analysis.warnings.push({
                 code: "RUNTIME_BROWSER_VISIT_FAILED",
@@ -340,7 +344,8 @@ class PlaywrightBrowserRuntimeClient implements RuntimeBrowserClient {
 
   async visit(
     path: string,
-    limits: Required<RuntimeResourceLimits> = this.defaultLimits
+    limits: Required<RuntimeResourceLimits> = this.defaultLimits,
+    webMcpToolScenarios: RuntimeWebMcpToolScenario[] = []
   ): Promise<RuntimeBrowserPageResult> {
     const page = await this.context.newPage();
     const network: RuntimeNetworkObservation[] = [];
@@ -372,7 +377,7 @@ class PlaywrightBrowserRuntimeClient implements RuntimeBrowserClient {
       const webMcpSupported = await runtime.isSupported();
       const webMcpTools = webMcpSupported ? await runtime.listTools() : [];
       const webMcpToolExecutions = webMcpSupported
-        ? await collectWebMcpToolExecutions(runtime, webMcpTools)
+        ? await collectWebMcpToolExecutions(runtime, webMcpTools, webMcpToolScenarios)
         : [];
       const rendered = await readRenderedPageEvidence(page);
       const currentUrl = page.url();
@@ -520,11 +525,13 @@ function renderRuntimeWebMcpToolExecutionObservation(
   };
 }
 
-async function collectWebMcpToolExecutions(
-  runtime: ReturnType<typeof createDocumentModelContextRuntime>,
-  tools: DiscoveredWebMcpTool[]
+export async function collectWebMcpToolExecutions(
+  runtime: WebMcpRuntime,
+  tools: DiscoveredWebMcpTool[],
+  scenarios: RuntimeWebMcpToolScenario[]
 ): Promise<RuntimeWebMcpToolExecutionResult[]> {
   const executions: RuntimeWebMcpToolExecutionResult[] = [];
+  const scenariosByTool = new Map(scenarios.map((scenario) => [scenario.toolName, scenario]));
 
   for (const tool of tools) {
     if (tool.annotations?.readOnlyHint !== true) {
@@ -538,8 +545,20 @@ async function collectWebMcpToolExecutions(
       continue;
     }
 
+    const scenario = scenariosByTool.get(tool.name);
+    if (scenario === undefined) {
+      executions.push({
+        toolName: tool.name,
+        status: "skipped",
+        origin: tool.origin,
+        frameUrl: tool.frameUrl,
+        error: "No explicit safe validation scenario approved this tool execution."
+      });
+      continue;
+    }
+
     try {
-      const result = await runtime.executeSafeTool(tool.name, {});
+      const result = await runtime.executeSafeTool(tool.name, scenario.input);
       executions.push({
         toolName: tool.name,
         status: "executed",

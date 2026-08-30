@@ -4,6 +4,10 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+### Added
+
+- Added explicit WebMCP runtime execution scenarios so browser-discovered read-only tools are only executed with approved validation inputs.
+
 ## 0.14.2 - 2026-08-30 - Doctor Diagnostic Accuracy
 
 ### Fixed

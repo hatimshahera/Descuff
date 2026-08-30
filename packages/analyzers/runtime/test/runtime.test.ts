@@ -10,6 +10,7 @@ import {
   validateStructuralAnalysis
 } from "@descuff/ir";
 import {
+  collectWebMcpToolExecutions,
   correlateRuntimeEvidence,
   createDocumentModelContextRuntime,
   createPlaywrightBrowserClient,
@@ -129,7 +130,7 @@ describe("@descuff/analyzer-runtime", () => {
         }
       }),
       async () => ({
-        async visit() {
+        async visit(_path, _limits, webMcpToolScenarios = []) {
           return {
             url: "http://example.test/",
             status: 200,
@@ -168,10 +169,16 @@ describe("@descuff/analyzer-runtime", () => {
             webMcpToolExecutions: [
               {
                 toolName: "search_products",
-                status: "executed",
+                status: webMcpToolScenarios.some(
+                  (scenario) => scenario.toolName === "search_products"
+                )
+                  ? "executed"
+                  : "skipped",
                 origin: "http://example.test",
                 frameUrl: "http://example.test/",
-                result: { products: [] }
+                ...(webMcpToolScenarios.some((scenario) => scenario.toolName === "search_products")
+                  ? { result: { products: [] } }
+                  : { error: "No explicit safe validation scenario approved this tool execution." })
               }
             ]
           };
@@ -186,7 +193,14 @@ describe("@descuff/analyzer-runtime", () => {
       runtime: {
         baseUrl: "http://example.test",
         routes: ["/"],
-        apiOperations: [{ method: "GET", path: "/api/products" }]
+        apiOperations: [{ method: "GET", path: "/api/products" }],
+        webMcpToolScenarios: [
+          {
+            toolName: "search_products",
+            input: { q: "desk" },
+            expectedApi: { method: "GET", path: "/api/products" }
+          }
+        ]
       }
     });
 
@@ -224,6 +238,77 @@ describe("@descuff/analyzer-runtime", () => {
       })
     );
     expect(validateStructuralAnalysis(analysis).valid).toBe(true);
+  });
+
+  it("does not pass WebMCP execution scenarios when none are configured", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: { "content-type": "text/html" } };
+        },
+        async fetch() {
+          return {
+            status: 200,
+            headers: { "content-type": "application/json" },
+            body: "[]"
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      async () => ({
+        async visit(_path, _limits, webMcpToolScenarios = []) {
+          return {
+            url: "http://example.test/",
+            status: 200,
+            title: "Example",
+            headings: ["Products"],
+            formCount: 1,
+            jsonLdCount: 1,
+            origin: "http://example.test",
+            network: [],
+            webMcpSupported: true,
+            webMcpTools: [
+              {
+                name: "search_products",
+                description: "Search products",
+                inputSchema: { type: "object" },
+                annotations: { readOnlyHint: true },
+                origin: "http://example.test",
+                frameUrl: "http://example.test/"
+              }
+            ],
+            webMcpToolExecutions: webMcpToolScenarios.map((scenario) => ({
+              toolName: scenario.toolName,
+              status: "executed" as const,
+              origin: "http://example.test",
+              frameUrl: "http://example.test/",
+              result: { products: [] }
+            }))
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      })
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/"],
+        apiOperations: [{ method: "GET", path: "/api/products" }]
+      }
+    });
+
+    expect(analysis.runtimeWebMcpTools).toContainEqual(
+      expect.objectContaining({
+        name: "search_products",
+        annotations: { readOnlyHint: true }
+      })
+    );
+    expect(analysis.runtimeWebMcpToolExecutions).toEqual([]);
   });
 
   it("skips browser evidence for blocked origins", async () => {
@@ -358,6 +443,58 @@ describe("@descuff/analyzer-runtime", () => {
     );
   });
 
+  it("executes WebMCP tools only with explicit validation scenarios", async () => {
+    const runtime = {
+      async isSupported() {
+        return true;
+      },
+      async listTools() {
+        return [];
+      },
+      async executeSafeTool(_toolName: string, input: unknown) {
+        return { toolName: "search_products", result: { input } };
+      }
+    };
+    const tools = [
+      {
+        name: "search_products",
+        description: "Search products",
+        inputSchema: { type: "object" },
+        annotations: { readOnlyHint: true },
+        origin: "https://example.test",
+        frameUrl: "https://example.test/"
+      }
+    ];
+
+    await expect(collectWebMcpToolExecutions(runtime, tools, [])).resolves.toEqual([
+      {
+        toolName: "search_products",
+        status: "skipped",
+        origin: "https://example.test",
+        frameUrl: "https://example.test/",
+        error: "No explicit safe validation scenario approved this tool execution."
+      }
+    ]);
+
+    await expect(
+      collectWebMcpToolExecutions(runtime, tools, [
+        {
+          toolName: "search_products",
+          input: { q: "desk" },
+          expectedApi: { method: "GET", path: "/api/products" }
+        }
+      ])
+    ).resolves.toEqual([
+      {
+        toolName: "search_products",
+        status: "executed",
+        origin: "https://example.test",
+        frameUrl: "https://example.test/",
+        result: { input: { q: "desk" } }
+      }
+    ]);
+  });
+
   it("refuses to execute WebMCP tools that are not explicitly read-only", async () => {
     await withModelContext(
       {
@@ -432,15 +569,25 @@ describe("@descuff/analyzer-runtime", () => {
       });
 
       try {
-        const page = await browser.visit("/", {
-          maxRoutes: 5,
-          maxPageLoadMs: 5_000,
-          maxNetworkRequests: 20,
-          maxResponseBodyBytes: 2_048,
-          maxRedirects: 3,
-          allowedOrigins: [baseUrl],
-          blockedOrigins: []
-        });
+        const page = await browser.visit(
+          "/",
+          {
+            maxRoutes: 5,
+            maxPageLoadMs: 5_000,
+            maxNetworkRequests: 20,
+            maxResponseBodyBytes: 2_048,
+            maxRedirects: 3,
+            allowedOrigins: [baseUrl],
+            blockedOrigins: []
+          },
+          [
+            {
+              toolName: "search_products",
+              input: { q: "desk" },
+              expectedApi: { method: "GET", path: "/api/products" }
+            }
+          ]
+        );
 
         expect(page).toMatchObject({
           status: 200,
