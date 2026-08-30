@@ -123,6 +123,39 @@ export interface RuntimeWebMcpToolExecutionObservation {
   evidence: EvidenceRef[];
 }
 
+export type BrowserAgentTaskPathKind = "baseline-ui-dom" | "descuff-webmcp";
+
+export interface BrowserAgentTaskPathObservation {
+  id: string;
+  kind: BrowserAgentTaskPathKind;
+  browserActions: number;
+  navigations: number;
+  screenshots: number;
+  domQueries: number;
+  networkObservations: number;
+  webMcpToolCalls: number;
+  result: "succeeded" | "failed" | "inconclusive";
+  confidence: "high" | "medium" | "low";
+  evidence: EvidenceRef[];
+}
+
+export interface BrowserAgentTaskBenchmarkImprovement {
+  browserActionReductionPercent: number;
+  screenshotReductionPercent: number;
+  domQueryReductionPercent: number;
+}
+
+export interface BrowserAgentTaskBenchmark {
+  id: string;
+  taskName: string;
+  startingUrl: string;
+  before: BrowserAgentTaskPathObservation;
+  after: BrowserAgentTaskPathObservation;
+  improvement: BrowserAgentTaskBenchmarkImprovement;
+  status: "improved" | "unchanged" | "regressed" | "inconclusive";
+  evidence: EvidenceRef[];
+}
+
 export interface EvidenceCorrelation {
   id: string;
   staticEvidence: EvidenceRef[];
@@ -152,6 +185,7 @@ export interface StructuralAnalysis {
   runtimePages: RuntimePageObservation[];
   runtimeWebMcpTools: RuntimeWebMcpToolObservation[];
   runtimeWebMcpToolExecutions: RuntimeWebMcpToolExecutionObservation[];
+  browserAgentBenchmarks: BrowserAgentTaskBenchmark[];
   correlations: EvidenceCorrelation[];
   evidence: EvidenceIndex;
   warnings: StructuralWarning[];
@@ -177,6 +211,7 @@ export function createEmptyStructuralAnalysis(projectRoot: string): StructuralAn
     runtimePages: [],
     runtimeWebMcpTools: [],
     runtimeWebMcpToolExecutions: [],
+    browserAgentBenchmarks: [],
     correlations: [],
     evidence: {
       schemaVersion: "0.1.0",

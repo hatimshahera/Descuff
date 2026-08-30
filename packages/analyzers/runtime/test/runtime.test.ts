@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http";
 import { createProjectContext } from "@descuff/core";
 import {
   createEmptyStructuralAnalysis,
+  type BrowserAgentTaskPathObservation,
   type RuntimeApiObservation,
   type RuntimeRouteObservation,
   type StructuralApiOperation,
@@ -13,6 +14,7 @@ import {
   collectWebMcpToolExecutions,
   correlateRuntimeEvidence,
   createDocumentModelContextRuntime,
+  createBrowserAgentTaskBenchmark,
   createPlaywrightBrowserClient,
   RuntimeAnalyzer,
   sanitizeNetworkObservation
@@ -493,6 +495,107 @@ describe("@descuff/analyzer-runtime", () => {
         result: { input: { q: "desk" } }
       }
     ]);
+  });
+
+  it("calculates browser-agent task effort from evidence-backed before and after paths", () => {
+    const evidence = {
+      id: "runtime:benchmark:search-products",
+      kind: "runtime" as const,
+      location: "/",
+      confidence: "high" as const,
+      summary: "browser-agent task benchmark"
+    };
+    const before: BrowserAgentTaskPathObservation = {
+      id: "browser-agent-path:before:search-products",
+      kind: "baseline-ui-dom",
+      browserActions: 12,
+      navigations: 2,
+      screenshots: 3,
+      domQueries: 7,
+      networkObservations: 2,
+      webMcpToolCalls: 0,
+      result: "succeeded",
+      confidence: "medium",
+      evidence: [evidence]
+    };
+    const after: BrowserAgentTaskPathObservation = {
+      id: "browser-agent-path:after:search-products",
+      kind: "descuff-webmcp",
+      browserActions: 4,
+      navigations: 1,
+      screenshots: 0,
+      domQueries: 2,
+      networkObservations: 1,
+      webMcpToolCalls: 1,
+      result: "succeeded",
+      confidence: "high",
+      evidence: [evidence]
+    };
+
+    expect(
+      createBrowserAgentTaskBenchmark({
+        id: "browser-agent-benchmark:search-products",
+        taskName: "Find matching products",
+        startingUrl: "https://example.test/",
+        before,
+        after,
+        evidence: [evidence]
+      })
+    ).toMatchObject({
+      status: "improved",
+      improvement: {
+        browserActionReductionPercent: 67,
+        screenshotReductionPercent: 100,
+        domQueryReductionPercent: 71
+      }
+    });
+  });
+
+  it("marks browser-agent task effort inconclusive when either path does not succeed", () => {
+    const evidence = {
+      id: "runtime:benchmark:search-products",
+      kind: "runtime" as const,
+      location: "/",
+      confidence: "medium" as const,
+      summary: "browser-agent task benchmark"
+    };
+    const before: BrowserAgentTaskPathObservation = {
+      id: "browser-agent-path:before:search-products",
+      kind: "baseline-ui-dom",
+      browserActions: 5,
+      navigations: 1,
+      screenshots: 1,
+      domQueries: 4,
+      networkObservations: 1,
+      webMcpToolCalls: 0,
+      result: "failed",
+      confidence: "low",
+      evidence: [evidence]
+    };
+    const after: BrowserAgentTaskPathObservation = {
+      id: "browser-agent-path:after:search-products",
+      kind: "descuff-webmcp",
+      browserActions: 2,
+      navigations: 1,
+      screenshots: 0,
+      domQueries: 1,
+      networkObservations: 1,
+      webMcpToolCalls: 1,
+      result: "succeeded",
+      confidence: "high",
+      evidence: [evidence]
+    };
+
+    expect(
+      createBrowserAgentTaskBenchmark({
+        id: "browser-agent-benchmark:search-products",
+        taskName: "Find matching products",
+        startingUrl: "https://example.test/",
+        before,
+        after,
+        evidence: [evidence]
+      }).status
+    ).toBe("inconclusive");
   });
 
   it("refuses to execute WebMCP tools that are not explicitly read-only", async () => {

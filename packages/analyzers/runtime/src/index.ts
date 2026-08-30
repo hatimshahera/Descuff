@@ -21,6 +21,8 @@ import { runtimeEvidence } from "./runtime-evidence.js";
 import { createDocumentModelContextRuntime } from "./webmcp-runtime.js";
 import type { DiscoveredWebMcpTool, WebMcpRuntime } from "./webmcp-runtime.js";
 
+export * from "./browser-agent-benchmark.js";
+
 export interface RuntimeHttpResponse {
   status: number;
   headers: Record<string, string | undefined>;

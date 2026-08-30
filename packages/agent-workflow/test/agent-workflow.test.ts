@@ -780,6 +780,9 @@ function createFixtureStructuralAnalysis(input?: {
     runtimeRoutes: [],
     runtimeApiOperations: [],
     runtimePages: [],
+    runtimeWebMcpTools: [],
+    runtimeWebMcpToolExecutions: [],
+    browserAgentBenchmarks: [],
     evidence: {
       schemaVersion: "0.1.0",
       items: input?.evidence ?? [evidence]

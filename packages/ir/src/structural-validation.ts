@@ -49,6 +49,19 @@ export function validateStructuralAnalysis(
     }
   }
 
+  for (const benchmark of analysis.browserAgentBenchmarks) {
+    if (
+      benchmark.evidence.length === 0 ||
+      benchmark.before.evidence.length === 0 ||
+      benchmark.after.evidence.length === 0
+    ) {
+      issues.push({
+        code: "BROWSER_AGENT_BENCHMARK_EVIDENCE_MISSING",
+        message: `Browser-agent benchmark ${benchmark.id} must include benchmark, before-path, and after-path evidence.`
+      });
+    }
+  }
+
   return {
     valid: issues.length === 0,
     issues
