@@ -259,10 +259,12 @@ describe("descuff CLI", () => {
 
   it("validates a Next.js fixture", async () => {
     const result = await runCli(["node", "descuff", "validate", fixtureRoot]);
+    const validation = await readFile(join(fixtureRoot, ".descuff", "validation.json"), "utf8");
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("descuff validate passed");
     expect(result.stdout).toContain("Readiness: 100/100");
+    expect(validation).toContain('"readinessExplanations"');
   });
 
   it("starts a baseline-to-agent workflow for a Next.js fixture", async () => {

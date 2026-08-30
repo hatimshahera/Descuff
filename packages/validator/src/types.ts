@@ -1,4 +1,4 @@
-import type { EvidenceRef, HttpMethod, ReadinessScore } from "@descuff/ir";
+import type { EvidenceRef, HttpMethod, ReadinessCategory, ReadinessScore } from "@descuff/ir";
 
 export type ValidationLevel =
   "static" | "build" | "existing-tests" | "runtime" | "security" | "regression";
@@ -99,9 +99,22 @@ export interface UiRegressionBaseline {
 export interface ValidationReadinessReport {
   schemaVersion: string;
   readiness: ReadinessScore;
+  readinessExplanations: ReadinessExplanation[];
   validation: ValidationSummary;
   ready: boolean;
   blockers: ValidationFailure[];
+}
+
+export type ReadinessExplanationStatus =
+  "complete" | "acceptable-gap" | "recommendation" | "blocker";
+
+export interface ReadinessExplanation {
+  category: ReadinessCategory;
+  status: ReadinessExplanationStatus;
+  pointsLost: number;
+  message: string;
+  action: string;
+  evidenceIds: string[];
 }
 
 export interface SourceFileFingerprint {

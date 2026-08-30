@@ -311,6 +311,8 @@ npx descuff validate .
 
 Freshly rescan and validate the current app state.
 
+The `.descuff/validation.json` report includes `readinessExplanations` with structured statuses for complete categories, acceptable gaps, recommendations, and blockers.
+
 ## What To Commit
 
 Commit source and standards files that the coding agent added, such as:

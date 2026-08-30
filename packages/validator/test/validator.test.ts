@@ -259,6 +259,65 @@ describe("@descuff/validator", () => {
     });
   });
 
+  it("adds structured readiness explanations for complete categories", () => {
+    const report = createValidationReadinessReport(createReadyApplicationModel(), []);
+
+    expect(report.readinessExplanations).toHaveLength(7);
+    expect(report.readinessExplanations).toContainEqual({
+      category: "api-quality",
+      status: "complete",
+      pointsLost: 0,
+      message: "This readiness category has the available evidence Descuff expects.",
+      action: "No action required.",
+      evidenceIds: []
+    });
+  });
+
+  it("distinguishes acceptable readiness gaps from recommendations and blockers", () => {
+    const model = {
+      ...createReadyApplicationModel(),
+      entities: [],
+      apis: [],
+      capabilities: [
+        {
+          ...createReadyApplicationModel().capabilities[0]!,
+          risk: "HIGH_CONSEQUENCE" as const
+        }
+      ],
+      standards: []
+    };
+
+    const report = createValidationReadinessReport(model, []);
+
+    expect(report.readinessExplanations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: "structured-content",
+          status: "acceptable-gap",
+          action:
+            "Add evidence-backed structured content only if the app has real public entities to describe."
+        }),
+        expect.objectContaining({
+          category: "api-quality",
+          status: "acceptable-gap",
+          message:
+            "No API operations were identified. This can be acceptable for intentionally static sites."
+        }),
+        expect.objectContaining({
+          category: "discoverability",
+          status: "recommendation",
+          action: "Run descuff start and implement the applicable generated standards plan."
+        }),
+        expect.objectContaining({
+          category: "security",
+          status: "blocker",
+          action:
+            "Add an explicit safe validation scenario or keep the capability out of public agent-facing standards."
+        })
+      ])
+    );
+  });
+
   it("adapts standard validation issues into actionable static failures", () => {
     expect(
       validateStaticStandardResults([

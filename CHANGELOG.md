@@ -9,6 +9,7 @@ All notable changes to Descuff will be documented in this file.
 - Added `descuff doctor [project-root]` to diagnose supported Next.js roots, wrong-folder monorepos, writable `.descuff/` artifacts, optional Graphify state, Git availability, and typed first-run blockers before creating a baseline.
 - Added stale `.descuff/source-fingerprints.json` detection to `doctor` so users are told when local artifacts no longer match current source files.
 - Added advisory browser/runtime prerequisite diagnostics to `doctor`, including Node support, project-level Playwright dependency presence, and explicit confirmation that no browser launch was performed.
+- Added structured `readinessExplanations` to validation reports so machine consumers can distinguish complete categories, acceptable gaps, recommendations, and blockers.
 - Improved `descuff start` output with detected app counts, standards status, validation status, readiness notes, generated artifact paths, and next-step guidance.
 - Improved `descuff install` completion output with explicit `finish` versus `check` guidance for Codex, Claude Code, Cursor, and local preview installs.
 

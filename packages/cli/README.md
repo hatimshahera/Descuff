@@ -24,7 +24,7 @@ Keep `.descuff/` ignored in public repositories by default. For CI drift checks,
 
 `install --platform codex` installs the Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`. `install --platform claude-code` writes a project slash command to `.claude/commands/descuff.md`. `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`. `install all` still writes local preview skill instructions under `.descuff/skills/`. Install output explains the exact invocation and reminds users to run `finish` after explicit Descuff plan implementation, or `check` for ordinary later edits.
 
-`enrich` deterministically validates `.descuff/semantic-enrichment.json` and writes a reviewable semantic diff.
+`enrich` deterministically validates `.descuff/semantic-enrichment.json` and writes a reviewable semantic diff. `validate` writes structured readiness explanations so tools can distinguish complete categories, acceptable gaps, recommendations, and blockers.
 
 `scan` also writes optional Graphify/native correlation artifacts when `graphify-out/graph.json` exists. Missing or invalid Graphify output is recorded but does not block native analysis.
 
