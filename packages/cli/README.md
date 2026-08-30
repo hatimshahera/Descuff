@@ -18,6 +18,8 @@ npx descuff enrich .
 
 `start` creates a baseline, plan, and coding-agent prompt in `.descuff/`. `finish` rescans after implementation and writes the before/after validation report.
 
+Optional `.descuff/runtime.json` lets `scan` and `validate` inspect a running local app in the browser. WebMCP tool execution requires explicit read-only scenarios in that file; Descuff does not guess tool inputs or execute mutating actions by default.
+
 `diff` compares changed files against `.descuff/drift-baseline.json` and writes a drift impact report. `check` fast-passes irrelevant changes, writes a validation plan, and runs validation when routes, APIs, capabilities, auth boundaries, or published standards may have changed.
 
 Keep `.descuff/` ignored in public repositories by default. For CI drift checks, preserve `.descuff/drift-baseline.json` as a protected cache/artifact from the last successful base-branch run, or regenerate it from the base branch before running `descuff check` on a pull request.

@@ -64,6 +64,7 @@ Descuff rescans, validates, and writes:
 - Recommends agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP implementation plans for browser-registered public read tools.
 - Generates a conservative implementation plan for a developer-owned coding agent.
 - Validates standards, security boundaries, runtime evidence, readiness score, and structured readiness explanations.
+- Can use optional `.descuff/runtime.json` to inspect a running local app in the browser and execute only explicitly approved read-only WebMCP scenarios.
 - Reports before/after improvement so teams can see what changed.
 - Tracks a local drift baseline so CI can fast-pass irrelevant changes and revalidate agent-facing changes before they ship.
 
@@ -122,6 +123,7 @@ Lower-level commands:
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
   The validation report includes `readinessExplanations` so tools can distinguish blockers, recommendations, acceptable gaps, and complete categories.
+- Optional `.descuff/runtime.json` lets `scan` and `validate` use a running local app for browser/runtime evidence. Without it, Descuff keeps using conservative synthetic runtime evidence.
 - `fix` prints agent workflow instructions. It does not invoke an LLM and does not edit source directly.
 - `apply-safe` is intentionally disabled for automatic source writes in this release.
 

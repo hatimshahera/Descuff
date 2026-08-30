@@ -47,7 +47,38 @@ This creates `.descuff/` with:
 
 The terminal summary shows detected route/API/capability/form counts, standards status, validation failures and warnings, readiness notes, generated artifact paths, and the next command.
 
-## 3. Give The Plan To Your Coding Agent
+## 3. Optional Browser Runtime Evidence
+
+By default, Descuff uses conservative synthetic runtime evidence so first runs do not require a running dev server.
+
+To let Descuff inspect a running local app in the browser, start your app and create `.descuff/runtime.json`:
+
+```json
+{
+  "baseUrl": "http://localhost:3000",
+  "routes": ["/"],
+  "apiOperations": [{ "method": "GET", "path": "/api/products" }],
+  "webMcpToolScenarios": [
+    {
+      "toolName": "search_products",
+      "input": { "q": "shirt" },
+      "expectedApi": { "method": "GET", "path": "/api/products" },
+      "description": "Safe read-only product search validation"
+    }
+  ]
+}
+```
+
+Then run:
+
+```bash
+npx descuff scan .
+npx descuff validate .
+```
+
+If `runtime.json` is missing or malformed, Descuff falls back to synthetic runtime evidence and records a typed warning. WebMCP tool execution still requires an explicit read-only scenario; Descuff does not guess inputs or execute mutating/high-consequence actions.
+
+## 4. Give The Plan To Your Coding Agent
 
 For Codex, install the tested skill once:
 
@@ -118,7 +149,7 @@ Also run the project checks that exist, such as lint, build, and tests.
 Return a final report with baseline score, files changed, standards added, final score, before/after comparison, remaining blockers, and confirmation that UI behavior was preserved.
 ```
 
-## 4. Finish And Compare
+## 5. Finish And Compare
 
 After the coding agent implements the plan:
 
@@ -142,7 +173,7 @@ Warnings: 0 -> 0
 Before/after report: .descuff/before-after.md
 ```
 
-## 5. Read The Result
+## 6. Read The Result
 
 Open:
 
@@ -159,7 +190,7 @@ Check:
 - remaining lost readiness points
 - whether sensitive or mutating capabilities were preserved safely
 
-## 6. Keep Readiness From Drifting
+## 7. Keep Readiness From Drifting
 
 After a successful `start` or `finish`, Descuff writes `.descuff/drift-baseline.json`.
 
