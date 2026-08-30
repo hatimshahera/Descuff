@@ -1,6 +1,6 @@
 {
   "name": "@descuff/agent-workflow",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "license": "MIT",
   "type": "module",
   "files": [
@@ -18,8 +18,8 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/ir": "^0.14.1",
-    "@descuff/standard-core": "^0.14.1"
+    "@descuff/ir": "^0.14.2",
+    "@descuff/standard-core": "^0.14.2"
   },
   "description": "Agent workflow planning and instruction rendering for Descuff.",
   "repository": {

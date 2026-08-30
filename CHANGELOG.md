@@ -4,6 +4,8 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+## 0.14.2 - 2026-08-30 - Doctor Diagnostic Accuracy
+
 ### Fixed
 
 - Fixed `descuff doctor` diagnostics so fresh projects report existing `.descuff` artifacts as absent before doctor writes its own artifacts.
