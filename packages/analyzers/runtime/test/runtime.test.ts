@@ -239,6 +239,16 @@ describe("@descuff/analyzer-runtime", () => {
         responseSummary: "[]"
       })
     );
+    expect(analysis.browserAgentBenchmarks).toContainEqual(
+      expect.objectContaining({
+        id: "browser-agent-benchmark:/:search_products",
+        taskName: "Use search_products",
+        status: "improved",
+        improvement: expect.objectContaining({
+          screenshotReductionPercent: 100
+        })
+      })
+    );
     expect(validateStructuralAnalysis(analysis).valid).toBe(true);
   });
 
@@ -311,6 +321,90 @@ describe("@descuff/analyzer-runtime", () => {
       })
     );
     expect(analysis.runtimeWebMcpToolExecutions).toEqual([]);
+    expect(analysis.browserAgentBenchmarks).toEqual([]);
+  });
+
+  it("records inconclusive browser-agent benchmark evidence when scenario execution is skipped", async () => {
+    const analysis = await new RuntimeAnalyzer(
+      async () => ({
+        async get() {
+          return { status: 200, headers: { "content-type": "text/html" } };
+        },
+        async fetch() {
+          return {
+            status: 200,
+            headers: { "content-type": "application/json" },
+            body: "[]"
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      }),
+      async () => ({
+        async visit() {
+          return {
+            url: "http://example.test/",
+            status: 200,
+            title: "Example",
+            headings: ["Products"],
+            formCount: 1,
+            jsonLdCount: 1,
+            origin: "http://example.test",
+            network: [],
+            webMcpSupported: true,
+            webMcpTools: [
+              {
+                name: "search_products",
+                description: "Search products",
+                inputSchema: { type: "object" },
+                annotations: { readOnlyHint: true },
+                origin: "http://example.test",
+                frameUrl: "http://example.test/"
+              }
+            ],
+            webMcpToolExecutions: [
+              {
+                toolName: "search_products",
+                status: "skipped",
+                origin: "http://example.test",
+                frameUrl: "http://example.test/",
+                error: "No explicit safe validation scenario approved this tool execution."
+              }
+            ]
+          };
+        },
+        async dispose() {
+          return undefined;
+        }
+      })
+    ).analyze({
+      rootDir: "/repo",
+      cwd: "/repo",
+      runtime: {
+        baseUrl: "http://example.test",
+        routes: ["/"],
+        apiOperations: [{ method: "GET", path: "/api/products" }],
+        webMcpToolScenarios: [
+          {
+            toolName: "search_products",
+            input: { q: "desk" },
+            expectedApi: { method: "GET", path: "/api/products" }
+          }
+        ]
+      }
+    });
+
+    expect(analysis.browserAgentBenchmarks).toContainEqual(
+      expect.objectContaining({
+        id: "browser-agent-benchmark:/:search_products",
+        status: "inconclusive",
+        after: expect.objectContaining({
+          result: "inconclusive"
+        })
+      })
+    );
+    expect(validateStructuralAnalysis(analysis).valid).toBe(true);
   });
 
   it("skips browser evidence for blocked origins", async () => {

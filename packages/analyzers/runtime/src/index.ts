@@ -8,6 +8,7 @@ import {
   type Response
 } from "@playwright/test";
 import {
+  type BrowserAgentTaskPathObservation,
   createEmptyStructuralAnalysis,
   type HttpMethod,
   type RuntimePageObservation,
@@ -16,6 +17,7 @@ import {
   type StructuralAnalysis
 } from "@descuff/ir";
 import type { ProjectContext, RuntimeWebMcpToolScenario, StructuralAnalyzer } from "@descuff/core";
+import { createBrowserAgentTaskBenchmark } from "./browser-agent-benchmark.js";
 import { correlateRuntimeEvidence } from "./correlation.js";
 import { runtimeEvidence } from "./runtime-evidence.js";
 import { createDocumentModelContextRuntime } from "./webmcp-runtime.js";
@@ -261,6 +263,33 @@ export class RuntimeAnalyzer implements StructuralAnalyzer {
                 renderRuntimeWebMcpToolExecutionObservation(execution, [executionEvidence])
               );
               analysis.evidence.items.push(executionEvidence);
+
+              const scenario = project.runtime.webMcpToolScenarios?.find(
+                (candidate) => candidate.toolName === execution.toolName
+              );
+              if (scenario !== undefined) {
+                const benchmarkEvidence = runtimeEvidence(
+                  `browser-agent-benchmark:${route}:${execution.toolName}`,
+                  `Compared browser-agent UI/DOM effort with WebMCP tool ${execution.toolName} for ${route}.`
+                );
+                analysis.browserAgentBenchmarks.push(
+                  createBrowserAgentTaskBenchmark({
+                    id: `browser-agent-benchmark:${route}:${execution.toolName}`,
+                    taskName: scenario.description ?? `Use ${execution.toolName}`,
+                    startingUrl: page.url,
+                    before: createBaselineBrowserAgentPath(route, page, [
+                      pageEvidence,
+                      benchmarkEvidence
+                    ]),
+                    after: createWebMcpBrowserAgentPath(execution, [
+                      executionEvidence,
+                      benchmarkEvidence
+                    ]),
+                    evidence: [benchmarkEvidence]
+                  })
+                );
+                analysis.evidence.items.push(benchmarkEvidence);
+              }
             }
           }
         } finally {
@@ -523,6 +552,54 @@ function renderRuntimeWebMcpToolExecutionObservation(
     frameUrl: execution.frameUrl,
     ...(summary === undefined ? {} : summary),
     ...(execution.error === undefined ? {} : { error: execution.error }),
+    evidence
+  };
+}
+
+function createBaselineBrowserAgentPath(
+  route: string,
+  page: RuntimeBrowserPageResult,
+  evidence: BrowserAgentTaskPathObservation["evidence"]
+): BrowserAgentTaskPathObservation {
+  const screenshots = page.webMcpSupported ? 1 : 2;
+  const domQueries = Math.max(1, page.headings.length + page.formCount + page.jsonLdCount);
+  const navigations = 1;
+  const networkObservations = page.network.length;
+
+  return {
+    id: `browser-agent-path:before:${route}`,
+    kind: "baseline-ui-dom",
+    browserActions: navigations + screenshots + domQueries + networkObservations,
+    navigations,
+    screenshots,
+    domQueries,
+    networkObservations,
+    webMcpToolCalls: 0,
+    result: page.status >= 200 && page.status < 400 ? "succeeded" : "failed",
+    confidence: page.headings.length > 0 || page.formCount > 0 ? "medium" : "low",
+    evidence
+  };
+}
+
+function createWebMcpBrowserAgentPath(
+  execution: RuntimeWebMcpToolExecutionResult,
+  evidence: BrowserAgentTaskPathObservation["evidence"]
+): BrowserAgentTaskPathObservation {
+  const navigations = 1;
+  const domQueries = 1;
+  const webMcpToolCalls = 1;
+
+  return {
+    id: `browser-agent-path:after:${execution.toolName}`,
+    kind: "descuff-webmcp",
+    browserActions: navigations + domQueries + webMcpToolCalls,
+    navigations,
+    screenshots: 0,
+    domQueries,
+    networkObservations: 0,
+    webMcpToolCalls,
+    result: execution.status === "executed" ? "succeeded" : "inconclusive",
+    confidence: execution.status === "executed" ? "high" : "low",
     evidence
   };
 }

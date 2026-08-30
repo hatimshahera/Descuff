@@ -11,6 +11,7 @@ All notable changes to Descuff will be documented in this file.
 - Added browser-agent benchmark JSON and Markdown artifact rendering for scans that produce benchmark evidence.
 - Added optional `.descuff/runtime.json` support so CLI scans can use real browser/runtime evidence instead of synthetic runtime evidence.
 - Added `BROWSER_AGENT_BENCHMARK_INCONCLUSIVE` runtime validation when benchmark evidence cannot prove both paths succeeded.
+- Added automatic browser-agent benchmark records for explicit WebMCP runtime scenarios observed during browser analysis.
 
 ### Changed
 
