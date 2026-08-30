@@ -13,6 +13,7 @@
     { "path": "../reporter" },
     { "path": "../agent-workflow" },
     { "path": "../analyzers/nextjs" },
+    { "path": "../analyzers/runtime" },
     { "path": "../standards/core" },
     { "path": "../standards/llms-txt" },
     { "path": "../standards/schema-org" },

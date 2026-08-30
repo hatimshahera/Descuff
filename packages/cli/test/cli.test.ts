@@ -262,6 +262,26 @@ describe("descuff CLI", () => {
     expect(enrichmentPrompt).toContain("Descuff Semantic Enrichment Request");
   });
 
+  it("falls back to synthetic runtime evidence when runtime config is malformed", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-runtime-malformed-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await mkdir(join(projectRoot, ".descuff"), { recursive: true });
+      await writeFile(join(projectRoot, ".descuff", "runtime.json"), "{bad json");
+
+      const result = await runCli(["node", "descuff", "scan", projectRoot]);
+      const analysis = await readFile(join(projectRoot, ".descuff", "analysis.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(analysis).toContain('"code": "RUNTIME_CONFIG_MALFORMED"');
+      expect(analysis).toContain('"id": "runtime-route:/"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("renders a report from a Next.js fixture", async () => {
     const result = await runCli(["node", "descuff", "report", fixtureRoot]);
 

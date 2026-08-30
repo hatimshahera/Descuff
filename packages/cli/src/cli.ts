@@ -26,6 +26,7 @@ import {
 } from "@descuff/agent-workflow";
 import { GraphifyAnalyzer } from "@descuff/analyzer-graphify";
 import { NativeNextAnalyzer } from "@descuff/analyzer-nextjs";
+import { correlateRuntimeEvidence, RuntimeAnalyzer } from "@descuff/analyzer-runtime";
 import {
   createProjectContext,
   descuffCommands,
@@ -33,7 +34,8 @@ import {
   renderDoctorMarkdown,
   renderDoctorSummary,
   runDoctor,
-  type CommandResult
+  type CommandResult,
+  type ProjectContext
 } from "@descuff/core";
 import {
   analyzeDrift,
@@ -946,7 +948,11 @@ async function readOrBuildArtifacts(projectRoot: string): Promise<ScanArtifacts>
 
 async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
   const analysis = await new NativeNextAnalyzer().analyze(createProjectContext(projectRoot));
-  const analysisWithRuntime = withSyntheticReadOnlyRuntime(analysis);
+  const runtimeProject = await readRuntimeProjectContext(projectRoot, analysis);
+  const analysisWithRuntime =
+    runtimeProject === undefined
+      ? withSyntheticReadOnlyRuntime(analysis)
+      : mergeRuntimeAnalysis(analysis, await new RuntimeAnalyzer().analyze(runtimeProject));
   const graphifyAnalysis = await new GraphifyAnalyzer().analyze(createProjectContext(projectRoot));
   const graphifyEnrichment = buildGraphifyEnrichmentSummary({
     native: analysisWithRuntime,
@@ -1146,6 +1152,115 @@ function planAffectedStandards(
   return plan.suites.includes("static-standards") && affected.size > 0 ? affected : undefined;
 }
 
+async function readRuntimeProjectContext(
+  projectRoot: string,
+  analysis: StructuralAnalysis
+): Promise<ProjectContext | undefined> {
+  let raw: unknown;
+
+  try {
+    raw = JSON.parse(await readFile(join(artifactDir(projectRoot), "runtime.json"), "utf8"));
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return undefined;
+    }
+
+    analysis.warnings.push({
+      code: "RUNTIME_CONFIG_MALFORMED",
+      message: "Could not parse .descuff/runtime.json, so Descuff used synthetic runtime evidence.",
+      evidence: []
+    });
+    return undefined;
+  }
+
+  if (!isRecord(raw) || typeof raw.baseUrl !== "string" || raw.baseUrl.trim().length === 0) {
+    analysis.warnings.push({
+      code: "RUNTIME_CONFIG_INVALID",
+      message:
+        ".descuff/runtime.json must include a non-empty baseUrl, so Descuff used synthetic runtime evidence.",
+      evidence: []
+    });
+    return undefined;
+  }
+
+  const runtime: NonNullable<ProjectContext["runtime"]> = {
+    baseUrl: raw.baseUrl,
+    routes: parseRuntimeRoutes(raw.routes, analysis),
+    apiOperations: parseRuntimeApiOperations(raw.apiOperations, analysis)
+  };
+
+  if (Array.isArray(raw.webMcpToolScenarios)) {
+    runtime.webMcpToolScenarios = raw.webMcpToolScenarios;
+  }
+
+  if (isRecord(raw.limits)) {
+    runtime.limits = raw.limits;
+  }
+
+  return {
+    rootDir: projectRoot,
+    cwd: projectRoot,
+    runtime
+  };
+}
+
+function parseRuntimeRoutes(rawRoutes: unknown, analysis: StructuralAnalysis): string[] {
+  if (!Array.isArray(rawRoutes)) {
+    return analysis.routes.map((route) => route.path);
+  }
+
+  return rawRoutes.filter((route): route is string => typeof route === "string");
+}
+
+function parseRuntimeApiOperations(
+  rawApiOperations: unknown,
+  analysis: StructuralAnalysis
+): NonNullable<ProjectContext["runtime"]>["apiOperations"] {
+  if (!Array.isArray(rawApiOperations)) {
+    return analysis.apiOperations.map((operation) => ({
+      method: operation.method,
+      path: operation.path
+    }));
+  }
+
+  return rawApiOperations.flatMap((operation) => {
+    if (
+      !isRecord(operation) ||
+      typeof operation.method !== "string" ||
+      typeof operation.path !== "string"
+    ) {
+      return [];
+    }
+
+    return [{ method: operation.method, path: operation.path }];
+  });
+}
+
+function mergeRuntimeAnalysis(
+  analysis: StructuralAnalysis,
+  runtimeAnalysis: StructuralAnalysis
+): StructuralAnalysis {
+  const merged = {
+    ...analysis,
+    runtimeRoutes: runtimeAnalysis.runtimeRoutes,
+    runtimeApiOperations: runtimeAnalysis.runtimeApiOperations,
+    runtimePages: runtimeAnalysis.runtimePages,
+    runtimeWebMcpTools: runtimeAnalysis.runtimeWebMcpTools,
+    runtimeWebMcpToolExecutions: runtimeAnalysis.runtimeWebMcpToolExecutions,
+    browserAgentBenchmarks: runtimeAnalysis.browserAgentBenchmarks,
+    evidence: {
+      ...analysis.evidence,
+      items: [...analysis.evidence.items, ...runtimeAnalysis.evidence.items]
+    },
+    warnings: [...analysis.warnings, ...runtimeAnalysis.warnings]
+  };
+
+  return {
+    ...merged,
+    correlations: correlateRuntimeEvidence(merged)
+  };
+}
+
 function withSyntheticReadOnlyRuntime(analysis: StructuralAnalysis): StructuralAnalysis {
   return {
     ...analysis,
@@ -1232,6 +1347,14 @@ async function readJson<T>(projectRoot: string, name: string): Promise<T> {
 
 async function writeJson(projectRoot: string, name: string, value: unknown): Promise<void> {
   await writeArtifact(projectRoot, name, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return isRecord(error) && error.code === "ENOENT";
 }
 
 async function writeArtifact(projectRoot: string, name: string, content: string): Promise<void> {

@@ -96,6 +96,9 @@ importers:
       "@descuff/analyzer-nextjs":
         specifier: ^0.14.2
         version: link:../analyzers/nextjs
+      "@descuff/analyzer-runtime":
+        specifier: ^0.14.2
+        version: link:../analyzers/runtime
       "@descuff/core":
         specifier: ^0.14.2
         version: link:../core

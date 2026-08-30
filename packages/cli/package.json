@@ -44,6 +44,7 @@
     "@descuff/agent-workflow": "^0.14.2",
     "@descuff/analyzer-graphify": "^0.14.2",
     "@descuff/analyzer-nextjs": "^0.14.2",
+    "@descuff/analyzer-runtime": "^0.14.2",
     "@descuff/core": "^0.14.2",
     "@descuff/ir": "^0.14.2",
     "@descuff/reporter": "^0.14.2",
