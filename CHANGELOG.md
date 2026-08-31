@@ -4,6 +4,8 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+## 0.17.4 - 2026-08-31 - Hosted Report Separation
+
 ### Changed
 
 - Updated installed Descuff skill reporting guidance so Graphify results stay as compact supporting evidence and Descuff-specific next steps remain the final call to action.

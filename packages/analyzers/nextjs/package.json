@@ -1,6 +1,6 @@
 {
   "name": "@descuff/analyzer-nextjs",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "license": "Apache-2.0",
   "type": "module",
   "files": [
@@ -18,8 +18,8 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/core": "^0.17.3",
-    "@descuff/ir": "^0.17.3"
+    "@descuff/core": "^0.17.4",
+    "@descuff/ir": "^0.17.4"
   },
   "description": "Next.js static analyzer for Descuff.",
   "repository": {

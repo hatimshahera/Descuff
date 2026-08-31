@@ -1,6 +1,6 @@
 {
   "name": "@descuff/agent-workflow",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "license": "Apache-2.0",
   "type": "module",
   "files": [
@@ -18,8 +18,8 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/ir": "^0.17.3",
-    "@descuff/standard-core": "^0.17.3"
+    "@descuff/ir": "^0.17.4",
+    "@descuff/standard-core": "^0.17.4"
   },
   "description": "Agent workflow planning and instruction rendering for Descuff.",
   "repository": {

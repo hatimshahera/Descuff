@@ -1,6 +1,6 @@
 {
   "name": "@descuff/standard-llms-txt",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "license": "Apache-2.0",
   "type": "module",
   "files": [
@@ -18,12 +18,12 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/ir": "^0.17.3",
-    "@descuff/standard-core": "^0.17.3"
+    "@descuff/ir": "^0.17.4",
+    "@descuff/standard-core": "^0.17.4"
   },
   "devDependencies": {
-    "@descuff/analyzer-nextjs": "^0.17.3",
-    "@descuff/core": "^0.17.3"
+    "@descuff/analyzer-nextjs": "^0.17.4",
+    "@descuff/core": "^0.17.4"
   },
   "description": "llms.txt standard adapter for Descuff.",
   "repository": {
