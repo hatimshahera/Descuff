@@ -10,6 +10,8 @@ Descuff checks a local Next.js app, tells your coding agent what to add, then pr
 
 It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser/runtime WebMCP validation.
 
+Preview hosted recon can also inspect a deployed public URL and report what browser agents can observe without source access.
+
 Current release: `descuff@0.16.1` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
 Works today: local Next.js App Router and Pages Router projects.
@@ -100,6 +102,7 @@ npx descuff report [project-root]
 npx descuff plan [project-root]
 npx descuff diff [project-root]
 npx descuff check [project-root]
+npx descuff recon <url> [--max-pages N] [--scenario id] [--compare path]
 npx descuff doctor [project-root]
 npx descuff install [codex|claude-code|cursor|all] [project-root]
 npx descuff install --platform codex
@@ -125,6 +128,7 @@ Lower-level commands:
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `diff` compares changed files against `.descuff/drift-baseline.json` and writes `.descuff/drift-diff.json` plus `.descuff/drift-report.md`.
 - `check` performs the same drift analysis, fast-passes unrelated changes, writes a validation plan, and runs validation for changes that can affect routes, APIs, capabilities, auth boundaries, or published standards.
+- `recon` inspects a hosted public URL without source access, writes `.descuff/hosted-recon.*`, and reports visible standards, public pages, forms, metadata, confidence labels, blockers, and optional read-only browser-agent reachability scenarios.
 - `doctor` diagnoses the current root before first use, writes `.descuff/doctor.json` and `.descuff/doctor.md`, and suggests a likely nested app root when Descuff was run from the wrong folder.
 - Drift baselines are generated local artifacts by default. Keep `.descuff/` ignored for public repos, and let CI preserve `.descuff/drift-baseline.json` as a protected cache/artifact or regenerate it from the base branch before checking a pull request.
 - `install --platform codex` installs the tested Codex skill under `$CODEX_HOME/skills/descuff` or `~/.codex/skills/descuff`; invoke it with `$descuff .`.
@@ -188,7 +192,13 @@ Not yet supported as a general-purpose website crawler:
 npx descuff scan https://example.com
 ```
 
-Descuff currently expects a local Next.js codebase:
+Use hosted recon for the public deployed surface:
+
+```bash
+npx descuff recon https://example.com
+```
+
+Use local source-backed validation for implementation:
 
 ```bash
 cd my-nextjs-app

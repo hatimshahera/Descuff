@@ -931,6 +931,7 @@ describe("descuff CLI", () => {
       "finish",
       "diff",
       "check",
+      "recon",
       "doctor",
       "fix",
       "install",
@@ -938,6 +939,161 @@ describe("descuff CLI", () => {
       "apply-safe",
       "validate"
     ]);
+  });
+
+  it("runs hosted recon against a public local fixture URL", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-recon-"));
+    const restoreFetch = mockHostedReconFetch();
+
+    try {
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli([
+          "node",
+          "descuff",
+          "recon",
+          "https://example.test/?token=secret",
+          "--max-pages",
+          "3"
+        ]);
+        const reconJson = await readFile(join(tempRoot, ".descuff", "hosted-recon.json"), "utf8");
+        const reconMarkdown = await readFile(join(tempRoot, ".descuff", "hosted-recon.md"), "utf8");
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("descuff recon completed");
+        expect(result.stdout).toContain(
+          "Standards visible: llms-txt, schema-org, openapi, api-catalog"
+        );
+        expect(result.stdout).toContain("Pages inspected: 2");
+        expect(reconJson).toContain('"targetUrl": "');
+        expect(reconJson).toContain("token=%5BREDACTED%5D");
+        expect(reconJson).toContain('"queryParametersRedacted": 1');
+        expect(reconJson).toContain('"kind": "llms-txt"');
+        expect(reconJson).toContain('"kind": "schema-org"');
+        expect(reconMarkdown).toContain("Hosted recon uses public read-only evidence");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs hosted recon browser-agent reachability scenarios", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-scenario-"));
+    const restoreFetch = mockHostedReconFetch();
+
+    try {
+      await mkdir(join(tempRoot, ".descuff"), { recursive: true });
+      await writeFile(
+        join(tempRoot, ".descuff", "runtime.json"),
+        JSON.stringify({
+          hostedBrowserAgentScenarios: [
+            {
+              id: "find-black-shirt",
+              title: "Find black shirt",
+              intent: "Find the black shirt product page without checkout.",
+              destinationCriteria: ["Black Shirt", "/products/black-shirt"],
+              expectedEvidenceSurfaces: ["dom", "json-ld", "llms-txt", "openapi"],
+              risk: "read-only"
+            }
+          ]
+        })
+      );
+
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli([
+          "node",
+          "descuff",
+          "recon",
+          "https://example.test/",
+          "--max-pages",
+          "3"
+        ]);
+        const scenarios = await readFile(
+          join(tempRoot, ".descuff", "hosted-browser-agent-scenarios.json"),
+          "utf8"
+        );
+        const results = await readFile(
+          join(tempRoot, ".descuff", "hosted-browser-agent-results.json"),
+          "utf8"
+        );
+        const scenarioMarkdown = await readFile(
+          join(tempRoot, ".descuff", "hosted-browser-agent-results.md"),
+          "utf8"
+        );
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("Browser-agent scenarios: 1");
+        expect(result.stdout).toContain("Destinations reached: 1/1");
+        expect(scenarios).toContain('"destinationCriteria"');
+        expect(results).toContain('"destinationReached": true');
+        expect(scenarioMarkdown).toContain("These results measure browser-agent reachability");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects non-HTTP hosted recon targets", async () => {
+    const result = await runCli(["node", "descuff", "recon", "file:///tmp/site"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("only supports http:// and https:// URLs");
+  });
+
+  it("compares hosted recon against a previous hosted baseline", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-compare-"));
+    const restoreFetch = mockHostedReconFetch();
+
+    try {
+      const baselinePath = join(tempRoot, "baseline.json");
+      await writeFile(
+        baselinePath,
+        JSON.stringify({
+          schemaVersion: "0.1.0",
+          pages: [],
+          standards: [],
+          scenarios: [],
+          blockers: ["previous blocker"]
+        })
+      );
+
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli([
+          "node",
+          "descuff",
+          "recon",
+          "https://example.test/",
+          "--compare",
+          baselinePath
+        ]);
+        const comparison = await readFile(
+          join(tempRoot, ".descuff", "hosted-before-after.md"),
+          "utf8"
+        );
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("hosted-before-after.md");
+        expect(comparison).toContain("Pages visited: 0 -> 2");
+        expect(comparison).toContain("Standards visible: 0 -> 4");
+        expect(comparison).toContain("Blockers: 1 -> 0");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("keeps apply-safe conservative in this release", async () => {
@@ -954,6 +1110,83 @@ describe("descuff CLI", () => {
     expect(result.stderr).toContain("Unknown command: unknown");
   });
 });
+
+function mockHostedReconFetch(): () => void {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input: string | URL | Request) => {
+    const url = new URL(String(typeof input === "object" && "url" in input ? input.url : input));
+    if (url.pathname === "/llms.txt") {
+      return textResponse(
+        url.href,
+        "Descuff fixture. Products live at /products/black-shirt.\n",
+        "text/plain"
+      );
+    }
+    if (url.pathname === "/openapi.json") {
+      return textResponse(
+        url.href,
+        JSON.stringify({ openapi: "3.1.0", paths: { "/api/products": { get: {} } } }),
+        "application/json"
+      );
+    }
+    if (url.pathname === "/.well-known/api-catalog") {
+      return textResponse(
+        url.href,
+        JSON.stringify({ linkset: [{ anchor: "/openapi.json" }] }),
+        "application/linkset+json"
+      );
+    }
+    if (url.pathname === "/products/black-shirt") {
+      return textResponse(
+        url.href,
+        `<!doctype html>
+        <html>
+          <head>
+            <title>Black Shirt</title>
+            <script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Black Shirt"}</script>
+          </head>
+          <body>
+            <h1>Black Shirt</h1>
+            <form method="get" action="/search"><input name="q" aria-label="Search products" /></form>
+          </body>
+        </html>`,
+        "text/html"
+      );
+    }
+    if (url.pathname === "/" || url.pathname === "") {
+      return textResponse(
+        url.href,
+        `<!doctype html>
+      <html>
+        <head><title>Hosted Fixture</title></head>
+        <body>
+          <h1>Products</h1>
+          <a href="/products/black-shirt">Black Shirt under 15 pounds</a>
+        </body>
+      </html>`,
+        "text/html"
+      );
+    }
+
+    return new Response("not found", {
+      status: 404,
+      headers: { "content-type": "text/plain" }
+    });
+  };
+
+  return () => {
+    globalThis.fetch = originalFetch;
+  };
+}
+
+function textResponse(url: string, body: string, contentType: string): Response {
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "content-type": contentType
+    }
+  });
+}
 
 async function sourceHash(projectRoot: string, path: string): Promise<string | null> {
   const manifest = JSON.parse(

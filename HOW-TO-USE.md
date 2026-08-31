@@ -256,6 +256,27 @@ CI systems can pass changed files directly:
 DESCUFF_CHANGED_FILES="app/page.tsx,app/api/search/route.ts" npx descuff check .
 ```
 
+## 8. Preview A Hosted URL
+
+Hosted recon checks what a public deployed website exposes to browser agents without reading local source code:
+
+```bash
+npx descuff recon https://example.com
+```
+
+It writes:
+
+- `.descuff/hosted-recon.json`
+- `.descuff/hosted-recon.md`
+- `.descuff/hosted-baseline.json`
+
+When `.descuff/runtime.json` includes `hostedBrowserAgentScenarios`, it can also write:
+
+- `.descuff/hosted-browser-agent-results.json`
+- `.descuff/hosted-browser-agent-results.md`
+
+Hosted recon is read-only by default. It records visible public standards, same-origin pages, headings, links, forms without submission, JSON-LD counts, blockers, redaction status, and confidence labels. It does not replace local `start` and `finish`, because hosted recon cannot prove source-backed implementation details.
+
 Or compare against a base ref:
 
 ```bash

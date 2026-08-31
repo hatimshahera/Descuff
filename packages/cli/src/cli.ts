@@ -80,6 +80,7 @@ import {
   validateStaticGeneratedChanges,
   validateWebMcpBehavior
 } from "@descuff/validator";
+import { parseHostedReconArgs, runHostedReconCommand } from "./hosted-recon.js";
 
 const helpText = `Descuff
 
@@ -90,6 +91,7 @@ Usage:
   descuff install codex --global
   descuff diff [project-root]
   descuff check [project-root]
+  descuff recon <url> [--max-pages N] [--scenario id] [--compare path]
   descuff doctor [project-root]
 
 Commands:
@@ -132,7 +134,9 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
   const projectRoot =
     command === "install"
       ? (installArgs?.projectRoot ?? process.cwd())
-      : resolve(argv[3] ?? process.cwd());
+      : command === "recon"
+        ? process.cwd()
+        : resolve(argv[3] ?? process.cwd());
 
   if (command === undefined || command === "--help" || command === "-h") {
     return { exitCode: 0, stdout: helpText, stderr: "" };
@@ -162,6 +166,8 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
         return await diffCommand(projectRoot);
       case "check":
         return await checkCommand(projectRoot);
+      case "recon":
+        return ok(await runHostedReconCommand(parseHostedReconArgs(argv.slice(3), projectRoot)));
       case "doctor":
         return await doctorCommand(projectRoot);
       case "fix":

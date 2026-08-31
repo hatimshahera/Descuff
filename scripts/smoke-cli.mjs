@@ -10,6 +10,7 @@ const commands = [
   "finish",
   "diff",
   "check",
+  "recon",
   "doctor",
   "fix",
   "install",
@@ -36,7 +37,9 @@ for (const command of commands) {
       ? [cliPath, command]
       : command === "install"
         ? [cliPath, command, "all", fixtureRoot]
-        : [cliPath, command, fixtureRoot];
+        : command === "recon"
+          ? [cliPath, command, "file:///tmp/site"]
+          : [cliPath, command, fixtureRoot];
   const result = spawnSync(process.execPath, args, {
     encoding: "utf8",
     env:
@@ -45,7 +48,9 @@ for (const command of commands) {
         : process.env
   });
 
-  if (result.status !== 0) {
+  const expectedStatus = command === "recon" ? 1 : 0;
+
+  if (result.status !== expectedStatus) {
     console.error(`descuff ${command} failed`);
     console.error(result.stderr);
     process.exit(result.status ?? 1);
@@ -74,13 +79,17 @@ for (const command of commands) {
                         ? "descuff install completed"
                         : command === "enrich"
                           ? "descuff enrich passed"
-                          : command === "validate"
-                            ? "descuff validate passed"
-                            : "no automatic file writes are enabled";
+                          : command === "recon"
+                            ? "only supports http:// and https:// URLs"
+                            : command === "validate"
+                              ? "descuff validate passed"
+                              : "no automatic file writes are enabled";
 
-  if (!result.stdout.includes(expectedOutput)) {
+  const output = command === "recon" ? result.stderr : result.stdout;
+
+  if (!output.includes(expectedOutput)) {
     console.error(`descuff ${command} produced unexpected output`);
-    console.error(result.stdout);
+    console.error(output);
     process.exit(1);
   }
 }
