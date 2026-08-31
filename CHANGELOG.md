@@ -7,9 +7,11 @@ All notable changes to Descuff will be documented in this file.
 ### Added
 
 - Added initial `descuff recon <url>` hosted URL reconnaissance with public standards discovery, same-origin page inspection, confidence-labeled artifacts, and read-only browser-agent reachability summaries.
+- Added typed hosted recon blockers for robots exclusions, cross-origin links, crawl budgets, unsafe scenarios, destination misses, fetch failures, and baseline comparison failures.
 
 ### Fixed
 
+- Fixed `descuff recon` argument parsing so flags and flag values can appear before the target URL.
 - Replaced the deprecated `pnpm/action-setup@v4` workflow setup with Corepack-pinned `pnpm@10.30.0` so CI and publish runs no longer emit Node 20 action deprecation warnings.
 
 ## 0.16.1 - 2026-08-30 - Browser-Agent Validation And Readiness Explanations

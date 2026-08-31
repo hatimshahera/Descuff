@@ -981,6 +981,85 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("parses hosted recon target after flag values", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-recon-flags-"));
+    const restoreFetch = mockHostedReconFetch();
+
+    try {
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli([
+          "node",
+          "descuff",
+          "recon",
+          "--max-pages",
+          "3",
+          "https://example.test/"
+        ]);
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("descuff recon completed");
+        expect(result.stdout).toContain("Pages inspected: 2");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports robots-blocked hosted recon with typed blockers", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-robots-"));
+    const restoreFetch = mockHostedReconFetch({ robots: "User-agent: *\nDisallow: /\n" });
+
+    try {
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli(["node", "descuff", "recon", "https://example.test/"]);
+        const reconJson = await readFile(join(tempRoot, ".descuff", "hosted-recon.json"), "utf8");
+        const reconMarkdown = await readFile(join(tempRoot, ".descuff", "hosted-recon.md"), "utf8");
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("Pages inspected: 0");
+        expect(result.stdout).toContain("blocked");
+        expect(reconJson).toContain('"code": "HOSTED_ROBOTS_BLOCKED"');
+        expect(reconJson).toContain('"status": "blocked"');
+        expect(reconMarkdown).toContain("HOSTED_ROBOTS_BLOCKED");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports cross-origin links as typed hosted blockers", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-origin-"));
+    const restoreFetch = mockHostedReconFetch({ crossOriginLink: true });
+
+    try {
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli(["node", "descuff", "recon", "https://example.test/"]);
+        const reconJson = await readFile(join(tempRoot, ".descuff", "hosted-recon.json"), "utf8");
+
+        expect(result.exitCode).toBe(0);
+        expect(reconJson).toContain('"code": "HOSTED_ORIGIN_BLOCKED"');
+        expect(reconJson).toContain("https://external.test/path?token=%5BREDACTED%5D");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("runs hosted recon browser-agent reachability scenarios", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-scenario-"));
     const restoreFetch = mockHostedReconFetch();
@@ -1111,10 +1190,15 @@ describe("descuff CLI", () => {
   });
 });
 
-function mockHostedReconFetch(): () => void {
+function mockHostedReconFetch(
+  options: { robots?: string; crossOriginLink?: boolean } = {}
+): () => void {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input: string | URL | Request) => {
     const url = new URL(String(typeof input === "object" && "url" in input ? input.url : input));
+    if (url.pathname === "/robots.txt" && options.robots !== undefined) {
+      return textResponse(url.href, options.robots, "text/plain");
+    }
     if (url.pathname === "/llms.txt") {
       return textResponse(
         url.href,
@@ -1162,6 +1246,7 @@ function mockHostedReconFetch(): () => void {
         <body>
           <h1>Products</h1>
           <a href="/products/black-shirt">Black Shirt under 15 pounds</a>
+          ${options.crossOriginLink === true ? '<a href="https://external.test/path?token=secret">External path</a>' : ""}
         </body>
       </html>`,
         "text/html"

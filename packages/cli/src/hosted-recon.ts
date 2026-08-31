@@ -2,6 +2,15 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 export type HostedReconConfidence = "observed" | "inferred" | "unknown" | "blocked";
+export type HostedReconBlockerCode =
+  | "HOSTED_FETCH_FAILED"
+  | "HOSTED_ROBOTS_BLOCKED"
+  | "HOSTED_CRAWL_BUDGET_EXCEEDED"
+  | "HOSTED_ORIGIN_BLOCKED"
+  | "HOSTED_SCENARIO_NOT_FOUND"
+  | "HOSTED_SCENARIO_UNSAFE"
+  | "HOSTED_DESTINATION_NOT_REACHED"
+  | "HOSTED_BASELINE_COMPARE_FAILED";
 
 export interface HostedReconArgs {
   targetUrl: string;
@@ -52,7 +61,7 @@ export interface HostedReconScenarioResult {
   destinationReached: boolean;
   confidence: HostedReconConfidence;
   evidenceSurfaces: string[];
-  blockers: string[];
+  blockers: HostedReconBlocker[];
   effort: {
     pagesVisited: number;
     browserActions: number;
@@ -81,7 +90,7 @@ export interface HostedReconResult {
   scenarioDefinitions: NormalizedHostedScenario[];
   scenarios: HostedReconScenarioResult[];
   confidenceSummary: Record<HostedReconConfidence, number>;
-  blockers: string[];
+  blockers: HostedReconBlocker[];
   redaction: {
     queryParametersRedacted: number;
     responseBodiesStored: 0;
@@ -97,6 +106,13 @@ export interface HostedReconComparison {
   standardsVisible: string;
   destinationsReached: string;
   blockers: string;
+}
+
+export interface HostedReconBlocker {
+  code: HostedReconBlockerCode;
+  message: string;
+  confidence: "blocked";
+  url?: string;
 }
 
 interface HostedReconRuntimeConfig {
@@ -120,8 +136,19 @@ interface FetchResult {
   body: string;
 }
 
+interface HostedRobotsRules {
+  url: string;
+  disallow: string[];
+  evidenceIds: string[];
+}
+
+interface ExtractedLinks {
+  sameOrigin: URL[];
+  blockedOrigins: URL[];
+}
+
 export function parseHostedReconArgs(args: string[], cwd: string): HostedReconArgs {
-  const targetUrl = args.find((arg) => !arg.startsWith("--"));
+  const targetUrl = parsePositionals(args)[0];
   if (targetUrl === undefined) {
     throw new Error("descuff recon requires an absolute http:// or https:// URL.");
   }
@@ -174,15 +201,16 @@ export async function runHostedReconCommand(args: HostedReconArgs): Promise<stri
 async function runHostedRecon(args: HostedReconArgs): Promise<HostedReconResult> {
   const target = new URL(args.targetUrl);
   const evidence: HostedReconEvidence[] = [];
-  const blockers: string[] = [];
+  const blockers: HostedReconBlocker[] = [];
   const redaction = {
     queryParametersRedacted: countSensitiveQueryParams(target),
     responseBodiesStored: 0 as const,
     credentialsStored: false as const
   };
 
-  const pages = await inspectPages(target, args.maxPages, evidence, blockers);
-  const standards = await inspectStandards(target, pages, evidence);
+  const robots = await inspectRobots(target, evidence);
+  const pages = await inspectPages(target, args.maxPages, robots, evidence, blockers);
+  const standards = await inspectStandards(target, pages, robots, evidence, blockers);
   const scenarioDefinitions = await selectHostedScenarios(args, blockers);
   const scenarios = scenarioDefinitions.map((scenario) =>
     evaluateHostedScenario(scenario, pages, standards, evidence)
@@ -204,6 +232,7 @@ async function runHostedRecon(args: HostedReconArgs): Promise<HostedReconResult>
     confidenceSummary: summarizeConfidence([
       ...standards.map((standard) => standard.status),
       ...pages.map((page) => page.confidence),
+      ...blockers.map((blocker) => blocker.confidence),
       ...evidence.map((item) => item.confidence)
     ]),
     blockers,
@@ -218,8 +247,9 @@ async function runHostedRecon(args: HostedReconArgs): Promise<HostedReconResult>
 async function inspectPages(
   target: URL,
   maxPages: number,
+  robots: HostedRobotsRules | undefined,
   evidence: HostedReconEvidence[],
-  blockers: string[]
+  blockers: HostedReconBlocker[]
 ): Promise<HostedReconPageObservation[]> {
   const pending = [target];
   const visited = new Set<string>();
@@ -234,13 +264,27 @@ async function inspectPages(
     if (visited.has(normalized.href)) {
       continue;
     }
+    if (isRobotsBlocked(normalized, robots)) {
+      pushBlocker(
+        blockers,
+        "HOSTED_ROBOTS_BLOCKED",
+        `Robots rules blocked hosted recon for ${sanitizeUrl(normalized.href)}.`,
+        normalized.href
+      );
+      continue;
+    }
     visited.add(normalized.href);
 
     let fetched: FetchResult;
     try {
       fetched = await fetchText(normalized);
     } catch (error) {
-      blockers.push(`Fetch failed for ${sanitizeUrl(normalized.href)}: ${errorMessage(error)}`);
+      pushBlocker(
+        blockers,
+        "HOSTED_FETCH_FAILED",
+        `Fetch failed for ${sanitizeUrl(normalized.href)}: ${errorMessage(error)}`,
+        normalized.href
+      );
       continue;
     }
 
@@ -255,12 +299,22 @@ async function inspectPages(
       fetched.url
     );
     const html = fetched.body;
+    const links = extractLinks(html, normalized);
+    for (const blockedUrl of links.blockedOrigins) {
+      pushBlocker(
+        blockers,
+        "HOSTED_ORIGIN_BLOCKED",
+        `Skipped cross-origin URL ${sanitizeUrl(blockedUrl.href)} from ${sanitizeUrl(normalized.href)}.`,
+        blockedUrl.href
+      );
+    }
+
     const page = {
       url: sanitizeUrl(fetched.url),
       status: fetched.status,
       ...optionalText("title", extractTitle(html)),
       headings: extractHeadings(html),
-      links: extractSameOriginLinks(html, normalized).map((url) => sanitizeUrl(url.href)),
+      links: links.sameOrigin.map((url) => sanitizeUrl(url.href)),
       forms: extractForms(html, normalized),
       jsonLdCount: countJsonLd(html),
       confidence: "observed" as const,
@@ -269,7 +323,7 @@ async function inspectPages(
 
     pages.push(page);
 
-    for (const link of extractSameOriginLinks(html, normalized)) {
+    for (const link of links.sameOrigin) {
       if (pages.length + pending.length >= maxPages) {
         continue;
       }
@@ -280,21 +334,62 @@ async function inspectPages(
   }
 
   if (pending.length > 0) {
-    blockers.push(`Crawl budget reached after ${maxPages} page(s).`);
+    pushBlocker(
+      blockers,
+      "HOSTED_CRAWL_BUDGET_EXCEEDED",
+      `Crawl budget reached after ${maxPages} page(s).`
+    );
   }
 
   return pages;
 }
 
+async function inspectRobots(
+  target: URL,
+  evidence: HostedReconEvidence[]
+): Promise<HostedRobotsRules | undefined> {
+  const robotsUrl = new URL("/robots.txt", target.origin);
+  try {
+    const response = await fetchText(robotsUrl);
+    if (response.status < 200 || response.status >= 400) {
+      return undefined;
+    }
+    const disallow = parseRobotsDisallow(response.body);
+    const ref = pushEvidence(
+      evidence,
+      "observed",
+      `Fetched robots.txt with ${disallow.length} disallow rule(s).`,
+      response.url
+    );
+    return {
+      url: sanitizeUrl(response.url),
+      disallow,
+      evidenceIds: [ref.id]
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 async function inspectStandards(
   target: URL,
   pages: HostedReconPageObservation[],
-  evidence: HostedReconEvidence[]
+  robots: HostedRobotsRules | undefined,
+  evidence: HostedReconEvidence[],
+  blockers: HostedReconBlocker[]
 ): Promise<HostedReconStandardObservation[]> {
   const observations: HostedReconStandardObservation[] = [];
 
   observations.push(
-    await probeStandard(target, "/llms.txt", "llms-txt", "Public llms.txt was reachable.", evidence)
+    await probeStandard(
+      target,
+      "/llms.txt",
+      "llms-txt",
+      "Public llms.txt was reachable.",
+      evidence,
+      robots,
+      blockers
+    )
   );
   observations.push(createSchemaOrgObservation(pages, evidence));
   observations.push(
@@ -303,7 +398,9 @@ async function inspectStandards(
       ["/openapi.json", "/swagger.json", "/api/openapi.json"],
       "openapi",
       "Public OpenAPI document was reachable.",
-      evidence
+      robots,
+      evidence,
+      blockers
     )
   );
   observations.push(
@@ -312,7 +409,9 @@ async function inspectStandards(
       "/.well-known/api-catalog",
       "api-catalog",
       "Public API Catalog metadata was reachable.",
-      evidence
+      evidence,
+      robots,
+      blockers
     )
   );
   observations.push(
@@ -321,7 +420,9 @@ async function inspectStandards(
       "/webmcp.json",
       "webmcp",
       "Public WebMCP metadata was reachable. Browser runtime tool registration still requires scenario-gated validation.",
-      evidence
+      evidence,
+      robots,
+      blockers
     )
   );
 
@@ -330,7 +431,7 @@ async function inspectStandards(
 
 async function selectHostedScenarios(
   args: HostedReconArgs,
-  blockers: string[]
+  blockers: HostedReconBlocker[]
 ): Promise<NormalizedHostedScenario[]> {
   const scenarios = await readHostedScenarios(args.projectRoot);
   const selected =
@@ -339,7 +440,11 @@ async function selectHostedScenarios(
       : scenarios.filter((scenario) => scenario.id === args.scenarioId);
 
   if (args.scenarioId !== undefined && selected.length === 0) {
-    blockers.push(`Hosted scenario not found: ${args.scenarioId}.`);
+    pushBlocker(
+      blockers,
+      "HOSTED_SCENARIO_NOT_FOUND",
+      `Hosted scenario not found: ${args.scenarioId}.`
+    );
   }
 
   return selected;
@@ -359,7 +464,12 @@ function evaluateHostedScenario(
       destinationReached: false,
       confidence: "blocked",
       evidenceSurfaces: [],
-      blockers: [`Scenario risk is ${scenario.risk}; hosted recon is read-only by default.`],
+      blockers: [
+        createBlocker(
+          "HOSTED_SCENARIO_UNSAFE",
+          `Scenario risk is ${scenario.risk}; hosted recon is read-only by default.`
+        )
+      ],
       effort: emptyEffort(pages.length),
       evidenceIds: []
     };
@@ -392,7 +502,11 @@ function evaluateHostedScenario(
     destinationReached,
     confidence: destinationReached ? "observed" : "inferred",
     evidenceSurfaces,
-    blockers: destinationReached ? [] : ["Destination criteria were not observed."],
+    blockers: destinationReached
+      ? []
+      : [
+          createBlocker("HOSTED_DESTINATION_NOT_REACHED", "Destination criteria were not observed.")
+        ],
     effort: {
       pagesVisited: pages.length,
       browserActions: Math.max(0, pages.length - 1),
@@ -420,10 +534,20 @@ async function probeFirstStandard(
   paths: string[],
   kind: HostedReconStandardObservation["kind"],
   foundDetail: string,
-  evidence: HostedReconEvidence[]
+  robots: HostedRobotsRules | undefined,
+  evidence: HostedReconEvidence[],
+  blockers: HostedReconBlocker[]
 ): Promise<HostedReconStandardObservation> {
   for (const path of paths) {
-    const observation = await probeStandard(target, path, kind, foundDetail, evidence);
+    const observation = await probeStandard(
+      target,
+      path,
+      kind,
+      foundDetail,
+      evidence,
+      robots,
+      blockers
+    );
     if (observation.status === "observed") {
       return observation;
     }
@@ -442,9 +566,27 @@ async function probeStandard(
   path: string,
   kind: HostedReconStandardObservation["kind"],
   foundDetail: string,
-  evidence: HostedReconEvidence[]
+  evidence: HostedReconEvidence[],
+  robots?: HostedRobotsRules,
+  blockers?: HostedReconBlocker[]
 ): Promise<HostedReconStandardObservation> {
   const url = new URL(path, target.origin);
+  if (isRobotsBlocked(url, robots)) {
+    if (blockers !== undefined) {
+      pushBlocker(
+        blockers,
+        "HOSTED_ROBOTS_BLOCKED",
+        `Robots rules blocked hosted recon for ${sanitizeUrl(url.href)}.`,
+        url.href
+      );
+    }
+    return {
+      kind,
+      status: "blocked",
+      detail: `${kind} was blocked by robots rules at ${path}.`,
+      evidenceIds: robots?.evidenceIds ?? []
+    };
+  }
   try {
     const response = await fetchText(url);
     if (response.status >= 200 && response.status < 400) {
@@ -506,7 +648,7 @@ async function compareHostedBaseline(
   pages: HostedReconPageObservation[],
   standards: HostedReconStandardObservation[],
   scenarios: HostedReconScenarioResult[],
-  blockers: string[]
+  blockers: HostedReconBlocker[]
 ): Promise<HostedReconComparison | undefined> {
   if (args.comparePath === undefined) {
     return undefined;
@@ -526,7 +668,11 @@ async function compareHostedBaseline(
       blockers: `${baselineBlockers.length} -> ${blockers.length}`
     };
   } catch (error) {
-    blockers.push(`Hosted baseline comparison failed: ${errorMessage(error)}.`);
+    pushBlocker(
+      blockers,
+      "HOSTED_BASELINE_COMPARE_FAILED",
+      `Hosted baseline comparison failed: ${errorMessage(error)}.`
+    );
     return undefined;
   }
 }
@@ -591,7 +737,9 @@ function renderHostedReconMarkdown(recon: HostedReconResult): string {
     ]),
     "## Blockers And Limits",
     "",
-    ...(recon.blockers.length === 0 ? ["- none"] : recon.blockers.map((blocker) => `- ${blocker}`)),
+    ...(recon.blockers.length === 0
+      ? ["- none"]
+      : recon.blockers.map((blocker) => `- ${blocker.code}: ${blocker.message}`)),
     "",
     "## Redaction",
     "",
@@ -622,7 +770,7 @@ function renderHostedBrowserAgentResultsMarkdown(recon: HostedReconResult): stri
       `- DOM queries: ${scenario.effort.domQueries}`,
       `- Standards lookups: ${scenario.effort.standardsLookups}`,
       `- WebMCP tool executions: ${scenario.effort.webMcpToolExecutions}`,
-      `- Blockers: ${scenario.blockers.join(", ") || "none"}`,
+      `- Blockers: ${formatBlockers(scenario.blockers)}`,
       ""
     ])
   ].join("\n");
@@ -753,8 +901,9 @@ function extractHeadings(html: string): string[] {
     .slice(0, 20);
 }
 
-function extractSameOriginLinks(html: string, base: URL): URL[] {
-  const links: URL[] = [];
+function extractLinks(html: string, base: URL): ExtractedLinks {
+  const sameOrigin: URL[] = [];
+  const blockedOrigins: URL[] = [];
   for (const match of html.matchAll(/<a\b[^>]*\shref=["']([^"']+)["'][^>]*>/gi)) {
     const href = match[1];
     if (
@@ -767,14 +916,22 @@ function extractSameOriginLinks(html: string, base: URL): URL[] {
     }
     try {
       const url = new URL(href, base);
-      if (url.origin === base.origin && (url.protocol === "http:" || url.protocol === "https:")) {
-        links.push(stripHash(url));
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        continue;
+      }
+      if (url.origin === base.origin) {
+        sameOrigin.push(stripHash(url));
+      } else {
+        blockedOrigins.push(stripHash(url));
       }
     } catch {
       continue;
     }
   }
-  return uniqueUrls(links);
+  return {
+    sameOrigin: uniqueUrls(sameOrigin),
+    blockedOrigins: uniqueUrls(blockedOrigins)
+  };
 }
 
 function extractForms(html: string, base: URL): HostedReconFormObservation[] {
@@ -866,6 +1023,28 @@ function parsePositiveIntegerFlag(args: string[], name: string, fallback: number
   return value;
 }
 
+function parsePositionals(args: string[]): string[] {
+  const positionals: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === undefined) {
+      continue;
+    }
+    if (arg.startsWith("--")) {
+      if (
+        !arg.includes("=") &&
+        args[index + 1] !== undefined &&
+        !args[index + 1]?.startsWith("--")
+      ) {
+        index += 1;
+      }
+      continue;
+    }
+    positionals.push(arg);
+  }
+  return positionals;
+}
+
 function parseStringFlag(args: string[], name: string): string | undefined {
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -912,6 +1091,36 @@ function emptyEffort(pagesVisited: number): HostedReconScenarioResult["effort"] 
   };
 }
 
+function createBlocker(
+  code: HostedReconBlockerCode,
+  message: string,
+  url?: string
+): HostedReconBlocker {
+  return {
+    code,
+    message,
+    confidence: "blocked",
+    ...(url === undefined ? {} : { url: sanitizeUrl(url) })
+  };
+}
+
+function pushBlocker(
+  blockers: HostedReconBlocker[],
+  code: HostedReconBlockerCode,
+  message: string,
+  url?: string
+): HostedReconBlocker {
+  const blocker = createBlocker(code, message, url);
+  blockers.push(blocker);
+  return blocker;
+}
+
+function formatBlockers(blockers: HostedReconBlocker[]): string {
+  return blockers.length === 0
+    ? "none"
+    : blockers.map((blocker) => `${blocker.code}: ${blocker.message}`).join("; ");
+}
+
 function pushEvidence(
   evidence: HostedReconEvidence[],
   confidence: HostedReconConfidence,
@@ -953,6 +1162,49 @@ function uniqueUrls(urls: URL[]): URL[] {
 
 function uniqueSorted(values: string[]): string[] {
   return [...new Set(values)].sort();
+}
+
+function parseRobotsDisallow(body: string): string[] {
+  const disallow: string[] = [];
+  let appliesToDescuff = false;
+  for (const rawLine of body.split(/\r?\n/)) {
+    const line = rawLine.split("#")[0]?.trim();
+    if (line === undefined || line.length === 0) {
+      continue;
+    }
+    const separator = line.indexOf(":");
+    if (separator === -1) {
+      continue;
+    }
+    const key = line.slice(0, separator).trim().toLowerCase();
+    const value = line.slice(separator + 1).trim();
+    if (key === "user-agent") {
+      const agent = value.toLowerCase();
+      appliesToDescuff = agent === "*" || agent.includes("descuff");
+      continue;
+    }
+    if (key === "disallow" && appliesToDescuff && value.length > 0) {
+      disallow.push(value);
+    }
+  }
+  return uniqueSorted(disallow);
+}
+
+function isRobotsBlocked(url: URL, robots: HostedRobotsRules | undefined): boolean {
+  if (robots === undefined) {
+    return false;
+  }
+  return robots.disallow.some((rule) => robotsRuleMatches(url.pathname, rule));
+}
+
+function robotsRuleMatches(pathname: string, rule: string): boolean {
+  if (rule.length === 0) {
+    return false;
+  }
+  if (rule === "/") {
+    return true;
+  }
+  return pathname.startsWith(rule);
 }
 
 function parseStringArray(value: unknown): string[] {
