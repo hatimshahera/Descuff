@@ -140,6 +140,7 @@ Lower-level commands:
   Install output reminds users to run `finish` only after explicit Descuff plan implementation and `check` for ordinary later edits.
   Installed agent instructions begin with a short intake: what Descuff does, the current local Next.js preview boundary, whether to use semantic enrichment, whether to generate browser-agent scenarios, whether to run optional hosted recon, and whether to use existing Graphify output when present. The agent should wait for confirmation before running Descuff commands unless the prompt explicitly says to proceed without confirmation.
   If Graphify is used, installed agents keep Graphify stats as compact supporting evidence and end with Descuff-specific next steps such as deployment, hosted recon, readiness repair, or scenario review.
+  When local validation and hosted recon both run, installed agents should report them separately so local source success is not confused with deployed-site visibility.
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
   The validation report includes `readinessExplanations` so tools can distinguish blockers, recommendations, acceptable gaps, and complete categories.

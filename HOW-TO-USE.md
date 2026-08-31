@@ -132,6 +132,8 @@ The installed skill starts with a short intake instead of silently changing file
 
 If you approve Graphify usage, the agent should keep Graphify output as compact supporting evidence. The final call to action should stay Descuff-specific: deploy local standards changes, rerun hosted recon after deployment, fix a remaining readiness gap, or review generated browser-agent scenarios.
 
+When both local validation and hosted recon run, the final report should separate source-backed local implementation results from deployed-site visibility. A local `finish` pass means the app source validates; hosted recon means the public URL exposes those changes after deployment.
+
 For Claude Code, install the project command from the app root:
 
 ```bash

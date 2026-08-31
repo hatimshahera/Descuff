@@ -618,6 +618,9 @@ describe("@descuff/agent-workflow", () => {
       expect(instructions).toContain("Do not run `start`, `scan`, `plan`, `enrich`");
       expect(instructions).toContain("## Final Report");
       expect(instructions).toContain(
+        "Separate local source-backed validation from hosted deployed-site recon"
+      );
+      expect(instructions).toContain(
         "Graphify results only as a compact supporting-evidence section"
       );
       expect(instructions).toContain(
@@ -642,6 +645,7 @@ describe("@descuff/agent-workflow", () => {
     expect(skill).toContain("npx descuff enrich .");
     expect(skill).toContain("short explanation and confirmation intake");
     expect(skill).toContain("confirmation intake before running any Descuff command");
+    expect(skill).toContain("Separate local validation from hosted recon");
     expect(skill).toContain("compact supporting evidence");
     expect(skill).toContain("Descuff-specific next step");
     expect(skill).toContain("npx descuff scenarios .");

@@ -689,6 +689,9 @@ describe("descuff CLI", () => {
       expect(codexInstructions).toContain("Do not run `start`, `scan`, `plan`, `enrich`");
       expect(codexInstructions).toContain("## Final Report");
       expect(codexInstructions).toContain(
+        "Separate local source-backed validation from hosted deployed-site recon"
+      );
+      expect(codexInstructions).toContain(
         "Graphify results only as a compact supporting-evidence section"
       );
       expect(codexInstructions).toContain(
@@ -754,6 +757,9 @@ describe("descuff CLI", () => {
       expect(skill).toContain("name: descuff");
       expect(skill).toContain("## Intake");
       expect(skill).toContain("## Final Report");
+      expect(skill).toContain(
+        "Separate local source-backed validation from hosted deployed-site recon"
+      );
       expect(skill).toContain("Before running any Descuff command");
       expect(skill).toContain("npx descuff enrich .");
       expect(skill).toContain("npx descuff recon <hosted-url> --browser");
@@ -788,6 +794,9 @@ describe("descuff CLI", () => {
       expect(command).toContain("# Descuff Skill For Claude Code");
       expect(command).toContain("## Intake");
       expect(command).toContain("## Final Report");
+      expect(command).toContain(
+        "Separate local source-backed validation from hosted deployed-site recon"
+      );
       expect(command).toContain("Before running any Descuff command");
       expect(command).toContain("Prefer a Descuff next step");
       expect(command).toContain("current public preview supports local Next.js codebases");
@@ -816,6 +825,9 @@ describe("descuff CLI", () => {
       expect(rule).toContain("# Descuff Skill For Cursor");
       expect(rule).toContain("## Intake");
       expect(rule).toContain("## Final Report");
+      expect(rule).toContain(
+        "Separate local source-backed validation from hosted deployed-site recon"
+      );
       expect(rule).toContain("Before running any Descuff command");
       expect(rule).toContain("Prefer a Descuff next step");
       expect(rule).toContain("current public preview supports local Next.js codebases");
