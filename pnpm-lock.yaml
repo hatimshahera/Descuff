@@ -40,6 +40,8 @@ importers:
 
   fixtures/ecommerce: {}
 
+  fixtures/mdx-content: {}
+
   fixtures/monorepo-next: {}
 
   fixtures/saas: {}

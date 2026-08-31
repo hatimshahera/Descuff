@@ -418,6 +418,57 @@ describe("@descuff/validator", () => {
     });
   });
 
+  it("keeps route-only acceptable gaps backed by affected routes", () => {
+    const routeOnlyModel: ApplicationModel = {
+      ...createApplicationModel(),
+      applicationType: {
+        type: "content",
+        confidence: "high",
+        evidence: [evidence]
+      },
+      routes: [
+        {
+          id: "route:/",
+          path: "/",
+          routerKind: "next-app",
+          sourceFile: "app/page.mdx",
+          runtimeObserved: false,
+          evidence: [evidence]
+        }
+      ],
+      standards: [
+        {
+          id: "standard:schema-org",
+          kind: "schema-org",
+          sourceFile: "app/layout.tsx",
+          evidence: [evidence]
+        }
+      ]
+    };
+
+    const report = createValidationReadinessReport(routeOnlyModel, []);
+    const agentActions = report.readinessExplanations.find(
+      (explanation) => explanation.category === "agent-actions"
+    );
+    const apiQuality = report.readinessExplanations.find(
+      (explanation) => explanation.category === "api-quality"
+    );
+
+    expect(agentActions).toMatchObject({
+      status: "acceptable-gap",
+      affectedRoutes: ["/"]
+    });
+    expect(apiQuality).toMatchObject({
+      status: "acceptable-gap",
+      affectedRoutes: ["/"]
+    });
+    expect(validateReadinessExplanations(report.readinessExplanations)).toEqual({
+      passed: true,
+      failures: [],
+      warnings: []
+    });
+  });
+
   it("fails readiness explanations that have no evidence or affected context", () => {
     expect(
       validateReadinessExplanations([

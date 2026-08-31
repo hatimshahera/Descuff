@@ -1324,6 +1324,48 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("treats the first redirected hosted origin as canonical for recon", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-canonical-origin-"));
+    const restoreFetch = mockHostedReconFetch({ canonicalOrigin: "https://canonical.test" });
+    const renderer: HostedReconBrowserRenderer = {
+      async render(url) {
+        return {
+          url: url.href,
+          status: 200,
+          headings: ["Canonical Render"],
+          formCount: 0,
+          jsonLdCount: 1,
+          networkRequests: 1,
+          webMcpSupported: false,
+          webMcpTools: []
+        };
+      },
+      async dispose() {}
+    };
+
+    try {
+      await runHostedReconCommand({
+        targetUrl: "https://example.test/",
+        projectRoot: tempRoot,
+        maxPages: 2,
+        browserRendering: true,
+        browserRenderer: renderer
+      });
+      const reconJson = await readFile(join(tempRoot, ".descuff", "hosted-recon.json"), "utf8");
+
+      expect(reconJson).toContain("Accepted canonical hosted origin https://canonical.test");
+      expect(reconJson).toContain('"url": "https://canonical.test/"');
+      expect(reconJson).toContain('"url": "https://canonical.test/products/black-shirt"');
+      expect(reconJson).toContain('"browserRendering": true');
+      expect(reconJson).not.toContain(
+        "Skipped browser rendering for cross-origin URL https://canonical.test"
+      );
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("rejects non-HTTP hosted recon targets", async () => {
     const result = await runCli(["node", "descuff", "recon", "file:///tmp/site"]);
 
@@ -1399,38 +1441,39 @@ function mockHostedReconFetch(
     crossOriginLink?: boolean;
     noHtml?: boolean;
     standards?: boolean;
+    canonicalOrigin?: string;
   } = {}
 ): () => void {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input: string | URL | Request) => {
     const url = new URL(String(typeof input === "object" && "url" in input ? input.url : input));
     if (url.pathname === "/robots.txt" && options.robots !== undefined) {
-      return textResponse(url.href, options.robots, "text/plain");
+      return textResponse(responseUrl(url, options), options.robots, "text/plain");
     }
     if (options.standards !== false && url.pathname === "/llms.txt") {
       return textResponse(
-        url.href,
+        responseUrl(url, options),
         "Descuff fixture. Products live at /products/black-shirt.\n",
         "text/plain"
       );
     }
     if (options.standards !== false && url.pathname === "/openapi.json") {
       return textResponse(
-        url.href,
+        responseUrl(url, options),
         JSON.stringify({ openapi: "3.1.0", paths: { "/api/products": { get: {} } } }),
         "application/json"
       );
     }
     if (options.standards !== false && url.pathname === "/.well-known/api-catalog") {
       return textResponse(
-        url.href,
+        responseUrl(url, options),
         JSON.stringify({ linkset: [{ anchor: "/openapi.json" }] }),
         "application/linkset+json"
       );
     }
     if (url.pathname === "/products/black-shirt") {
       return textResponse(
-        url.href,
+        responseUrl(url, options),
         `<!doctype html>
         <html>
           <head>
@@ -1447,10 +1490,10 @@ function mockHostedReconFetch(
     }
     if (url.pathname === "/" || url.pathname === "") {
       if (options.noHtml === true) {
-        return textResponse(url.href, "not html", "text/plain");
+        return textResponse(responseUrl(url, options), "not html", "text/plain");
       }
       return textResponse(
-        url.href,
+        responseUrl(url, options),
         `<!doctype html>
       <html>
         <head><title>Hosted Fixture</title></head>
@@ -1476,12 +1519,30 @@ function mockHostedReconFetch(
 }
 
 function textResponse(url: string, body: string, contentType: string): Response {
-  return new Response(body, {
+  const response = new Response(body, {
     status: 200,
     headers: {
       "content-type": contentType
     }
   });
+  Object.defineProperty(response, "url", { value: url });
+  return response;
+}
+
+function responseUrl(
+  url: URL,
+  options: {
+    canonicalOrigin?: string;
+  }
+): string {
+  if (options.canonicalOrigin === undefined) {
+    return url.href;
+  }
+  const redirected = new URL(url.href);
+  const canonical = new URL(options.canonicalOrigin);
+  redirected.protocol = canonical.protocol;
+  redirected.host = canonical.host;
+  return redirected.href;
 }
 
 async function startHostedFixtureServer(): Promise<{

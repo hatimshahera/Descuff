@@ -1,7 +1,7 @@
 import { basename, dirname, extname, relative, sep } from "node:path";
 import type { RouterKind } from "@descuff/ir";
 
-const sourceExtensions = new Set([".js", ".jsx", ".ts", ".tsx"]);
+const sourceExtensions = new Set([".js", ".jsx", ".ts", ".tsx", ".mdx"]);
 
 export function isSourceFile(path: string): boolean {
   return sourceExtensions.has(extname(path));

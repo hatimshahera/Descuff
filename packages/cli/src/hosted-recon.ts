@@ -175,6 +175,11 @@ interface ExtractedLinks {
   blockedOrigins: URL[];
 }
 
+interface HostedReconOriginPolicy {
+  initialOrigin: string;
+  canonicalOrigin?: string;
+}
+
 export interface HostedReconBrowserRenderer {
   render(url: URL): Promise<HostedReconBrowserRenderResult>;
   dispose(): Promise<void>;
@@ -264,9 +269,10 @@ async function runHostedRecon(args: HostedReconArgs): Promise<HostedReconResult>
   }
 
   const robots = await inspectRobots(target, evidence);
-  const pages = await inspectPages(target, args.maxPages, robots, evidence, blockers);
-  await inspectBrowserRenderedPages(target, pages, args, evidence, blockers);
-  const standards = await inspectStandards(target, pages, robots, evidence, blockers);
+  const originPolicy: HostedReconOriginPolicy = { initialOrigin: target.origin };
+  const pages = await inspectPages(target, args.maxPages, robots, originPolicy, evidence, blockers);
+  await inspectBrowserRenderedPages(target, pages, args, originPolicy, evidence, blockers);
+  const standards = await inspectStandards(target, pages, robots, originPolicy, evidence, blockers);
   const scenarioDefinitions = await selectHostedScenarios(args, blockers);
   const scenarios = scenarioDefinitions.map((scenario) =>
     evaluateHostedScenario(scenario, pages, standards, evidence)
@@ -306,6 +312,7 @@ async function inspectPages(
   target: URL,
   maxPages: number,
   robots: HostedRobotsRules | undefined,
+  originPolicy: HostedReconOriginPolicy,
   evidence: HostedReconEvidence[],
   blockers: HostedReconBlocker[]
 ): Promise<HostedReconPageObservation[]> {
@@ -357,7 +364,17 @@ async function inspectPages(
       fetched.url
     );
     const html = fetched.body;
-    const links = extractLinks(html, normalized);
+    const fetchedUrl = stripHash(new URL(fetched.url));
+    if (pages.length === 0 && fetchedUrl.origin !== originPolicy.initialOrigin) {
+      originPolicy.canonicalOrigin = fetchedUrl.origin;
+      pushEvidence(
+        evidence,
+        "observed",
+        `Accepted canonical hosted origin ${fetchedUrl.origin} after redirect from ${originPolicy.initialOrigin}.`,
+        fetchedUrl.href
+      );
+    }
+    const links = extractLinks(html, fetchedUrl, originPolicy);
     for (const blockedUrl of links.blockedOrigins) {
       pushBlocker(
         blockers,
@@ -433,6 +450,7 @@ async function inspectBrowserRenderedPages(
   target: URL,
   pages: HostedReconPageObservation[],
   args: HostedReconArgs,
+  originPolicy: HostedReconOriginPolicy,
   evidence: HostedReconEvidence[],
   blockers: HostedReconBlocker[]
 ): Promise<void> {
@@ -443,7 +461,11 @@ async function inspectBrowserRenderedPages(
   let renderer: HostedReconBrowserRenderer;
   try {
     renderer =
-      args.browserRenderer ?? (await createPlaywrightHostedBrowserRenderer(target, args.maxPages));
+      args.browserRenderer ??
+      (await createPlaywrightHostedBrowserRenderer(
+        new URL(originPolicy.canonicalOrigin ?? target.origin),
+        args.maxPages
+      ));
   } catch (error) {
     pushBlocker(
       blockers,
@@ -456,7 +478,7 @@ async function inspectBrowserRenderedPages(
   try {
     for (const page of pages) {
       const pageUrl = new URL(page.url);
-      if (pageUrl.origin !== target.origin) {
+      if (!isOriginAllowedByPolicy(pageUrl.origin, originPolicy)) {
         pushBlocker(
           blockers,
           "HOSTED_ORIGIN_BLOCKED",
@@ -503,14 +525,16 @@ async function inspectStandards(
   target: URL,
   pages: HostedReconPageObservation[],
   robots: HostedRobotsRules | undefined,
+  originPolicy: HostedReconOriginPolicy,
   evidence: HostedReconEvidence[],
   blockers: HostedReconBlocker[]
 ): Promise<HostedReconStandardObservation[]> {
   const observations: HostedReconStandardObservation[] = [];
+  const standardTarget = new URL(originPolicy.canonicalOrigin ?? target.origin);
 
   observations.push(
     await probeStandard(
-      target,
+      standardTarget,
       "/llms.txt",
       "llms-txt",
       "Public llms.txt was reachable.",
@@ -522,7 +546,7 @@ async function inspectStandards(
   observations.push(createSchemaOrgObservation(pages, evidence));
   observations.push(
     await probeFirstStandard(
-      target,
+      standardTarget,
       ["/openapi.json", "/swagger.json", "/api/openapi.json"],
       "openapi",
       "Public OpenAPI document was reachable.",
@@ -533,7 +557,7 @@ async function inspectStandards(
   );
   observations.push(
     await probeStandard(
-      target,
+      standardTarget,
       "/.well-known/api-catalog",
       "api-catalog",
       "Public API Catalog metadata was reachable.",
@@ -545,7 +569,7 @@ async function inspectStandards(
   observations.push(
     createBrowserWebMcpObservation(pages, evidence) ??
       (await probeStandard(
-        target,
+        standardTarget,
         "/webmcp.json",
         "webmcp",
         "Public WebMCP metadata was reachable. Browser runtime tool registration still requires scenario-gated validation.",
@@ -1147,7 +1171,11 @@ function extractHeadings(html: string): string[] {
     .slice(0, 20);
 }
 
-function extractLinks(html: string, base: URL): ExtractedLinks {
+function extractLinks(
+  html: string,
+  base: URL,
+  originPolicy: HostedReconOriginPolicy
+): ExtractedLinks {
   const sameOrigin: URL[] = [];
   const blockedOrigins: URL[] = [];
   for (const match of html.matchAll(/<a\b[^>]*\shref=["']([^"']+)["'][^>]*>/gi)) {
@@ -1165,7 +1193,7 @@ function extractLinks(html: string, base: URL): ExtractedLinks {
       if (url.protocol !== "http:" && url.protocol !== "https:") {
         continue;
       }
-      if (url.origin === base.origin) {
+      if (isOriginAllowedByPolicy(url.origin, originPolicy)) {
         sameOrigin.push(stripHash(url));
       } else {
         blockedOrigins.push(stripHash(url));
@@ -1178,6 +1206,10 @@ function extractLinks(html: string, base: URL): ExtractedLinks {
     sameOrigin: uniqueUrls(sameOrigin),
     blockedOrigins: uniqueUrls(blockedOrigins)
   };
+}
+
+function isOriginAllowedByPolicy(origin: string, originPolicy: HostedReconOriginPolicy): boolean {
+  return origin === originPolicy.initialOrigin || origin === originPolicy.canonicalOrigin;
 }
 
 function extractForms(html: string, base: URL): HostedReconFormObservation[] {

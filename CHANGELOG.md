@@ -15,6 +15,8 @@ All notable changes to Descuff will be documented in this file.
 ### Fixed
 
 - Fixed `descuff recon` argument parsing so flags and flag values can appear before the target URL.
+- Fixed hosted recon canonical-origin handling after public URL redirects, so browser rendering is not incorrectly skipped after normal domain redirects.
+- Fixed Next.js analyzer route discovery for App Router `.mdx` page files.
 - Replaced the deprecated `pnpm/action-setup@v4` workflow setup with Corepack-pinned `pnpm@10.30.0` so CI and publish runs no longer emit Node 20 action deprecation warnings.
 
 ## 0.16.1 - 2026-08-30 - Browser-Agent Validation And Readiness Explanations

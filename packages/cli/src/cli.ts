@@ -962,9 +962,13 @@ async function validateArtifacts(
     "readiness-explanations.md",
     renderReadinessExplanations(report.readinessExplanations)
   );
-  await writeArtifact(projectRoot, "validation-repair.md", renderValidationRepairGuide(summary));
+  await writeArtifact(
+    projectRoot,
+    "validation-repair.md",
+    renderValidationRepairGuide(report.validation)
+  );
 
-  return { summary, report };
+  return { summary: report.validation, report };
 }
 
 async function validateArtifactsForDriftPlan(
@@ -1031,9 +1035,13 @@ async function validateArtifactsForDriftPlan(
     "readiness-explanations.md",
     renderReadinessExplanations(report.readinessExplanations)
   );
-  await writeArtifact(projectRoot, "validation-repair.md", renderValidationRepairGuide(summary));
+  await writeArtifact(
+    projectRoot,
+    "validation-repair.md",
+    renderValidationRepairGuide(report.validation)
+  );
 
-  return { summary, report };
+  return { summary: report.validation, report };
 }
 
 async function readOrBuildArtifacts(projectRoot: string): Promise<ScanArtifacts> {

@@ -148,7 +148,10 @@ function readinessContextForCategory(
       return {
         confidence: model.capabilities.length > 0 ? "high" : "medium",
         evidenceIds: evidenceIds(model.capabilities.flatMap((capability) => capability.evidence)),
-        affectedRoutes: unique(model.capabilities.flatMap((capability) => capability.linkedRoutes)),
+        affectedRoutes:
+          model.capabilities.length > 0
+            ? unique(model.capabilities.flatMap((capability) => capability.linkedRoutes))
+            : model.routes.map((route) => route.path),
         affectedApis: unique(model.capabilities.flatMap((capability) => capability.linkedApis)),
         affectedCapabilities: model.capabilities.map((capability) => capability.id),
         affectedStandards: standardsOfKind(model, ["webmcp", "openapi", "api-catalog"])
@@ -157,7 +160,7 @@ function readinessContextForCategory(
       return {
         confidence: model.apis.length > 0 ? "high" : "medium",
         evidenceIds: evidenceIds(model.apis.flatMap((api) => api.evidence)),
-        affectedRoutes: [],
+        affectedRoutes: model.apis.length > 0 ? [] : model.routes.map((route) => route.path),
         affectedApis: model.apis.map((api) => `${api.method} ${api.path}`),
         affectedCapabilities: model.capabilities
           .filter((capability) => capability.linkedApis.length > 0)

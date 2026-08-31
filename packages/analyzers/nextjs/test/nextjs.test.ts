@@ -91,6 +91,23 @@ describe("@descuff/analyzer-nextjs", () => {
     ).toEqual(["GET /api/forms/{formId}"]);
   });
 
+  it("discovers MDX app router page routes", async () => {
+    const analysis = await new NativeNextAnalyzer().analyze(
+      createProjectContext("fixtures/mdx-content")
+    );
+
+    expect(analysis.framework).toMatchObject({ kind: "nextjs", detected: true });
+    expect(analysis.routes.map((route) => `${route.routerKind} ${route.path}`).sort()).toEqual([
+      "next-app /",
+      "next-app /blog/{slug}"
+    ]);
+    expect(analysis.routes.map((route) => route.sourceFile).sort()).toEqual([
+      "app/blog/[slug]/page.mdx",
+      "app/page.mdx"
+    ]);
+    expect(validateStructuralAnalysis(analysis).valid).toBe(true);
+  });
+
   it("extracts symbols, server actions, forms, auth boundaries, and standards with evidence", async () => {
     const analysis = await new NativeNextAnalyzer().analyze(
       createProjectContext("fixtures/ecommerce")
