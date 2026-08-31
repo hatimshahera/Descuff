@@ -616,6 +616,15 @@ describe("@descuff/agent-workflow", () => {
       expect(instructions).toContain("current public preview supports local Next.js codebases");
       expect(instructions).toContain("Before running any Descuff command");
       expect(instructions).toContain("Do not run `start`, `scan`, `plan`, `enrich`");
+      expect(instructions).toContain("## Final Report");
+      expect(instructions).toContain(
+        "Graphify results only as a compact supporting-evidence section"
+      );
+      expect(instructions).toContain(
+        "Do not let Graphify suggested questions become the final call to action"
+      );
+      expect(instructions).toContain("Prefer a Descuff next step");
+      expect(instructions).toContain("If hosted recon already confirms");
     }
 
     expect(renderSkillHostInstructions({ adapter: codexSkillAdapter })).toContain(
@@ -633,6 +642,8 @@ describe("@descuff/agent-workflow", () => {
     expect(skill).toContain("npx descuff enrich .");
     expect(skill).toContain("short explanation and confirmation intake");
     expect(skill).toContain("confirmation intake before running any Descuff command");
+    expect(skill).toContain("compact supporting evidence");
+    expect(skill).toContain("Descuff-specific next step");
     expect(skill).toContain("npx descuff scenarios .");
     expect(skill).toContain("npx descuff check .");
     expect(skill).toContain("semantic-enrichment.json");

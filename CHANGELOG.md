@@ -4,6 +4,10 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+### Changed
+
+- Updated installed Descuff skill reporting guidance so Graphify results stay as compact supporting evidence and Descuff-specific next steps remain the final call to action.
+
 ## 0.17.3 - 2026-08-31 - Skill Intake Confirmation
 
 ### Changed

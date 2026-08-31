@@ -130,6 +130,8 @@ $descuff .
 
 The installed skill starts with a short intake instead of silently changing files. It explains that Descuff currently supports local Next.js apps first, asks for the project root if needed, shows defaults for semantic enrichment and browser-agent scenario suggestions, asks for an optional hosted URL when you want hosted before/after effort numbers, and asks whether to use existing Graphify output when present. It should wait for your confirmation before running Descuff commands unless your prompt explicitly says to proceed without confirmation.
 
+If you approve Graphify usage, the agent should keep Graphify output as compact supporting evidence. The final call to action should stay Descuff-specific: deploy local standards changes, rerun hosted recon after deployment, fix a remaining readiness gap, or review generated browser-agent scenarios.
+
 For Claude Code, install the project command from the app root:
 
 ```bash

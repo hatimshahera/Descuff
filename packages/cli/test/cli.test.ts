@@ -687,6 +687,14 @@ describe("descuff CLI", () => {
       expect(codexInstructions).toContain("## Intake");
       expect(codexInstructions).toContain("Before running any Descuff command");
       expect(codexInstructions).toContain("Do not run `start`, `scan`, `plan`, `enrich`");
+      expect(codexInstructions).toContain("## Final Report");
+      expect(codexInstructions).toContain(
+        "Graphify results only as a compact supporting-evidence section"
+      );
+      expect(codexInstructions).toContain(
+        "Do not let Graphify suggested questions become the final call to action"
+      );
+      expect(codexInstructions).toContain("If hosted recon already confirms");
       expect(codexInstructions).toContain(
         "current public preview supports local Next.js codebases"
       );
@@ -716,6 +724,8 @@ describe("descuff CLI", () => {
       expect(skill).toContain("name: descuff");
       expect(skill).toContain("short explanation and confirmation intake");
       expect(skill).toContain("confirmation intake before running any Descuff command");
+      expect(skill).toContain("compact supporting evidence");
+      expect(skill).toContain("Descuff-specific next step");
       expect(skill).toContain("current public preview supports local Next.js codebases");
       expect(skill).toContain("npx descuff enrich .");
       expect(skill).toContain("npx descuff scenarios .");
@@ -743,6 +753,7 @@ describe("descuff CLI", () => {
       expect(result.stdout).toContain("Invoke it in Codex with: $descuff .");
       expect(skill).toContain("name: descuff");
       expect(skill).toContain("## Intake");
+      expect(skill).toContain("## Final Report");
       expect(skill).toContain("Before running any Descuff command");
       expect(skill).toContain("npx descuff enrich .");
       expect(skill).toContain("npx descuff recon <hosted-url> --browser");
@@ -776,7 +787,9 @@ describe("descuff CLI", () => {
       expect(result.stdout).toContain("For ordinary later edits, run: npx descuff check .");
       expect(command).toContain("# Descuff Skill For Claude Code");
       expect(command).toContain("## Intake");
+      expect(command).toContain("## Final Report");
       expect(command).toContain("Before running any Descuff command");
+      expect(command).toContain("Prefer a Descuff next step");
       expect(command).toContain("current public preview supports local Next.js codebases");
       expect(command).toContain("npx descuff start .");
       expect(command).toContain("npx descuff enrich .");
@@ -802,7 +815,9 @@ describe("descuff CLI", () => {
       expect(result.stdout).toContain("For ordinary later edits, run: npx descuff check .");
       expect(rule).toContain("# Descuff Skill For Cursor");
       expect(rule).toContain("## Intake");
+      expect(rule).toContain("## Final Report");
       expect(rule).toContain("Before running any Descuff command");
+      expect(rule).toContain("Prefer a Descuff next step");
       expect(rule).toContain("current public preview supports local Next.js codebases");
       expect(rule).toContain("npx descuff start .");
       expect(rule).toContain("npx descuff enrich .");
