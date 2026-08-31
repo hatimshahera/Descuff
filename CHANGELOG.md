@@ -8,6 +8,7 @@ All notable changes to Descuff will be documented in this file.
 
 - Added initial `descuff recon <url>` hosted URL reconnaissance with public standards discovery, same-origin page inspection, confidence-labeled artifacts, and read-only browser-agent reachability summaries.
 - Added typed hosted recon blockers for robots exclusions, cross-origin links, crawl budgets, unsafe scenarios, destination misses, fetch failures, and baseline comparison failures.
+- Added hosted recon diagnostics for malformed scenarios, inconclusive public evidence, and redacted sensitive query parameters.
 
 ### Fixed
 

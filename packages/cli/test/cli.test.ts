@@ -969,6 +969,7 @@ describe("descuff CLI", () => {
         expect(reconJson).toContain('"targetUrl": "');
         expect(reconJson).toContain("token=%5BREDACTED%5D");
         expect(reconJson).toContain('"queryParametersRedacted": 1');
+        expect(reconJson).toContain('"code": "HOSTED_EVIDENCE_REDACTED"');
         expect(reconJson).toContain('"kind": "llms-txt"');
         expect(reconJson).toContain('"kind": "schema-org"');
         expect(reconMarkdown).toContain("Hosted recon uses public read-only evidence");
@@ -1026,6 +1027,7 @@ describe("descuff CLI", () => {
         expect(result.stdout).toContain("Pages inspected: 0");
         expect(result.stdout).toContain("blocked");
         expect(reconJson).toContain('"code": "HOSTED_ROBOTS_BLOCKED"');
+        expect(reconJson).toContain('"code": "HOSTED_RECON_INCONCLUSIVE"');
         expect(reconJson).toContain('"status": "blocked"');
         expect(reconMarkdown).toContain("HOSTED_ROBOTS_BLOCKED");
       } finally {
@@ -1051,6 +1053,46 @@ describe("descuff CLI", () => {
         expect(result.exitCode).toBe(0);
         expect(reconJson).toContain('"code": "HOSTED_ORIGIN_BLOCKED"');
         expect(reconJson).toContain("https://external.test/path?token=%5BREDACTED%5D");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports malformed hosted browser-agent scenarios", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-scenario-malformed-"));
+    const restoreFetch = mockHostedReconFetch();
+
+    try {
+      await mkdir(join(tempRoot, ".descuff"), { recursive: true });
+      await writeFile(
+        join(tempRoot, ".descuff", "runtime.json"),
+        JSON.stringify({
+          hostedBrowserAgentScenarios: [
+            "not-an-object",
+            {
+              id: "missing-criteria",
+              title: "Missing criteria",
+              intent: "This scenario cannot be evaluated safely."
+            }
+          ]
+        })
+      );
+
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli(["node", "descuff", "recon", "https://example.test/"]);
+        const reconJson = await readFile(join(tempRoot, ".descuff", "hosted-recon.json"), "utf8");
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("Browser-agent scenarios: 0");
+        expect(reconJson).toContain('"code": "HOSTED_SCENARIO_MALFORMED"');
+        expect(reconJson).toContain("scenario[0] must be an object");
+        expect(reconJson).toContain("missing-criteria");
       } finally {
         process.chdir(currentCwd);
       }

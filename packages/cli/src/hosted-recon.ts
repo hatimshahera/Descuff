@@ -7,10 +7,13 @@ export type HostedReconBlockerCode =
   | "HOSTED_ROBOTS_BLOCKED"
   | "HOSTED_CRAWL_BUDGET_EXCEEDED"
   | "HOSTED_ORIGIN_BLOCKED"
+  | "HOSTED_SCENARIO_MALFORMED"
   | "HOSTED_SCENARIO_NOT_FOUND"
   | "HOSTED_SCENARIO_UNSAFE"
   | "HOSTED_DESTINATION_NOT_REACHED"
-  | "HOSTED_BASELINE_COMPARE_FAILED";
+  | "HOSTED_BASELINE_COMPARE_FAILED"
+  | "HOSTED_RECON_INCONCLUSIVE"
+  | "HOSTED_EVIDENCE_REDACTED";
 
 export interface HostedReconArgs {
   targetUrl: string;
@@ -207,6 +210,14 @@ async function runHostedRecon(args: HostedReconArgs): Promise<HostedReconResult>
     responseBodiesStored: 0 as const,
     credentialsStored: false as const
   };
+  if (redaction.queryParametersRedacted > 0) {
+    pushBlocker(
+      blockers,
+      "HOSTED_EVIDENCE_REDACTED",
+      `Redacted ${redaction.queryParametersRedacted} sensitive query parameter(s) from hosted recon artifacts.`,
+      target.href
+    );
+  }
 
   const robots = await inspectRobots(target, evidence);
   const pages = await inspectPages(target, args.maxPages, robots, evidence, blockers);
@@ -215,6 +226,7 @@ async function runHostedRecon(args: HostedReconArgs): Promise<HostedReconResult>
   const scenarios = scenarioDefinitions.map((scenario) =>
     evaluateHostedScenario(scenario, pages, standards, evidence)
   );
+  addInconclusiveBlockerIfNeeded(pages, standards, blockers);
   const comparison = await compareHostedBaseline(args, pages, standards, scenarios, blockers);
   const result: HostedReconResult = {
     schemaVersion: "0.1.0",
@@ -433,7 +445,7 @@ async function selectHostedScenarios(
   args: HostedReconArgs,
   blockers: HostedReconBlocker[]
 ): Promise<NormalizedHostedScenario[]> {
-  const scenarios = await readHostedScenarios(args.projectRoot);
+  const scenarios = await readHostedScenarios(args.projectRoot, blockers);
   const selected =
     args.scenarioId === undefined
       ? scenarios
@@ -793,7 +805,10 @@ function renderHostedComparison(recon: HostedReconResult): string {
   ].join("\n");
 }
 
-async function readHostedScenarios(projectRoot: string): Promise<NormalizedHostedScenario[]> {
+async function readHostedScenarios(
+  projectRoot: string,
+  blockers: HostedReconBlocker[]
+): Promise<NormalizedHostedScenario[]> {
   let raw: HostedReconRuntimeConfig;
   try {
     raw = JSON.parse(
@@ -810,11 +825,18 @@ async function readHostedScenarios(projectRoot: string): Promise<NormalizedHoste
     return [];
   }
 
-  return candidates.flatMap((candidate) => normalizeHostedScenario(candidate));
+  return candidates.flatMap((candidate, index) =>
+    normalizeHostedScenario(candidate, `scenario[${index}]`, blockers)
+  );
 }
 
-function normalizeHostedScenario(candidate: unknown): NormalizedHostedScenario[] {
+function normalizeHostedScenario(
+  candidate: unknown,
+  label: string,
+  blockers: HostedReconBlocker[]
+): NormalizedHostedScenario[] {
   if (!isRecord(candidate)) {
+    pushBlocker(blockers, "HOSTED_SCENARIO_MALFORMED", `${label} must be an object.`);
     return [];
   }
   if (
@@ -822,6 +844,11 @@ function normalizeHostedScenario(candidate: unknown): NormalizedHostedScenario[]
     typeof candidate.title !== "string" ||
     typeof candidate.intent !== "string"
   ) {
+    pushBlocker(
+      blockers,
+      "HOSTED_SCENARIO_MALFORMED",
+      `${label} must include string id, title, and intent fields.`
+    );
     return [];
   }
 
@@ -830,6 +857,11 @@ function normalizeHostedScenario(candidate: unknown): NormalizedHostedScenario[]
   const expectedEvidenceSurfaces = parseStringArray(candidate.expectedEvidenceSurfaces);
   const criteria = destinationCriteria.length > 0 ? destinationCriteria : successCriteria;
   if (criteria.length === 0) {
+    pushBlocker(
+      blockers,
+      "HOSTED_SCENARIO_MALFORMED",
+      `Hosted scenario ${candidate.id} must include destinationCriteria or successCriteria.`
+    );
     return [];
   }
 
@@ -857,6 +889,21 @@ function isEvidenceSurfaceObserved(
     return pages.some((page) => page.jsonLdCount > 0);
   }
   return standards.some((standard) => standard.kind === surface && standard.status === "observed");
+}
+
+function addInconclusiveBlockerIfNeeded(
+  pages: HostedReconPageObservation[],
+  standards: HostedReconStandardObservation[],
+  blockers: HostedReconBlocker[]
+): void {
+  if (pages.length > 0 || standards.some((standard) => standard.status === "observed")) {
+    return;
+  }
+  pushBlocker(
+    blockers,
+    "HOSTED_RECON_INCONCLUSIVE",
+    "Hosted recon did not observe any public pages or standards for this target."
+  );
 }
 
 async function fetchText(url: URL): Promise<FetchResult> {
