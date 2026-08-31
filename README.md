@@ -12,7 +12,7 @@ It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, 
 
 Preview hosted recon can also inspect a deployed public URL and report what browser agents can observe without source access.
 
-Current release: `descuff@0.16.1` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
+Current release: `descuff@0.17.1` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
 Works today: local Next.js App Router and Pages Router projects.
 
