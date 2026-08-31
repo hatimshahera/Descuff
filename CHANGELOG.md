@@ -4,6 +4,10 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+### Changed
+
+- Tightened installed Descuff skill intake so Codex, Claude Code, and Cursor wait for explicit confirmation before running Descuff commands unless the prompt explicitly says to proceed without confirmation.
+
 ## 0.17.2 - 2026-08-31 - Guided Skill Intake
 
 ### Changed

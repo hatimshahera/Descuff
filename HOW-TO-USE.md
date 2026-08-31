@@ -128,7 +128,7 @@ Then invoke it in Codex with:
 $descuff .
 ```
 
-The installed skill starts with a short intake instead of silently changing files. It explains that Descuff currently supports local Next.js apps first, asks for any missing project root, asks whether to include semantic enrichment, asks whether to generate browser-agent scenario suggestions, asks for an optional hosted URL when you want hosted before/after effort numbers, and asks whether to use existing Graphify output when present. If you already provided those choices, the agent proceeds without asking again.
+The installed skill starts with a short intake instead of silently changing files. It explains that Descuff currently supports local Next.js apps first, asks for the project root if needed, shows defaults for semantic enrichment and browser-agent scenario suggestions, asks for an optional hosted URL when you want hosted before/after effort numbers, and asks whether to use existing Graphify output when present. It should wait for your confirmation before running Descuff commands unless your prompt explicitly says to proceed without confirmation.
 
 For Claude Code, install the project command from the app root:
 
