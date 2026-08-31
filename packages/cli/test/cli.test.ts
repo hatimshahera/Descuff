@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appendFile, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createServer, type ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { descuffCommands } from "@descuff/core";
@@ -1062,6 +1063,31 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("reports inconclusive hosted recon when no public evidence is visible", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-inconclusive-"));
+    const restoreFetch = mockHostedReconFetch({ noHtml: true, standards: false });
+
+    try {
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli(["node", "descuff", "recon", "https://example.test/"]);
+        const reconJson = await readFile(join(tempRoot, ".descuff", "hosted-recon.json"), "utf8");
+        const reconMarkdown = await readFile(join(tempRoot, ".descuff", "hosted-recon.md"), "utf8");
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("Pages inspected: 0");
+        expect(reconJson).toContain('"code": "HOSTED_RECON_INCONCLUSIVE"');
+        expect(reconMarkdown).toContain("HOSTED_RECON_INCONCLUSIVE");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("reports malformed hosted browser-agent scenarios", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-scenario-malformed-"));
     const restoreFetch = mockHostedReconFetch();
@@ -1093,6 +1119,50 @@ describe("descuff CLI", () => {
         expect(reconJson).toContain('"code": "HOSTED_SCENARIO_MALFORMED"');
         expect(reconJson).toContain("scenario[0] must be an object");
         expect(reconJson).toContain("missing-criteria");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks unsafe hosted browser-agent scenarios", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-scenario-unsafe-"));
+    const restoreFetch = mockHostedReconFetch();
+
+    try {
+      await mkdir(join(tempRoot, ".descuff"), { recursive: true });
+      await writeFile(
+        join(tempRoot, ".descuff", "runtime.json"),
+        JSON.stringify({
+          hostedBrowserAgentScenarios: [
+            {
+              id: "checkout",
+              title: "Checkout",
+              intent: "Submit checkout.",
+              destinationCriteria: ["checkout"],
+              expectedEvidenceSurfaces: ["dom"],
+              risk: "mutating"
+            }
+          ]
+        })
+      );
+
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli(["node", "descuff", "recon", "https://example.test/"]);
+        const results = await readFile(
+          join(tempRoot, ".descuff", "hosted-browser-agent-results.json"),
+          "utf8"
+        );
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("Destinations reached: 0/1");
+        expect(results).toContain('"code": "HOSTED_SCENARIO_UNSAFE"');
+        expect(results).toContain('"confidence": "blocked"');
       } finally {
         process.chdir(currentCwd);
       }
@@ -1159,6 +1229,37 @@ describe("descuff CLI", () => {
       }
     } finally {
       restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs hosted recon against a real local HTTP fixture when sockets are available", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-http-"));
+    const fixtureServer = await startHostedFixtureServer();
+
+    try {
+      if (fixtureServer === null) {
+        return;
+      }
+
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli(["node", "descuff", "recon", fixtureServer.url]);
+        const reconJson = await readFile(join(tempRoot, ".descuff", "hosted-recon.json"), "utf8");
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("Pages inspected: 2");
+        expect(result.stdout).toContain(
+          "Standards visible: llms-txt, schema-org, openapi, api-catalog, webmcp"
+        );
+        expect(reconJson).toContain('"kind": "webmcp"');
+        expect(reconJson).toContain('"url": "');
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      await fixtureServer?.close();
       await rm(tempRoot, { recursive: true, force: true });
     }
   });
@@ -1233,7 +1334,12 @@ describe("descuff CLI", () => {
 });
 
 function mockHostedReconFetch(
-  options: { robots?: string; crossOriginLink?: boolean } = {}
+  options: {
+    robots?: string;
+    crossOriginLink?: boolean;
+    noHtml?: boolean;
+    standards?: boolean;
+  } = {}
 ): () => void {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input: string | URL | Request) => {
@@ -1241,21 +1347,21 @@ function mockHostedReconFetch(
     if (url.pathname === "/robots.txt" && options.robots !== undefined) {
       return textResponse(url.href, options.robots, "text/plain");
     }
-    if (url.pathname === "/llms.txt") {
+    if (options.standards !== false && url.pathname === "/llms.txt") {
       return textResponse(
         url.href,
         "Descuff fixture. Products live at /products/black-shirt.\n",
         "text/plain"
       );
     }
-    if (url.pathname === "/openapi.json") {
+    if (options.standards !== false && url.pathname === "/openapi.json") {
       return textResponse(
         url.href,
         JSON.stringify({ openapi: "3.1.0", paths: { "/api/products": { get: {} } } }),
         "application/json"
       );
     }
-    if (url.pathname === "/.well-known/api-catalog") {
+    if (options.standards !== false && url.pathname === "/.well-known/api-catalog") {
       return textResponse(
         url.href,
         JSON.stringify({ linkset: [{ anchor: "/openapi.json" }] }),
@@ -1280,6 +1386,9 @@ function mockHostedReconFetch(
       );
     }
     if (url.pathname === "/" || url.pathname === "") {
+      if (options.noHtml === true) {
+        return textResponse(url.href, "not html", "text/plain");
+      }
       return textResponse(
         url.href,
         `<!doctype html>
@@ -1313,6 +1422,120 @@ function textResponse(url: string, body: string, contentType: string): Response 
       "content-type": contentType
     }
   });
+}
+
+async function startHostedFixtureServer(): Promise<{
+  url: string;
+  close: () => Promise<void>;
+} | null> {
+  const server = createServer((request, response) => {
+    const pathname = request.url?.split("?")[0] ?? "/";
+    if (pathname === "/robots.txt") {
+      sendFixtureResponse(response, 404, "text/plain", "not found");
+      return;
+    }
+    if (pathname === "/llms.txt") {
+      sendFixtureResponse(response, 200, "text/plain", "Descuff local HTTP fixture.\n");
+      return;
+    }
+    if (pathname === "/openapi.json") {
+      sendFixtureResponse(
+        response,
+        200,
+        "application/json",
+        JSON.stringify({ openapi: "3.1.0", paths: { "/api/products": { get: {} } } })
+      );
+      return;
+    }
+    if (pathname === "/.well-known/api-catalog") {
+      sendFixtureResponse(
+        response,
+        200,
+        "application/linkset+json",
+        JSON.stringify({ linkset: [{ anchor: "/openapi.json" }] })
+      );
+      return;
+    }
+    if (pathname === "/webmcp.json") {
+      sendFixtureResponse(
+        response,
+        200,
+        "application/json",
+        JSON.stringify({ tools: [{ name: "search_products", readOnly: true }] })
+      );
+      return;
+    }
+    if (pathname === "/products/black-shirt") {
+      sendFixtureResponse(
+        response,
+        200,
+        "text/html",
+        `<!doctype html>
+        <html>
+          <head>
+            <title>Black Shirt</title>
+            <script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Black Shirt"}</script>
+          </head>
+          <body><h1>Black Shirt</h1></body>
+        </html>`
+      );
+      return;
+    }
+    sendFixtureResponse(
+      response,
+      200,
+      "text/html",
+      `<!doctype html>
+      <html>
+        <head><title>Hosted HTTP Fixture</title></head>
+        <body>
+          <h1>Products</h1>
+          <a href="/products/black-shirt">Black Shirt under 15 pounds</a>
+        </body>
+      </html>`
+    );
+  });
+
+  const listenResult = await new Promise<"listening" | "blocked">((resolveListen, reject) => {
+    server.once("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "EPERM") {
+        resolveListen("blocked");
+        return;
+      }
+      reject(error);
+    });
+    server.listen(0, "127.0.0.1", () => resolveListen("listening"));
+  });
+
+  if (listenResult === "blocked") {
+    return null;
+  }
+
+  const address = server.address();
+  if (address === null || typeof address === "string") {
+    await new Promise<void>((resolveClose, reject) => {
+      server.close((error) => (error === undefined ? resolveClose() : reject(error)));
+    });
+    throw new Error("Hosted fixture server did not expose a TCP address.");
+  }
+
+  return {
+    url: `http://127.0.0.1:${address.port}/`,
+    close: () =>
+      new Promise<void>((resolveClose, reject) => {
+        server.close((error) => (error === undefined ? resolveClose() : reject(error)));
+      })
+  };
+}
+
+function sendFixtureResponse(
+  response: ServerResponse,
+  status: number,
+  contentType: string,
+  body: string
+): void {
+  response.writeHead(status, { "content-type": contentType });
+  response.end(body);
 }
 
 async function sourceHash(projectRoot: string, path: string): Promise<string | null> {
