@@ -608,8 +608,12 @@ describe("@descuff/agent-workflow", () => {
       expect(instructions).toContain("npx descuff start .");
       expect(instructions).toContain("npx descuff enrich .");
       expect(instructions).toContain("npx descuff finish .");
+      expect(instructions).toContain("npx descuff scenarios .");
+      expect(instructions).toContain("npx descuff recon <hosted-url> --browser");
       expect(instructions).toContain("npx descuff check .");
       expect(instructions).toContain("`finish` is for completing a Descuff implementation plan");
+      expect(instructions).toContain("## Intake");
+      expect(instructions).toContain("current public preview supports local Next.js codebases");
     }
 
     expect(renderSkillHostInstructions({ adapter: codexSkillAdapter })).toContain(
@@ -625,6 +629,8 @@ describe("@descuff/agent-workflow", () => {
     expect(skill).toContain("description:");
     expect(skill).toContain("$descuff .");
     expect(skill).toContain("npx descuff enrich .");
+    expect(skill).toContain("short explanation and intake");
+    expect(skill).toContain("npx descuff scenarios .");
     expect(skill).toContain("npx descuff check .");
     expect(skill).toContain("semantic-enrichment.json");
     expect(skill).toContain("Do not treat domain labels as safety approval");

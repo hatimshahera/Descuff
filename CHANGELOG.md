@@ -4,6 +4,10 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+### Changed
+
+- Updated installed Codex, Claude Code, and Cursor Descuff instructions to begin with a short intake that explains Descuff, states the local Next.js preview boundary, and asks about semantic enrichment, browser-agent scenarios, optional hosted recon, and Graphify usage before running the full workflow.
+
 ## 0.17.1 - 2026-08-31 - Hosted Recon Scenario Suggestions
 
 ### Added

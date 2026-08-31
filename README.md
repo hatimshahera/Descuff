@@ -138,6 +138,7 @@ Lower-level commands:
 - `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`; ask Cursor Agent to Descuff the app from that project.
 - `install all` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
   Install output reminds users to run `finish` only after explicit Descuff plan implementation and `check` for ordinary later edits.
+  Installed agent instructions begin with a short intake: what Descuff does, the current local Next.js preview boundary, whether to use semantic enrichment, whether to generate browser-agent scenarios, whether to run optional hosted recon, and whether to use existing Graphify output when present.
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
   The validation report includes `readinessExplanations` so tools can distinguish blockers, recommendations, acceptable gaps, and complete categories.

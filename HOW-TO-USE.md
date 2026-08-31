@@ -128,6 +128,8 @@ Then invoke it in Codex with:
 $descuff .
 ```
 
+The installed skill starts with a short intake instead of silently changing files. It explains that Descuff currently supports local Next.js apps first, asks for any missing project root, asks whether to include semantic enrichment, asks whether to generate browser-agent scenario suggestions, asks for an optional hosted URL when you want hosted before/after effort numbers, and asks whether to use existing Graphify output when present. If you already provided those choices, the agent proceeds without asking again.
+
 For Claude Code, install the project command from the app root:
 
 ```bash
@@ -147,6 +149,8 @@ npx descuff install --platform cursor .
 ```
 
 Then ask Cursor Agent to Descuff the app from that project.
+
+Claude Code and Cursor receive the same shared intake and safety rules as Codex. The host-specific files only change how you invoke the workflow.
 
 If you do not want a host-specific install, paste this into Codex, Cursor, Claude Code, or another coding agent:
 
