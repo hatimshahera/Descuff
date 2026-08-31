@@ -51,37 +51,37 @@ importers:
   packages/agent-workflow:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../ir
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/core
 
   packages/analyzers/graphify:
     dependencies:
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../core
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
 
   packages/analyzers/nextjs:
     dependencies:
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../core
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
 
   packages/analyzers/runtime:
     dependencies:
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../core
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
       "@playwright/test":
         specifier: ^1.57.0
@@ -90,73 +90,73 @@ importers:
   packages/cli:
     dependencies:
       "@descuff/agent-workflow":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../agent-workflow
       "@descuff/analyzer-graphify":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../analyzers/graphify
       "@descuff/analyzer-nextjs":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../analyzers/nextjs
       "@descuff/analyzer-runtime":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../analyzers/runtime
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../core
       "@descuff/drift-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../drift
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../ir
       "@descuff/reporter":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../reporter
       "@descuff/standard-api-catalog":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/api-catalog
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/core
       "@descuff/standard-llms-txt":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/llms-txt
       "@descuff/standard-openapi":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/openapi
       "@descuff/standard-schema-org":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/schema-org
       "@descuff/standard-webmcp":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/webmcp
       "@descuff/validator":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../validator
 
   packages/config:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../ir
 
   packages/core:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../ir
 
   packages/drift:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../ir
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/core
       "@descuff/validator":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../validator
 
   packages/ir: {}
@@ -164,102 +164,102 @@ importers:
   packages/reporter:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../ir
 
   packages/standards/api-catalog:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../core
 
   packages/standards/core:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
 
   packages/standards/llms-txt:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../core
 
   packages/standards/openapi:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../core
 
   packages/standards/schema-org:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../core
 
   packages/standards/webmcp:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../ir
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../core
     devDependencies:
       "@descuff/analyzer-nextjs":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../analyzers/nextjs
       "@descuff/core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../../core
 
   packages/validator:
     dependencies:
       "@descuff/ir":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../ir
       "@descuff/standard-core":
-        specifier: ^0.17.2
+        specifier: ^0.17.3
         version: link:../standards/core
 
 packages:

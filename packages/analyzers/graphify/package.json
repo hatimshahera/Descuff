@@ -1,6 +1,6 @@
 {
   "name": "@descuff/analyzer-graphify",
-  "version": "0.17.2",
+  "version": "0.17.3",
   "license": "Apache-2.0",
   "type": "module",
   "files": [
@@ -18,8 +18,8 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@descuff/core": "^0.17.2",
-    "@descuff/ir": "^0.17.2"
+    "@descuff/core": "^0.17.3",
+    "@descuff/ir": "^0.17.3"
   },
   "description": "Optional Graphify correlation adapter for Descuff analysis.",
   "repository": {
