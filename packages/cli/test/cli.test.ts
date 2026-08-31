@@ -5,6 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { descuffCommands } from "@descuff/core";
 import { runCli } from "../src/cli.js";
+import {
+  parseHostedReconArgs,
+  runHostedReconCommand,
+  type HostedReconBrowserRenderer
+} from "../src/hosted-recon.js";
 
 const fixtureRoot = "fixtures/ecommerce";
 
@@ -1012,6 +1017,13 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("parses hosted recon target after boolean browser flag", () => {
+    const args = parseHostedReconArgs(["--browser", "https://example.test/"], "/repo");
+
+    expect(args.targetUrl).toBe("https://example.test/");
+    expect(args.browserRendering).toBe(true);
+  });
+
   it("reports robots-blocked hosted recon with typed blockers", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-robots-"));
     const restoreFetch = mockHostedReconFetch({ robots: "User-agent: *\nDisallow: /\n" });
@@ -1260,6 +1272,54 @@ describe("descuff CLI", () => {
       }
     } finally {
       await fixtureServer?.close();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("records rendered browser evidence through an injected hosted renderer", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-browser-"));
+    const restoreFetch = mockHostedReconFetch({ standards: false });
+    let disposed = false;
+    const renderer: HostedReconBrowserRenderer = {
+      async render(url) {
+        return {
+          url: url.href,
+          status: 200,
+          title: "Rendered Products",
+          headings: ["Rendered Products", "Black Shirt"],
+          formCount: 1,
+          jsonLdCount: 1,
+          networkRequests: 3,
+          webMcpSupported: true,
+          webMcpTools: ["search_products"]
+        };
+      },
+      async dispose() {
+        disposed = true;
+      }
+    };
+
+    try {
+      const result = await runHostedReconCommand({
+        targetUrl: "https://example.test/",
+        projectRoot: tempRoot,
+        maxPages: 2,
+        browserRendering: true,
+        browserRenderer: renderer
+      });
+      const reconJson = await readFile(join(tempRoot, ".descuff", "hosted-recon.json"), "utf8");
+      const reconMarkdown = await readFile(join(tempRoot, ".descuff", "hosted-recon.md"), "utf8");
+
+      expect(result).toContain("Standards visible: schema-org, webmcp");
+      expect(disposed).toBe(true);
+      expect(reconJson).toContain('"browserRendering": true');
+      expect(reconJson).toContain('"networkRequests": 3');
+      expect(reconJson).toContain('"webMcpTools": [');
+      expect(reconJson).toContain('"search_products"');
+      expect(reconMarkdown).toContain("Browser rendering: observed");
+      expect(reconMarkdown).toContain("Browser WebMCP tools: search_products");
+    } finally {
+      restoreFetch();
       await rm(tempRoot, { recursive: true, force: true });
     }
   });

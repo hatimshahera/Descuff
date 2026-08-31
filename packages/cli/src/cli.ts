@@ -91,7 +91,7 @@ Usage:
   descuff install codex --global
   descuff diff [project-root]
   descuff check [project-root]
-  descuff recon <url> [--max-pages N] [--scenario id] [--compare path]
+  descuff recon <url> [--max-pages N] [--scenario id] [--compare path] [--browser]
   descuff doctor [project-root]
 
 Commands:

@@ -1,5 +1,11 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import {
+  createPlaywrightBrowserClient,
+  defaultRuntimeResourceLimits,
+  type RuntimeBrowserClient,
+  type RuntimeResourceLimits
+} from "@descuff/analyzer-runtime";
 
 export type HostedReconConfidence = "observed" | "inferred" | "unknown" | "blocked";
 export type HostedReconBlockerCode =
@@ -13,14 +19,17 @@ export type HostedReconBlockerCode =
   | "HOSTED_DESTINATION_NOT_REACHED"
   | "HOSTED_BASELINE_COMPARE_FAILED"
   | "HOSTED_RECON_INCONCLUSIVE"
-  | "HOSTED_EVIDENCE_REDACTED";
+  | "HOSTED_EVIDENCE_REDACTED"
+  | "HOSTED_BROWSER_RENDER_FAILED";
 
 export interface HostedReconArgs {
   targetUrl: string;
   projectRoot: string;
   maxPages: number;
+  browserRendering: boolean;
   scenarioId?: string;
   comparePath?: string;
+  browserRenderer?: HostedReconBrowserRenderer;
 }
 
 export interface HostedReconEvidence {
@@ -46,6 +55,21 @@ export interface HostedReconPageObservation {
   links: string[];
   forms: HostedReconFormObservation[];
   jsonLdCount: number;
+  browser?: HostedReconBrowserObservation;
+  confidence: HostedReconConfidence;
+  evidenceIds: string[];
+}
+
+export interface HostedReconBrowserObservation {
+  url: string;
+  status: number;
+  title?: string;
+  headings: string[];
+  formCount: number;
+  jsonLdCount: number;
+  networkRequests: number;
+  webMcpSupported: boolean;
+  webMcpTools: string[];
   confidence: HostedReconConfidence;
   evidenceIds: string[];
 }
@@ -87,6 +111,7 @@ export interface HostedReconResult {
   command: string;
   budgets: {
     maxPages: number;
+    browserRendering: boolean;
   };
   standards: HostedReconStandardObservation[];
   pages: HostedReconPageObservation[];
@@ -150,6 +175,23 @@ interface ExtractedLinks {
   blockedOrigins: URL[];
 }
 
+export interface HostedReconBrowserRenderer {
+  render(url: URL): Promise<HostedReconBrowserRenderResult>;
+  dispose(): Promise<void>;
+}
+
+export interface HostedReconBrowserRenderResult {
+  url: string;
+  status: number;
+  title?: string;
+  headings: string[];
+  formCount: number;
+  jsonLdCount: number;
+  networkRequests: number;
+  webMcpSupported: boolean;
+  webMcpTools: string[];
+}
+
 export function parseHostedReconArgs(args: string[], cwd: string): HostedReconArgs {
   const targetUrl = parsePositionals(args)[0];
   if (targetUrl === undefined) {
@@ -157,6 +199,7 @@ export function parseHostedReconArgs(args: string[], cwd: string): HostedReconAr
   }
 
   const maxPages = parsePositiveIntegerFlag(args, "--max-pages", 5);
+  const browserRendering = args.includes("--browser");
   const scenarioId = parseStringFlag(args, "--scenario");
   const comparePath = parseStringFlag(args, "--compare");
 
@@ -166,6 +209,7 @@ export function parseHostedReconArgs(args: string[], cwd: string): HostedReconAr
     targetUrl,
     projectRoot: cwd,
     maxPages,
+    browserRendering,
     ...(scenarioId === undefined ? {} : { scenarioId }),
     ...(comparePath === undefined ? {} : { comparePath: resolve(cwd, comparePath) })
   };
@@ -221,6 +265,7 @@ async function runHostedRecon(args: HostedReconArgs): Promise<HostedReconResult>
 
   const robots = await inspectRobots(target, evidence);
   const pages = await inspectPages(target, args.maxPages, robots, evidence, blockers);
+  await inspectBrowserRenderedPages(target, pages, args, evidence, blockers);
   const standards = await inspectStandards(target, pages, robots, evidence, blockers);
   const scenarioDefinitions = await selectHostedScenarios(args, blockers);
   const scenarios = scenarioDefinitions.map((scenario) =>
@@ -233,9 +278,10 @@ async function runHostedRecon(args: HostedReconArgs): Promise<HostedReconResult>
     targetUrl: sanitizeUrl(target.href),
     recordedAt: new Date(0).toISOString(),
     toolVersion: "0.16.1",
-    command: `descuff recon ${sanitizeUrl(target.href)}`,
+    command: `descuff recon ${sanitizeUrl(target.href)}${args.browserRendering ? " --browser" : ""}`,
     budgets: {
-      maxPages: args.maxPages
+      maxPages: args.maxPages,
+      browserRendering: args.browserRendering
     },
     standards,
     pages,
@@ -383,6 +429,76 @@ async function inspectRobots(
   }
 }
 
+async function inspectBrowserRenderedPages(
+  target: URL,
+  pages: HostedReconPageObservation[],
+  args: HostedReconArgs,
+  evidence: HostedReconEvidence[],
+  blockers: HostedReconBlocker[]
+): Promise<void> {
+  if (!args.browserRendering && args.browserRenderer === undefined) {
+    return;
+  }
+
+  let renderer: HostedReconBrowserRenderer;
+  try {
+    renderer =
+      args.browserRenderer ?? (await createPlaywrightHostedBrowserRenderer(target, args.maxPages));
+  } catch (error) {
+    pushBlocker(
+      blockers,
+      "HOSTED_BROWSER_RENDER_FAILED",
+      `Hosted browser rendering could not start: ${errorMessage(error)}.`
+    );
+    return;
+  }
+
+  try {
+    for (const page of pages) {
+      const pageUrl = new URL(page.url);
+      if (pageUrl.origin !== target.origin) {
+        pushBlocker(
+          blockers,
+          "HOSTED_ORIGIN_BLOCKED",
+          `Skipped browser rendering for cross-origin URL ${sanitizeUrl(pageUrl.href)}.`,
+          pageUrl.href
+        );
+        continue;
+      }
+
+      try {
+        const rendered = await renderer.render(pageUrl);
+        const renderEvidence = pushEvidence(
+          evidence,
+          "observed",
+          `Browser rendered ${sanitizeUrl(rendered.url)} with ${rendered.headings.length} heading(s), ${rendered.formCount} form(s), ${rendered.jsonLdCount} JSON-LD block(s), and ${rendered.networkRequests} network request(s).`,
+          rendered.url
+        );
+        page.browser = {
+          ...rendered,
+          url: sanitizeUrl(rendered.url),
+          confidence: "observed",
+          evidenceIds: [renderEvidence.id]
+        };
+        page.jsonLdCount = Math.max(page.jsonLdCount, rendered.jsonLdCount);
+        page.headings = uniqueSorted([...page.headings, ...rendered.headings]);
+        if (page.title === undefined && rendered.title !== undefined) {
+          page.title = rendered.title;
+        }
+      } catch (error) {
+        pushBlocker(
+          blockers,
+          "HOSTED_BROWSER_RENDER_FAILED",
+          `Hosted browser rendering failed for ${sanitizeUrl(pageUrl.href)}: ${errorMessage(error)}.`,
+          pageUrl.href
+        );
+      }
+    }
+  } finally {
+    await renderer.dispose();
+  }
+}
+
 async function inspectStandards(
   target: URL,
   pages: HostedReconPageObservation[],
@@ -427,18 +543,86 @@ async function inspectStandards(
     )
   );
   observations.push(
-    await probeStandard(
-      target,
-      "/webmcp.json",
-      "webmcp",
-      "Public WebMCP metadata was reachable. Browser runtime tool registration still requires scenario-gated validation.",
-      evidence,
-      robots,
-      blockers
-    )
+    createBrowserWebMcpObservation(pages, evidence) ??
+      (await probeStandard(
+        target,
+        "/webmcp.json",
+        "webmcp",
+        "Public WebMCP metadata was reachable. Browser runtime tool registration still requires scenario-gated validation.",
+        evidence,
+        robots,
+        blockers
+      ))
   );
 
   return observations;
+}
+
+async function createPlaywrightHostedBrowserRenderer(
+  target: URL,
+  maxPages: number
+): Promise<HostedReconBrowserRenderer> {
+  const limits = {
+    ...defaultRuntimeResourceLimits,
+    maxRoutes: maxPages,
+    allowedOrigins: [target.origin],
+    blockedOrigins: []
+  };
+  const browser = await createPlaywrightBrowserClient(target.origin, limits);
+  return new PlaywrightHostedBrowserRenderer(browser, limits);
+}
+
+class PlaywrightHostedBrowserRenderer implements HostedReconBrowserRenderer {
+  constructor(
+    private readonly browser: RuntimeBrowserClient,
+    private readonly limits: Required<RuntimeResourceLimits>
+  ) {}
+
+  async render(url: URL): Promise<HostedReconBrowserRenderResult> {
+    const rendered = await this.browser.visit(`${url.pathname}${url.search}`, this.limits, []);
+    return {
+      url: rendered.url,
+      status: rendered.status,
+      ...(rendered.title === undefined ? {} : { title: rendered.title }),
+      headings: rendered.headings,
+      formCount: rendered.formCount,
+      jsonLdCount: rendered.jsonLdCount,
+      networkRequests: rendered.network.length,
+      webMcpSupported: rendered.webMcpSupported,
+      webMcpTools: rendered.webMcpTools.map((tool) => tool.name)
+    };
+  }
+
+  async dispose(): Promise<void> {
+    await this.browser.dispose();
+  }
+}
+
+function createBrowserWebMcpObservation(
+  pages: HostedReconPageObservation[],
+  evidence: HostedReconEvidence[]
+): HostedReconStandardObservation | undefined {
+  const pagesWithTools = pages.filter((page) => (page.browser?.webMcpTools.length ?? 0) > 0);
+  if (pagesWithTools.length === 0) {
+    return undefined;
+  }
+
+  const toolCount = pagesWithTools.reduce(
+    (total, page) => total + (page.browser?.webMcpTools.length ?? 0),
+    0
+  );
+  const ref = pushEvidence(
+    evidence,
+    "observed",
+    `Browser discovered ${toolCount} WebMCP tool(s) across ${pagesWithTools.length} rendered page(s).`
+  );
+
+  return {
+    kind: "webmcp",
+    status: "observed",
+    detail: "Browser runtime WebMCP tool registration was observed.",
+    evidenceIds: [ref.id]
+  };
 }
 
 async function selectHostedScenarios(
@@ -745,6 +929,7 @@ function renderHostedReconMarkdown(recon: HostedReconResult): string {
       `- Links: ${page.links.length}`,
       `- Forms: ${page.forms.length}`,
       `- JSON-LD blocks: ${page.jsonLdCount}`,
+      ...renderHostedBrowserObservation(page),
       ""
     ]),
     "## Blockers And Limits",
@@ -760,6 +945,20 @@ function renderHostedReconMarkdown(recon: HostedReconResult): string {
     `- Credentials stored: ${String(recon.redaction.credentialsStored)}`,
     ""
   ].join("\n");
+}
+
+function renderHostedBrowserObservation(page: HostedReconPageObservation): string[] {
+  if (page.browser === undefined) {
+    return ["- Browser rendering: disabled"];
+  }
+
+  return [
+    "- Browser rendering: observed",
+    `- Browser-rendered status: ${page.browser.status}`,
+    `- Browser-rendered forms: ${page.browser.formCount}`,
+    `- Browser network requests: ${page.browser.networkRequests}`,
+    `- Browser WebMCP tools: ${page.browser.webMcpTools.join(", ") || "none"}`
+  ];
 }
 
 function renderHostedBrowserAgentResultsMarkdown(recon: HostedReconResult): string {
@@ -1058,6 +1257,8 @@ function stripHash(url: URL): URL {
   return clone;
 }
 
+const hostedReconFlagsWithValues = new Set(["--max-pages", "--scenario", "--compare", "--config"]);
+
 function parsePositiveIntegerFlag(args: string[], name: string, fallback: number): number {
   const raw = parseStringFlag(args, name);
   if (raw === undefined) {
@@ -1080,6 +1281,7 @@ function parsePositionals(args: string[]): string[] {
     if (arg.startsWith("--")) {
       if (
         !arg.includes("=") &&
+        hostedReconFlagsWithValues.has(arg) &&
         args[index + 1] !== undefined &&
         !args[index + 1]?.startsWith("--")
       ) {

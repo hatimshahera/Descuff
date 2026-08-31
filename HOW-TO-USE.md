@@ -264,6 +264,12 @@ Hosted recon checks what a public deployed website exposes to browser agents wit
 npx descuff recon https://example.com
 ```
 
+For best-effort rendered-page evidence, use:
+
+```bash
+npx descuff recon https://example.com --browser
+```
+
 It writes:
 
 - `.descuff/hosted-recon.json`
@@ -275,7 +281,7 @@ When `.descuff/runtime.json` includes `hostedBrowserAgentScenarios`, it can also
 - `.descuff/hosted-browser-agent-results.json`
 - `.descuff/hosted-browser-agent-results.md`
 
-Hosted recon is read-only by default. It records visible public standards, same-origin pages, headings, links, forms without submission, JSON-LD counts, blockers, redaction status, and confidence labels. It does not replace local `start` and `finish`, because hosted recon cannot prove source-backed implementation details.
+Hosted recon is read-only by default. It records visible public standards, same-origin pages, headings, links, forms without submission, JSON-LD counts, blockers, redaction status, and confidence labels. With `--browser`, it also records rendered-page evidence, browser network counts, and browser-discovered WebMCP tools when Playwright can launch. It does not replace local `start` and `finish`, because hosted recon cannot prove source-backed implementation details.
 
 Or compare against a base ref:
 
