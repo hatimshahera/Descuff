@@ -8,6 +8,7 @@ npx descuff start .
 npx descuff finish .
 npx descuff diff .
 npx descuff check .
+npx descuff scenarios .
 npx descuff recon https://example.com
 npx descuff recon https://example.com --browser
 npx descuff install --platform codex
@@ -24,7 +25,9 @@ Optional `.descuff/runtime.json` lets `scan` and `validate` inspect a running lo
 
 `diff` compares changed files against `.descuff/drift-baseline.json` and writes a drift impact report. `check` fast-passes irrelevant changes, writes a validation plan, and runs validation when routes, APIs, capabilities, auth boundaries, or published standards may have changed.
 
-`recon` inspects a hosted public URL without local source access. It writes `.descuff/hosted-recon.json`, `.descuff/hosted-recon.md`, and `.descuff/hosted-baseline.json` with visible standards, same-origin pages, forms, headings, links, JSON-LD counts, confidence labels, blockers, and redaction status. Add `--browser` for best-effort rendered-page evidence, browser network counts, and browser-discovered WebMCP tools. When `hostedBrowserAgentScenarios` exist in `.descuff/runtime.json`, it also writes hosted browser-agent reachability reports.
+`scenarios` writes `.descuff/scenario-suggestions.json` and `.descuff/scenario-suggestions.md` with deterministic, evidence-backed, read-only browser-agent task suggestions.
+
+`recon` inspects a hosted public URL without local source access. It writes `.descuff/hosted-recon.json`, `.descuff/hosted-recon.md`, and `.descuff/hosted-baseline.json` with visible standards, same-origin pages, forms, headings, links, JSON-LD counts, confidence labels, blockers, and redaction status. Add `--browser` for best-effort rendered-page evidence, browser network counts, and browser-discovered WebMCP tools. When `hostedBrowserAgentScenarios` exist in `.descuff/runtime.json`, or generated scenario suggestions exist, it also writes hosted browser-agent reachability reports.
 
 Keep `.descuff/` ignored in public repositories by default. For CI drift checks, preserve `.descuff/drift-baseline.json` as a protected cache/artifact from the last successful base-branch run, or regenerate it from the base branch before running `descuff check` on a pull request.
 

@@ -270,13 +270,27 @@ For best-effort rendered-page evidence, use:
 npx descuff recon https://example.com --browser
 ```
 
+To generate read-only task suggestions from local source evidence first:
+
+```bash
+npx descuff scenarios .
+npx descuff recon https://example.com --browser
+```
+
+This writes:
+
+- `.descuff/scenario-suggestions.json`
+- `.descuff/scenario-suggestions.md`
+
+The suggestions are deterministic and evidence-backed. Review them before using the resulting before/after numbers publicly. Mutating or high-consequence scenarios are not generated as runnable defaults.
+
 It writes:
 
 - `.descuff/hosted-recon.json`
 - `.descuff/hosted-recon.md`
 - `.descuff/hosted-baseline.json`
 
-When `.descuff/runtime.json` includes `hostedBrowserAgentScenarios`, it can also write:
+When `.descuff/runtime.json` includes `hostedBrowserAgentScenarios`, or `.descuff/scenario-suggestions.json` exists, hosted recon can also write:
 
 - `.descuff/hosted-browser-agent-results.json`
 - `.descuff/hosted-browser-agent-results.md`

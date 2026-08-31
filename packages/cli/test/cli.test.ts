@@ -937,6 +937,7 @@ describe("descuff CLI", () => {
       "finish",
       "diff",
       "check",
+      "scenarios",
       "recon",
       "doctor",
       "fix",
@@ -945,6 +946,35 @@ describe("descuff CLI", () => {
       "apply-safe",
       "validate"
     ]);
+  });
+
+  it("generates evidence-backed browser-agent scenario suggestions", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-scenarios-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+
+      const result = await runCli(["node", "descuff", "scenarios", projectRoot]);
+      const suggestionsJson = await readFile(
+        join(projectRoot, ".descuff", "scenario-suggestions.json"),
+        "utf8"
+      );
+      const suggestionsMarkdown = await readFile(
+        join(projectRoot, ".descuff", "scenario-suggestions.md"),
+        "utf8"
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff scenarios completed");
+      expect(result.stdout).toContain("Generated scenarios:");
+      expect(suggestionsJson).toContain('"source": "descuff-scenarios"');
+      expect(suggestionsJson).toContain('"risk": "read-only"');
+      expect(suggestionsJson).toContain('"source": "descuff-deterministic"');
+      expect(suggestionsMarkdown).toContain("Review generated scenarios before using them");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("runs hosted recon against a public local fixture URL", async () => {
@@ -1236,6 +1266,75 @@ describe("descuff CLI", () => {
         expect(scenarios).toContain('"destinationCriteria"');
         expect(results).toContain('"destinationReached": true');
         expect(scenarioMarkdown).toContain("These results measure browser-agent reachability");
+      } finally {
+        process.chdir(currentCwd);
+      }
+    } finally {
+      restoreFetch();
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs hosted recon from generated scenario suggestions", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-hosted-suggestions-"));
+    const restoreFetch = mockHostedReconFetch();
+
+    try {
+      await mkdir(join(tempRoot, ".descuff"), { recursive: true });
+      await writeFile(
+        join(tempRoot, ".descuff", "scenario-suggestions.json"),
+        JSON.stringify({
+          schemaVersion: "0.1.0",
+          source: "descuff-scenarios",
+          suggestions: [
+            {
+              id: "find-black-shirt",
+              title: "Find black shirt",
+              intent: "Find the black shirt product page without checkout.",
+              startRoute: "/",
+              allowedRoutes: ["/", "/products/black-shirt"],
+              allowedOrigins: [],
+              blockedOrigins: [],
+              inputs: {},
+              successCriteria: ["Black Shirt", "/products/black-shirt"],
+              expectedEvidenceSurfaces: ["dom", "json-ld", "llms-txt"],
+              budgets: {
+                maxActions: 6,
+                maxScreenshots: 2,
+                maxDomQueries: 10,
+                maxNetworkObservations: 4,
+                maxToolCalls: 0
+              },
+              risk: "read-only",
+              evidence: [],
+              source: "descuff-deterministic",
+              confidence: "medium",
+              rationale: "Generated from route evidence."
+            }
+          ]
+        })
+      );
+
+      const currentCwd = process.cwd();
+      process.chdir(tempRoot);
+      try {
+        const result = await runCli([
+          "node",
+          "descuff",
+          "recon",
+          "https://example.test/",
+          "--max-pages",
+          "3"
+        ]);
+        const scenarios = await readFile(
+          join(tempRoot, ".descuff", "hosted-browser-agent-scenarios.json"),
+          "utf8"
+        );
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain("Browser-agent scenarios: 1");
+        expect(result.stdout).toContain("Destinations reached: 1/1");
+        expect(scenarios).toContain('"id": "find-black-shirt"');
       } finally {
         process.chdir(currentCwd);
       }

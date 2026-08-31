@@ -27,6 +27,7 @@ describe("@descuff/core", () => {
       "finish",
       "diff",
       "check",
+      "scenarios",
       "recon",
       "doctor",
       "fix",

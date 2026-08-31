@@ -11,6 +11,7 @@ All notable changes to Descuff will be documented in this file.
 - Added hosted recon diagnostics for malformed scenarios, inconclusive public evidence, and redacted sensitive query parameters.
 - Added hosted recon fixture coverage for unsafe browser-agent scenarios and real local HTTP recon when the environment permits local sockets.
 - Added opt-in `descuff recon <url> --browser` rendered-page evidence with browser network counts and browser-discovered WebMCP tool reporting.
+- Added `descuff scenarios` to generate evidence-backed read-only browser-agent task suggestions that hosted recon can use for before/after effort reporting.
 
 ### Fixed
 

@@ -10,6 +10,7 @@ const commands = [
   "finish",
   "diff",
   "check",
+  "scenarios",
   "recon",
   "doctor",
   "fix",
@@ -73,17 +74,19 @@ for (const command of commands) {
                   ? "descuff diff pass"
                   : command === "check"
                     ? "descuff check pass"
-                    : command === "doctor"
-                      ? "descuff doctor supported"
-                      : command === "install"
-                        ? "descuff install completed"
-                        : command === "enrich"
-                          ? "descuff enrich passed"
-                          : command === "recon"
-                            ? "only supports http:// and https:// URLs"
-                            : command === "validate"
-                              ? "descuff validate passed"
-                              : "no automatic file writes are enabled";
+                    : command === "scenarios"
+                      ? "descuff scenarios completed"
+                      : command === "doctor"
+                        ? "descuff doctor supported"
+                        : command === "install"
+                          ? "descuff install completed"
+                          : command === "enrich"
+                            ? "descuff enrich passed"
+                            : command === "recon"
+                              ? "only supports http:// and https:// URLs"
+                              : command === "validate"
+                                ? "descuff validate passed"
+                                : "no automatic file writes are enabled";
 
   const output = command === "recon" ? result.stderr : result.stdout;
 

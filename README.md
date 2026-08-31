@@ -102,6 +102,7 @@ npx descuff report [project-root]
 npx descuff plan [project-root]
 npx descuff diff [project-root]
 npx descuff check [project-root]
+npx descuff scenarios [project-root]
 npx descuff recon <url> [--max-pages N] [--scenario id] [--compare path] [--browser]
 npx descuff doctor [project-root]
 npx descuff install [codex|claude-code|cursor|all] [project-root]
@@ -128,6 +129,7 @@ Lower-level commands:
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `diff` compares changed files against `.descuff/drift-baseline.json` and writes `.descuff/drift-diff.json` plus `.descuff/drift-report.md`.
 - `check` performs the same drift analysis, fast-passes unrelated changes, writes a validation plan, and runs validation for changes that can affect routes, APIs, capabilities, auth boundaries, or published standards.
+- `scenarios` writes `.descuff/scenario-suggestions.json` and `.descuff/scenario-suggestions.md` with evidence-backed read-only browser-agent task suggestions. Hosted recon can use these suggestions when no explicit `.descuff/runtime.json` scenarios exist.
 - `recon` inspects a hosted public URL without source access, writes `.descuff/hosted-recon.*`, and reports visible standards, public pages, forms, metadata, confidence labels, blockers, and optional read-only browser-agent reachability scenarios. Add `--browser` when you want best-effort rendered-page evidence, browser network counts, and browser-discovered WebMCP tools.
 - `doctor` diagnoses the current root before first use, writes `.descuff/doctor.json` and `.descuff/doctor.md`, and suggests a likely nested app root when Descuff was run from the wrong folder.
 - Drift baselines are generated local artifacts by default. Keep `.descuff/` ignored for public repos, and let CI preserve `.descuff/drift-baseline.json` as a protected cache/artifact or regenerate it from the base branch before checking a pull request.

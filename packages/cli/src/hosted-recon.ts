@@ -148,6 +148,10 @@ interface HostedReconRuntimeConfig {
   browserAgentScenarios?: unknown;
 }
 
+interface HostedScenarioSuggestionArtifact {
+  suggestions?: unknown;
+}
+
 export interface NormalizedHostedScenario {
   id: string;
   title: string;
@@ -696,7 +700,13 @@ function evaluateHostedScenario(
   }
 
   const haystack = [
-    ...pages.flatMap((page) => [page.url, page.title ?? "", ...page.headings, ...page.links]),
+    ...pages.flatMap((page) => [
+      page.url,
+      page.title ?? "",
+      ...page.headings,
+      ...page.links,
+      ...page.forms.flatMap((form) => ["form", form.method, form.action ?? "", ...form.fields])
+    ]),
     ...standards.map((standard) => `${standard.kind} ${standard.status} ${standard.url ?? ""}`)
   ]
     .join("\n")
@@ -1032,18 +1042,8 @@ async function readHostedScenarios(
   projectRoot: string,
   blockers: HostedReconBlocker[]
 ): Promise<NormalizedHostedScenario[]> {
-  let raw: HostedReconRuntimeConfig;
-  try {
-    raw = JSON.parse(
-      await readFile(join(projectRoot, ".descuff", "runtime.json"), "utf8")
-    ) as HostedReconRuntimeConfig;
-  } catch {
-    return [];
-  }
-
-  const candidates = Array.isArray(raw.hostedBrowserAgentScenarios)
-    ? raw.hostedBrowserAgentScenarios
-    : raw.browserAgentScenarios;
+  const runtime = await readHostedRuntimeConfig(projectRoot);
+  const candidates = await hostedScenarioCandidates(projectRoot, runtime);
   if (!Array.isArray(candidates)) {
     return [];
   }
@@ -1051,6 +1051,37 @@ async function readHostedScenarios(
   return candidates.flatMap((candidate, index) =>
     normalizeHostedScenario(candidate, `scenario[${index}]`, blockers)
   );
+}
+
+async function readHostedRuntimeConfig(projectRoot: string): Promise<HostedReconRuntimeConfig> {
+  try {
+    return JSON.parse(
+      await readFile(join(projectRoot, ".descuff", "runtime.json"), "utf8")
+    ) as HostedReconRuntimeConfig;
+  } catch {
+    return {};
+  }
+}
+
+async function hostedScenarioCandidates(
+  projectRoot: string,
+  runtime: HostedReconRuntimeConfig
+): Promise<unknown> {
+  if (Array.isArray(runtime.hostedBrowserAgentScenarios)) {
+    return runtime.hostedBrowserAgentScenarios;
+  }
+  if (Array.isArray(runtime.browserAgentScenarios)) {
+    return runtime.browserAgentScenarios;
+  }
+
+  try {
+    const suggestions = JSON.parse(
+      await readFile(join(projectRoot, ".descuff", "scenario-suggestions.json"), "utf8")
+    ) as HostedScenarioSuggestionArtifact;
+    return suggestions.suggestions;
+  } catch {
+    return undefined;
+  }
 }
 
 function normalizeHostedScenario(

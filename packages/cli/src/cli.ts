@@ -81,6 +81,10 @@ import {
   validateWebMcpBehavior
 } from "@descuff/validator";
 import { parseHostedReconArgs, runHostedReconCommand } from "./hosted-recon.js";
+import {
+  createScenarioSuggestions,
+  renderScenarioSuggestionsMarkdown
+} from "./scenario-suggestions.js";
 
 const helpText = `Descuff
 
@@ -91,6 +95,7 @@ Usage:
   descuff install codex --global
   descuff diff [project-root]
   descuff check [project-root]
+  descuff scenarios [project-root]
   descuff recon <url> [--max-pages N] [--scenario id] [--compare path] [--browser]
   descuff doctor [project-root]
 
@@ -166,6 +171,8 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
         return await diffCommand(projectRoot);
       case "check":
         return await checkCommand(projectRoot);
+      case "scenarios":
+        return ok(await scenariosCommand(projectRoot));
       case "recon":
         return ok(await runHostedReconCommand(parseHostedReconArgs(argv.slice(3), projectRoot)));
       case "doctor":
@@ -590,6 +597,35 @@ async function checkCommand(projectRoot: string): Promise<CommandResult> {
     stderr:
       check.status === "pass" ? "" : `${check.failures.map((failure) => failure.code).join("\n")}\n`
   };
+}
+
+async function scenariosCommand(projectRoot: string): Promise<string> {
+  const artifacts = await readOrBuildArtifacts(projectRoot);
+  const suggestions = createScenarioSuggestions({
+    model: artifacts.model,
+    analysis: artifacts.analysis
+  });
+
+  await writeJson(projectRoot, "scenario-suggestions.json", suggestions);
+  await writeArtifact(
+    projectRoot,
+    "scenario-suggestions.md",
+    renderScenarioSuggestionsMarkdown(suggestions)
+  );
+
+  return [
+    "descuff scenarios completed",
+    `Generated scenarios: ${suggestions.suggestions.length}`,
+    "",
+    "Artifacts:",
+    `  ${join(artifactDir(projectRoot), "scenario-suggestions.json")}`,
+    `  ${join(artifactDir(projectRoot), "scenario-suggestions.md")}`,
+    "",
+    suggestions.suggestions.length === 0
+      ? "No safe read-only scenario suggestions were generated."
+      : "Next: run descuff recon <url> --browser to test these suggestions against a hosted site.",
+    ""
+  ].join("\n");
 }
 
 function driftFailureCommandResult(
