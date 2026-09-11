@@ -65,6 +65,10 @@ export class ReactViteAnalyzer implements StructuralAnalyzer {
         });
       }
 
+      analysis.warnings.push(
+        ...detectUnsupportedDynamicRouteEvidence(project.rootDir, filePath, source)
+      );
+
       const symbols = extractSymbols(project.rootDir, filePath, source);
       analysis.symbols.push(...symbols);
       analysis.evidence.items.push(...symbols.flatMap((symbol) => symbol.evidence));
@@ -227,6 +231,30 @@ function extractNavigationPaths(source: string): string[] {
     ...matches(source, /<(?:Link|NavLink)\b[^>]*\bto=["']([^"']+)["']/g),
     ...matches(source, /\bhref=["']([^"']+)["']/g)
   ]).filter(isPublicRoutePath);
+}
+
+function detectUnsupportedDynamicRouteEvidence(
+  rootDir: string,
+  filePath: string,
+  source: string
+): StructuralAnalysis["warnings"] {
+  const hasDynamicRoute =
+    /<Route\b[^>]*\bpath=\{[^}]+\}/.test(source) ||
+    /<(?:Link|NavLink)\b[^>]*\bto=\{[^}]+\}/.test(source) ||
+    /\bpath\s*:\s*(?!["'])[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?/.test(source);
+
+  if (!hasDynamicRoute) {
+    return [];
+  }
+
+  return [
+    {
+      code: "REACT_VITE_DYNAMIC_ROUTE_UNSUPPORTED",
+      message:
+        "React/Vite dynamic route evidence was found, but Descuff only records literal route paths in this release.",
+      evidence: [sourceEvidence(rootDir, filePath, "Unsupported React/Vite dynamic route evidence")]
+    }
+  ];
 }
 
 function extractFetchReferences(
