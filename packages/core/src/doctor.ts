@@ -63,6 +63,8 @@ export async function runDoctor(
   const graphify = await detectGraphifyState(projectRoot);
   const git = (await pathExists(join(projectRoot, ".git"))) ? "available" : "unavailable";
   const hasNextDependency = hasDependency(packageJson.value, "next");
+  const hasReactDependency = hasReactDependencies(packageJson.value);
+  const hasViteDependency = hasDependency(packageJson.value, "vite");
   const hasReactViteDependency = hasReactViteDependencies(packageJson.value);
   const nodeVersion = options.nodeVersion ?? process.version;
   const runtimePrerequisites = {
@@ -82,6 +84,10 @@ export async function runDoctor(
   });
   const supported =
     packageJson.status === "present" && (framework === "nextjs" || framework === "react-vite");
+  const hasRunnableReactVite = hasRunnableReactViteIndicators(reactViteIndicators);
+  const hasAmbiguousFrameworkSignals =
+    (hasNextDependency || nextIndicators.length > 0) &&
+    (hasReactViteDependency || hasRunnableReactVite);
 
   if (!runtimePrerequisites.nodeSupported) {
     issues.push({
@@ -124,6 +130,49 @@ export async function runDoctor(
           : [
               "Descuff currently supports local Next.js and React/Vite preview apps. Run it from a supported app root."
             ]
+    });
+  }
+
+  if (packageJson.status === "present" && hasViteDependency && !hasReactDependency) {
+    issues.push({
+      code: "VITE_NON_REACT_UNSUPPORTED",
+      severity: "unsupported",
+      message: "A Vite project was detected, but React app evidence was not found.",
+      evidence: ["package.json", ...reactViteIndicators],
+      nextSteps: [
+        "Descuff React/Vite preview support requires React dependencies and runnable React entry evidence."
+      ]
+    });
+  }
+
+  if (
+    packageJson.status === "present" &&
+    hasReactDependency &&
+    !hasViteDependency &&
+    reactViteIndicators.length === 0 &&
+    framework === "unknown"
+  ) {
+    issues.push({
+      code: "REACT_LIBRARY_UNSUPPORTED",
+      severity: "unsupported",
+      message: "React dependencies were detected, but this does not look like a runnable Vite app.",
+      evidence: ["package.json"],
+      nextSteps: [
+        "Run Descuff from a runnable Next.js app or React/Vite app root, not a component library package."
+      ]
+    });
+  }
+
+  if (hasAmbiguousFrameworkSignals) {
+    issues.push({
+      code: "AMBIGUOUS_FRAMEWORK_SIGNALS",
+      severity: "warning",
+      message:
+        "Both Next.js and React/Vite framework signals were detected. Descuff will use the Next.js analyzer for this root.",
+      evidence: [...nextIndicators, ...reactViteIndicators],
+      nextSteps: [
+        "Confirm this root is a Next.js app. If the React/Vite app is nested, run Descuff from that app root."
+      ]
     });
   }
 
@@ -583,12 +632,15 @@ function hasDependency(packageJson: unknown, dependencyName: string): boolean {
 }
 
 function hasReactViteDependencies(packageJson: unknown): boolean {
+  return hasDependency(packageJson, "vite") && hasReactDependencies(packageJson);
+}
+
+function hasReactDependencies(packageJson: unknown): boolean {
   return (
-    hasDependency(packageJson, "vite") &&
-    (hasDependency(packageJson, "react") ||
-      hasDependency(packageJson, "react-dom") ||
-      hasDependency(packageJson, "@vitejs/plugin-react") ||
-      hasDependency(packageJson, "@vitejs/plugin-react-swc"))
+    hasDependency(packageJson, "react") ||
+    hasDependency(packageJson, "react-dom") ||
+    hasDependency(packageJson, "@vitejs/plugin-react") ||
+    hasDependency(packageJson, "@vitejs/plugin-react-swc")
   );
 }
 

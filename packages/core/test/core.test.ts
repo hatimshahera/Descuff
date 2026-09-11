@@ -91,6 +91,102 @@ describe("@descuff/core", () => {
     expect(result.supported).toBe(false);
     expect(result.detected.framework).toBe("unknown");
     expect(result.issues.map((issue) => issue.code)).toContain("SUPPORTED_PROJECT_NOT_FOUND");
+    expect(result.issues.map((issue) => issue.code)).toContain("REACT_LIBRARY_UNSUPPORTED");
+  });
+
+  it("does not support Vite non-React apps", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-core-doctor-vite-non-react-"));
+
+    try {
+      await writeFile(
+        join(tempRoot, "package.json"),
+        JSON.stringify({ name: "vite-app", dependencies: { vite: "latest" } })
+      );
+      await writeFile(join(tempRoot, "vite.config.ts"), "export default {};\n");
+      await writeFile(join(tempRoot, "index.html"), '<div id="app"></div>\n');
+
+      const result = await runDoctor(tempRoot, {
+        now: new Date("2026-08-30T00:00:00.000Z"),
+        nodeVersion: "v22.0.0"
+      });
+
+      expect(result.supported).toBe(false);
+      expect(result.detected.framework).toBe("unknown");
+      expect(result.issues.map((issue) => issue.code)).toContain("VITE_NON_REACT_UNSUPPORTED");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports nested React/Vite candidate roots", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-core-doctor-nested-react-vite-"));
+
+    try {
+      await writeFile(join(tempRoot, "package.json"), JSON.stringify({ name: "workspace" }));
+      await mkdir(join(tempRoot, "apps", "web", "src"), { recursive: true });
+      await writeFile(
+        join(tempRoot, "apps", "web", "package.json"),
+        JSON.stringify({
+          name: "web",
+          dependencies: { vite: "latest", react: "latest", "react-dom": "latest" }
+        })
+      );
+      await writeFile(join(tempRoot, "apps", "web", "vite.config.ts"), "export default {};\n");
+      await writeFile(join(tempRoot, "apps", "web", "index.html"), '<div id="root"></div>\n');
+      await writeFile(join(tempRoot, "apps", "web", "src", "main.tsx"), "export {};\n");
+
+      const result = await runDoctor(tempRoot, {
+        now: new Date("2026-08-30T00:00:00.000Z"),
+        nodeVersion: "v22.0.0"
+      });
+
+      expect(result.supported).toBe(false);
+      expect(result.detected.candidateAppRoots).toEqual(["apps/web"]);
+      expect(result.issues.map((issue) => issue.code)).toEqual(
+        expect.arrayContaining(["SUPPORTED_PROJECT_NOT_FOUND", "CANDIDATE_APP_ROOTS_FOUND"])
+      );
+      expect(renderDoctorSummary(result, join(tempRoot, ".descuff"))).toContain(
+        "Try: npx descuff doctor apps/web"
+      );
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports ambiguous Next.js plus React/Vite framework signals", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-core-doctor-ambiguous-framework-"));
+
+    try {
+      await mkdir(join(tempRoot, "app"), { recursive: true });
+      await mkdir(join(tempRoot, "src"), { recursive: true });
+      await writeFile(
+        join(tempRoot, "package.json"),
+        JSON.stringify({
+          name: "ambiguous-app",
+          dependencies: {
+            next: "latest",
+            vite: "latest",
+            react: "latest",
+            "react-dom": "latest"
+          }
+        })
+      );
+      await writeFile(join(tempRoot, "app", "page.tsx"), "export default function Page() {}\n");
+      await writeFile(join(tempRoot, "vite.config.ts"), "export default {};\n");
+      await writeFile(join(tempRoot, "index.html"), '<div id="root"></div>\n');
+      await writeFile(join(tempRoot, "src", "main.tsx"), "export {};\n");
+
+      const result = await runDoctor(tempRoot, {
+        now: new Date("2026-08-30T00:00:00.000Z"),
+        nodeVersion: "v22.0.0"
+      });
+
+      expect(result.supported).toBe(true);
+      expect(result.detected.framework).toBe("nextjs");
+      expect(result.issues.map((issue) => issue.code)).toContain("AMBIGUOUS_FRAMEWORK_SIGNALS");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("uses the current time for doctor checks when no test clock is provided", async () => {
