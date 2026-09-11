@@ -81,9 +81,9 @@ function explainReadiness(
         pointsLost: 0,
         scoreImpact: 0,
         confidence: context.confidence,
-        message: "This readiness category has the available evidence Descuff expects.",
+        message: readinessCompleteMessage(category, model),
         action: "No action required.",
-        expectedImpact: "No readiness points are currently lost for this category.",
+        expectedImpact: readinessCompleteExpectedImpact(category, model),
         scenarioImpact: readinessScenarioImpact(category, scenarioIds),
         evidenceIds: context.evidenceIds,
         affectedRoutes: context.affectedRoutes,
@@ -158,7 +158,11 @@ function readinessContextForCategory(
       };
     case "api-quality":
       return {
-        confidence: model.apis.length > 0 ? "high" : "medium",
+        confidence: apiEvidenceIsFrontendObservedOnly(model)
+          ? "medium"
+          : model.apis.length > 0
+            ? "high"
+            : "medium",
         evidenceIds: evidenceIds(model.apis.flatMap((api) => api.evidence)),
         affectedRoutes: model.apis.length > 0 ? [] : model.routes.map((route) => route.path),
         affectedApis: model.apis.map((api) => `${api.method} ${api.path}`),
@@ -224,6 +228,39 @@ function readinessContextForCategory(
         affectedStandards: model.standards.map((standard) => standard.kind)
       };
   }
+}
+
+function readinessCompleteMessage(category: ReadinessCategory, model: ApplicationModel): string {
+  if (
+    (category === "api-quality" || category === "agent-actions") &&
+    apiEvidenceIsFrontendObservedOnly(model)
+  ) {
+    return "This readiness category has the available evidence Descuff expects. For React/Vite, API operations are client-side fetch references until runtime or backend evidence proves the server handler.";
+  }
+
+  return "This readiness category has the available evidence Descuff expects.";
+}
+
+function readinessCompleteExpectedImpact(
+  category: ReadinessCategory,
+  model: ApplicationModel
+): string {
+  if (
+    (category === "api-quality" || category === "agent-actions") &&
+    apiEvidenceIsFrontendObservedOnly(model)
+  ) {
+    return "No readiness points are currently lost for this category, but API confidence remains bounded by frontend-observed evidence.";
+  }
+
+  return "No readiness points are currently lost for this category.";
+}
+
+function apiEvidenceIsFrontendObservedOnly(model: ApplicationModel): boolean {
+  return (
+    model.project.framework === "react-vite" &&
+    model.apis.length > 0 &&
+    !model.apis.some((api) => api.runtimeObserved)
+  );
 }
 
 function readinessStatusForLoss(loss: ReadinessLossReason): ReadinessExplanationStatus {

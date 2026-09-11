@@ -284,6 +284,61 @@ describe("@descuff/validator", () => {
     );
   });
 
+  it("describes React Vite API readiness as frontend-observed when runtime proof is absent", () => {
+    const model = {
+      ...createReadyApplicationModel(),
+      project: {
+        ...createReadyApplicationModel().project,
+        framework: "react-vite" as const
+      },
+      routes: [
+        {
+          ...createReadyApplicationModel().routes[0]!,
+          routerKind: "react-router" as const,
+          sourceFile: "src/ProductRoutes.tsx"
+        }
+      ],
+      apis: [
+        {
+          ...createReadyApplicationModel().apis[0]!,
+          sourceFile: "src/ProductButton.tsx",
+          runtimeObserved: false,
+          evidence: [
+            {
+              ...evidence,
+              id: "source:react-fetch",
+              location: "src/ProductButton.tsx",
+              summary: "React/Vite fetch API reference detected"
+            }
+          ]
+        }
+      ]
+    };
+
+    const report = createValidationReadinessReport(model, []);
+    const apiQuality = report.readinessExplanations.find(
+      (explanation) => explanation.category === "api-quality"
+    );
+    const agentActions = report.readinessExplanations.find(
+      (explanation) => explanation.category === "agent-actions"
+    );
+
+    expect(apiQuality).toMatchObject({
+      status: "complete",
+      confidence: "medium",
+      message:
+        "This readiness category has the available evidence Descuff expects. For React/Vite, API operations are client-side fetch references until runtime or backend evidence proves the server handler.",
+      expectedImpact:
+        "No readiness points are currently lost for this category, but API confidence remains bounded by frontend-observed evidence.",
+      affectedApis: ["GET /api/products"]
+    });
+    expect(agentActions).toMatchObject({
+      status: "complete",
+      message:
+        "This readiness category has the available evidence Descuff expects. For React/Vite, API operations are client-side fetch references until runtime or backend evidence proves the server handler."
+    });
+  });
+
   it("distinguishes acceptable readiness gaps from recommendations and blockers", () => {
     const model = {
       ...createReadyApplicationModel(),
