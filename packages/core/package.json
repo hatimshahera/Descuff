@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b --pretty false",
-    "test": "vitest run test"
+    "test": "cd ../.. && vitest run packages/core/test"
   },
   "dependencies": {
     "@descuff/ir": "^0.17.4"

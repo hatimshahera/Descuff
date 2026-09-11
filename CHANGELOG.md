@@ -8,6 +8,15 @@ All notable changes to Descuff will be documented in this file.
 
 - Added initial React/Vite preview support with a dedicated analyzer package, doctor detection, CLI scan workflow integration, route/form/fetch-reference evidence, existing standards discovery, fixtures, and release graph wiring.
 
+### Changed
+
+- Clarified React/Vite readiness explanations so client-side fetch references are treated as frontend-observed API evidence until runtime or backend source evidence proves the server handler.
+
+### Fixed
+
+- Fixed `descuff doctor` so ordinary React/Vite `src/pages` and `src/app` component folders are not misclassified as Next.js without Next dependency, config, or App Router file evidence.
+- Fixed package-local `@descuff/core` and `@descuff/validator` test scripts so they run their package tests from the workspace root.
+
 ## 0.17.4 - 2026-08-31 - Hosted Report Separation
 
 ### Changed

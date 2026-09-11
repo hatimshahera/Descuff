@@ -82,6 +82,42 @@ describe("@descuff/core", () => {
     );
   });
 
+  it("does not classify React/Vite src/pages or src/app folders as Next.js without Next evidence", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-core-doctor-vite-src-pages-"));
+
+    try {
+      await mkdir(join(tempRoot, "src", "pages"), { recursive: true });
+      await mkdir(join(tempRoot, "src", "app", "public"), { recursive: true });
+      await writeFile(
+        join(tempRoot, "package.json"),
+        JSON.stringify({
+          name: "vite-src-pages",
+          dependencies: { vite: "latest", react: "latest", "react-dom": "latest" },
+          devDependencies: { "@vitejs/plugin-react": "latest" }
+        })
+      );
+      await writeFile(join(tempRoot, "vite.config.ts"), "export default {};\n");
+      await writeFile(join(tempRoot, "index.html"), '<div id="root"></div>\n');
+      await writeFile(join(tempRoot, "src", "main.tsx"), "export {};\n");
+      await writeFile(join(tempRoot, "src", "pages", "Home.tsx"), "export {};\n");
+      await writeFile(join(tempRoot, "src", "app", "public", "Home.tsx"), "export {};\n");
+
+      const result = await runDoctor(tempRoot, {
+        now: new Date("2026-08-30T00:00:00.000Z"),
+        nodeVersion: "v22.0.0"
+      });
+
+      expect(result.supported).toBe(true);
+      expect(result.detected.framework).toBe("react-vite");
+      expect(result.detected.nextIndicators).toContain("src/pages");
+      expect(result.detected.nextIndicators).not.toContain("src/app");
+      expect(result.issues.map((issue) => issue.code)).not.toContain("AMBIGUOUS_FRAMEWORK_SIGNALS");
+      expect(result.issues[0]?.code).toBe("REACT_VITE_PROJECT_SUPPORTED");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("does not support React libraries without a runnable Vite app", async () => {
     const result = await runDoctor("fixtures/react-library", {
       now: new Date("2026-08-30T00:00:00.000Z"),

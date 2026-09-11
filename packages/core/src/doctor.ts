@@ -86,7 +86,7 @@ export async function runDoctor(
     packageJson.status === "present" && (framework === "nextjs" || framework === "react-vite");
   const hasRunnableReactVite = hasRunnableReactViteIndicators(reactViteIndicators);
   const hasAmbiguousFrameworkSignals =
-    (hasNextDependency || nextIndicators.length > 0) &&
+    hasAuthoritativeNextEvidence(hasNextDependency, nextIndicators) &&
     (hasReactViteDependency || hasRunnableReactVite);
 
   if (!runtimePrerequisites.nodeSupported) {
@@ -390,7 +390,7 @@ function detectFramework(input: {
   hasReactViteDependency: boolean;
   reactViteIndicators: string[];
 }): FrameworkKind {
-  if (input.hasNextDependency || input.nextIndicators.length > 0) {
+  if (hasAuthoritativeNextEvidence(input.hasNextDependency, input.nextIndicators)) {
     return "nextjs";
   }
 
@@ -401,16 +401,20 @@ function detectFramework(input: {
   return "unknown";
 }
 
+function hasAuthoritativeNextEvidence(
+  hasNextDependency: boolean,
+  nextIndicators: string[]
+): boolean {
+  return (
+    hasNextDependency ||
+    nextIndicators.some((indicator) =>
+      ["next.config.js", "next.config.mjs", "next.config.ts", "app", "src/app"].includes(indicator)
+    )
+  );
+}
+
 async function detectNextIndicators(projectRoot: string): Promise<string[]> {
-  const candidates = [
-    "next.config.js",
-    "next.config.mjs",
-    "next.config.ts",
-    "app",
-    "pages",
-    "src/app",
-    "src/pages"
-  ];
+  const candidates = ["next.config.js", "next.config.mjs", "next.config.ts", "pages", "src/pages"];
   const found: string[] = [];
 
   for (const candidate of candidates) {
@@ -419,7 +423,47 @@ async function detectNextIndicators(projectRoot: string): Promise<string[]> {
     }
   }
 
+  for (const candidate of ["app", "src/app"]) {
+    const directory = join(projectRoot, candidate);
+    if ((await pathExists(directory)) && (await hasNextAppRouteEvidence(directory))) {
+      found.push(candidate);
+    }
+  }
+
   return found;
+}
+
+async function hasNextAppRouteEvidence(directory: string, depth = 0): Promise<boolean> {
+  if (depth > 4) {
+    return false;
+  }
+
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch {
+    return false;
+  }
+
+  for (const entry of entries) {
+    if (
+      entry.isFile() &&
+      /^(page|layout|route|loading|error|not-found)\.(tsx|ts|jsx|js|mdx)$/.test(entry.name)
+    ) {
+      return true;
+    }
+  }
+
+  for (const entry of entries) {
+    if (!entry.isDirectory() || shouldSkipDirectory(entry.name)) {
+      continue;
+    }
+    if (await hasNextAppRouteEvidence(join(directory, entry.name), depth + 1)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 async function detectReactViteIndicators(projectRoot: string): Promise<string[]> {
@@ -486,8 +530,7 @@ async function walk(
     const indicators = await detectNextIndicators(current);
     const reactViteIndicators = await detectReactViteIndicators(current);
     if (
-      hasDependency(packageJson.value, "next") ||
-      indicators.length > 0 ||
+      hasAuthoritativeNextEvidence(hasDependency(packageJson.value, "next"), indicators) ||
       (hasReactViteDependencies(packageJson.value) &&
         hasRunnableReactViteIndicators(reactViteIndicators))
     ) {
