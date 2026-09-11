@@ -5,6 +5,7 @@
     { "path": "./packages/core" },
     { "path": "./packages/config" },
     { "path": "./packages/analyzers/nextjs" },
+    { "path": "./packages/analyzers/react-vite" },
     { "path": "./packages/analyzers/runtime" },
     { "path": "./packages/analyzers/graphify" },
     { "path": "./packages/standards/core" },

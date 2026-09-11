@@ -4,6 +4,10 @@ All notable changes to Descuff will be documented in this file.
 
 ## Unreleased - Next Changes
 
+### Added
+
+- Added initial React/Vite preview support with a dedicated analyzer package, doctor detection, CLI scan workflow integration, route/form/fetch-reference evidence, existing standards discovery, fixtures, and release graph wiring.
+
 ## 0.17.4 - 2026-08-31 - Hosted Report Separation
 
 ### Changed

@@ -114,6 +114,26 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("runs doctor on a supported React/Vite fixture", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-react-vite-"));
+    const projectRoot = join(tempRoot, "react-vite");
+
+    try {
+      await cp("fixtures/react-vite", projectRoot, { recursive: true });
+
+      const result = await runCli(["node", "descuff", "doctor", projectRoot]);
+      const doctorJson = await readFile(join(projectRoot, ".descuff", "doctor.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff doctor supported");
+      expect(result.stdout).toContain("Framework: react-vite");
+      expect(doctorJson).toContain('"framework": "react-vite"');
+      expect(doctorJson).toContain('"code": "REACT_VITE_PROJECT_SUPPORTED"');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("reports absent Descuff artifacts before writing doctor artifacts", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-doctor-fresh-artifacts-"));
 
@@ -269,6 +289,37 @@ describe("descuff CLI", () => {
     expect(graphifyEnrichmentMarkdown).toContain("Graphify Enrichment");
     expect(enrichmentTemplate.schemaVersion).toBe("0.1.0");
     expect(enrichmentPrompt).toContain("Descuff Semantic Enrichment Request");
+  });
+
+  it("runs scan on a React/Vite fixture and writes framework-neutral artifacts", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-scan-react-vite-"));
+    const projectRoot = join(tempRoot, "react-vite");
+
+    try {
+      await cp("fixtures/react-vite", projectRoot, { recursive: true });
+
+      const result = await runCli(["node", "descuff", "scan", projectRoot]);
+      const analysis = JSON.parse(
+        await readFile(join(projectRoot, ".descuff", "analysis.json"), "utf8")
+      ) as { framework: { kind: string }; routes: Array<{ path: string }> };
+      const model = JSON.parse(
+        await readFile(join(projectRoot, ".descuff", "model.json"), "utf8")
+      ) as { project: { framework: string }; apis: Array<{ path: string; method: string }> };
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff scan completed");
+      expect(analysis.framework.kind).toBe("react-vite");
+      expect(analysis.routes.map((route) => route.path)).toContain("/products");
+      expect(model.project.framework).toBe("react-vite");
+      expect(model.apis).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ method: "GET", path: "/api/products" }),
+          expect.objectContaining({ method: "POST", path: "/api/waitlist" })
+        ])
+      );
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it("falls back to synthetic runtime evidence when runtime config is malformed", async () => {
@@ -699,7 +750,7 @@ describe("descuff CLI", () => {
       );
       expect(codexInstructions).toContain("If hosted recon already confirms");
       expect(codexInstructions).toContain(
-        "current public preview supports local Next.js codebases"
+        "current public preview supports local Next.js codebases and React/Vite preview codebases"
       );
       expect(codexInstructions).toContain("npx descuff start .");
       expect(codexInstructions).toContain("npx descuff scenarios .");
@@ -729,7 +780,9 @@ describe("descuff CLI", () => {
       expect(skill).toContain("confirmation intake before running any Descuff command");
       expect(skill).toContain("compact supporting evidence");
       expect(skill).toContain("Descuff-specific next step");
-      expect(skill).toContain("current public preview supports local Next.js codebases");
+      expect(skill).toContain(
+        "current public preview supports local Next.js codebases and React/Vite preview codebases"
+      );
       expect(skill).toContain("npx descuff enrich .");
       expect(skill).toContain("npx descuff scenarios .");
     } finally {
@@ -799,7 +852,9 @@ describe("descuff CLI", () => {
       );
       expect(command).toContain("Before running any Descuff command");
       expect(command).toContain("Prefer a Descuff next step");
-      expect(command).toContain("current public preview supports local Next.js codebases");
+      expect(command).toContain(
+        "current public preview supports local Next.js codebases and React/Vite preview codebases"
+      );
       expect(command).toContain("npx descuff start .");
       expect(command).toContain("npx descuff enrich .");
       expect(command).toContain("npx descuff scenarios .");
@@ -830,7 +885,9 @@ describe("descuff CLI", () => {
       );
       expect(rule).toContain("Before running any Descuff command");
       expect(rule).toContain("Prefer a Descuff next step");
-      expect(rule).toContain("current public preview supports local Next.js codebases");
+      expect(rule).toContain(
+        "current public preview supports local Next.js codebases and React/Vite preview codebases"
+      );
       expect(rule).toContain("npx descuff start .");
       expect(rule).toContain("npx descuff enrich .");
       expect(rule).toContain("npx descuff scenarios .");

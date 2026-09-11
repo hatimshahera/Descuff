@@ -17,7 +17,7 @@ export type CapabilityVisibility = "public" | "authenticated" | "admin" | "unkno
 
 export interface ProjectMetadata {
   rootDir: string;
-  framework: "nextjs" | "unknown";
+  framework: "nextjs" | "react-vite" | "unknown";
   evidence: EvidenceRef[];
 }
 

@@ -65,6 +65,34 @@ describe("@descuff/core", () => {
     expect(renderDoctorMarkdown(result)).toContain("## Detected");
   });
 
+  it("diagnoses a supported React/Vite project root", async () => {
+    const result = await runDoctor("fixtures/react-vite", {
+      now: new Date("2026-08-30T00:00:00.000Z"),
+      nodeVersion: "v22.0.0"
+    });
+
+    expect(result.supported).toBe(true);
+    expect(result.detected.framework).toBe("react-vite");
+    expect(result.detected.reactViteIndicators).toEqual(
+      expect.arrayContaining(["vite.config.ts", "index.html", "src/main.tsx"])
+    );
+    expect(result.issues[0]?.code).toBe("REACT_VITE_PROJECT_SUPPORTED");
+    expect(renderDoctorSummary(result, "fixtures/react-vite/.descuff")).toContain(
+      "descuff doctor supported"
+    );
+  });
+
+  it("does not support React libraries without a runnable Vite app", async () => {
+    const result = await runDoctor("fixtures/react-library", {
+      now: new Date("2026-08-30T00:00:00.000Z"),
+      nodeVersion: "v22.0.0"
+    });
+
+    expect(result.supported).toBe(false);
+    expect(result.detected.framework).toBe("unknown");
+    expect(result.issues.map((issue) => issue.code)).toContain("SUPPORTED_PROJECT_NOT_FOUND");
+  });
+
   it("uses the current time for doctor checks when no test clock is provided", async () => {
     const result = await runDoctor("fixtures/ecommerce", {
       nodeVersion: "v22.0.0"

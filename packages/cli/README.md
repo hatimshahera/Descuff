@@ -1,6 +1,6 @@
 # Descuff CLI
 
-Command-line entry point for Descuff, an open-source tool that helps developers turn local Next.js apps into websites AI agents can understand and use.
+Command-line entry point for Descuff, an open-source tool that helps developers turn local supported apps into websites AI agents can understand and use.
 
 ```bash
 npx descuff doctor .
@@ -37,4 +37,4 @@ Keep `.descuff/` ignored in public repositories by default. For CI drift checks,
 
 `scan` also writes optional Graphify/native correlation artifacts when `graphify-out/graph.json` exists. Missing or invalid Graphify output is recorded but does not block native analysis.
 
-The current public preview targets local Next.js applications and keeps automatic source writes disabled. It detects App Router and Pages Router projects, common nested monorepo app layouts, API routes, Server Actions, auth boundaries, route visibility, and common agent-facing standards.
+The current public preview targets local Next.js applications and React/Vite preview applications, and keeps automatic source writes disabled. It detects App Router and Pages Router projects, common nested monorepo app layouts, API routes, Server Actions, auth boundaries, route visibility, React/Vite frontend routes, forms, fetch references, and common agent-facing standards.

@@ -2,12 +2,12 @@ import type { EvidenceIndex, EvidenceRef } from "./evidence.js";
 
 export const structuralAnalysisSchemaVersion = "0.1.0";
 
-export type RouterKind = "next-app" | "next-pages" | "unknown";
+export type RouterKind = "next-app" | "next-pages" | "react-router" | "unknown";
 
 export type HttpMethod =
   "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS" | "UNKNOWN";
 
-export type FrameworkKind = "nextjs" | "unknown";
+export type FrameworkKind = "nextjs" | "react-vite" | "unknown";
 
 export type StandardKind = "llms-txt" | "webmcp" | "schema-org" | "openapi" | "api-catalog";
 

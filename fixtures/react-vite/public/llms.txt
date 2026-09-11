@@ -1,0 +1,3 @@
+# React Vite Fixture
+
+This fixture has local React/Vite public metadata for Descuff tests.

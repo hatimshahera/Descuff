@@ -1,7 +1,7 @@
 {
   "name": "descuff",
   "version": "0.17.4",
-  "description": "Turn local Next.js websites into interfaces AI agents can understand and use.",
+  "description": "Turn local supported websites into interfaces AI agents can understand and use.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {
@@ -19,7 +19,9 @@
     "llms.txt",
     "nextjs",
     "openapi",
+    "react",
     "schema-org",
+    "vite",
     "webmcp"
   ],
   "files": [
@@ -44,6 +46,7 @@
     "@descuff/agent-workflow": "^0.17.4",
     "@descuff/analyzer-graphify": "^0.17.4",
     "@descuff/analyzer-nextjs": "^0.17.4",
+    "@descuff/analyzer-react-vite": "^0.17.4",
     "@descuff/analyzer-runtime": "^0.17.4",
     "@descuff/core": "^0.17.4",
     "@descuff/ir": "^0.17.4",

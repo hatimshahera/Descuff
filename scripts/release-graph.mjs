@@ -6,6 +6,7 @@ export const publicPackageJsonPaths = [
   "packages/agent-workflow/package.json",
   "packages/analyzers/graphify/package.json",
   "packages/analyzers/nextjs/package.json",
+  "packages/analyzers/react-vite/package.json",
   "packages/analyzers/runtime/package.json",
   "packages/cli/package.json",
   "packages/config/package.json",

@@ -1,6 +1,6 @@
 # How To Use Descuff
 
-Descuff is an early public preview for local Next.js codebases. Run it from the root of the app you want to improve.
+Descuff is an early public preview for local Next.js and React/Vite codebases. Run it from the root of the app you want to improve.
 
 Install is optional. The easiest path is:
 
@@ -12,7 +12,7 @@ npx descuff start .
 ## 1. Check The Project Root
 
 ```bash
-cd my-nextjs-app
+cd my-supported-app
 npx descuff doctor .
 ```
 
@@ -128,7 +128,7 @@ Then invoke it in Codex with:
 $descuff .
 ```
 
-The installed skill starts with a short intake instead of silently changing files. It explains that Descuff currently supports local Next.js apps first, asks for the project root if needed, shows defaults for semantic enrichment and browser-agent scenario suggestions, asks for an optional hosted URL when you want hosted before/after effort numbers, and asks whether to use existing Graphify output when present. It should wait for your confirmation before running Descuff commands unless your prompt explicitly says to proceed without confirmation.
+The installed skill starts with a short intake instead of silently changing files. It explains that Descuff currently supports local Next.js apps and React/Vite preview apps, asks for the project root if needed, shows defaults for semantic enrichment and browser-agent scenario suggestions, asks for an optional hosted URL when you want hosted before/after effort numbers, and asks whether to use existing Graphify output when present. It should wait for your confirmation before running Descuff commands unless your prompt explicitly says to proceed without confirmation.
 
 If you approve Graphify usage, the agent should keep Graphify output as compact supporting evidence. The final call to action should stay Descuff-specific: deploy local standards changes, rerun hosted recon after deployment, fix a remaining readiness gap, or review generated browser-agent scenarios.
 
@@ -159,7 +159,7 @@ Claude Code and Cursor receive the same shared intake and safety rules as Codex.
 If you do not want a host-specific install, paste this into Codex, Cursor, Claude Code, or another coding agent:
 
 ```text
-Use Descuff to make this Next.js app more usable by AI agents.
+Use Descuff to make this supported local app more usable by AI agents.
 
 Read:
 - .descuff/baseline.json
@@ -445,7 +445,8 @@ Usually do not commit `.descuff/`, because it contains local absolute paths and 
 
 ## Current Limitations
 
-- The current public preview supports local Next.js codebases, not arbitrary deployed URLs.
+- The current public preview supports local Next.js codebases and React/Vite preview codebases, not arbitrary deployed URLs.
+- React/Vite support is frontend source-backed. Descuff can detect routes, forms, same-origin fetch references, and public standards, but it does not prove backend implementation unless a supported backend adapter exists.
 - `apply-safe` does not write application source automatically yet.
 - Descuff guides your coding agent; it does not directly call an LLM.
 - WebMCP support is implementation-plan and validation oriented; static `webmcp.json` metadata alone is not treated as proof.

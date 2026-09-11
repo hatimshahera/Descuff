@@ -26,6 +26,7 @@ import {
 } from "@descuff/agent-workflow";
 import { GraphifyAnalyzer } from "@descuff/analyzer-graphify";
 import { NativeNextAnalyzer } from "@descuff/analyzer-nextjs";
+import { ReactViteAnalyzer } from "@descuff/analyzer-react-vite";
 import { correlateRuntimeEvidence, RuntimeAnalyzer } from "@descuff/analyzer-runtime";
 import {
   createProjectContext,
@@ -1113,7 +1114,7 @@ async function readOrBuildArtifacts(projectRoot: string): Promise<ScanArtifacts>
 }
 
 async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
-  const analysis = await new NativeNextAnalyzer().analyze(createProjectContext(projectRoot));
+  const analysis = await analyzeProject(projectRoot);
   const runtimeProject = await readRuntimeProjectContext(projectRoot, analysis);
   const analysisWithRuntime =
     runtimeProject === undefined
@@ -1139,6 +1140,21 @@ async function buildScanArtifacts(projectRoot: string): Promise<ScanArtifacts> {
     generatedChanges: generated.flat(),
     sourceFingerprints: await createSourceFingerprintManifest(projectRoot, analysisWithRuntime)
   };
+}
+
+async function analyzeProject(projectRoot: string): Promise<StructuralAnalysis> {
+  const project = createProjectContext(projectRoot);
+  const nextAnalysis = await new NativeNextAnalyzer().analyze(project);
+  if (nextAnalysis.framework.detected) {
+    return nextAnalysis;
+  }
+
+  const reactViteAnalysis = await new ReactViteAnalyzer().analyze(project);
+  if (reactViteAnalysis.framework.detected) {
+    return reactViteAnalysis;
+  }
+
+  return nextAnalysis;
 }
 
 async function writeScanArtifacts(projectRoot: string, artifacts: ScanArtifacts): Promise<void> {
@@ -1241,7 +1257,7 @@ function renderCodexPrompt(): string {
   return [
     "# Descuff Coding Agent Prompt",
     "",
-    "Use Descuff to implement agent-facing standards for this Next.js app.",
+    "Use Descuff to implement agent-facing standards for this supported local app.",
     "",
     "1. Read `.descuff/baseline.json`, `.descuff/plan.md`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/skill-evidence-packet.json`, and `.descuff/semantic-enrichment-prompt.md`.",
     "2. Write evidence-backed semantic enrichment to `.descuff/semantic-enrichment.json` using only evidence IDs from the packet.",

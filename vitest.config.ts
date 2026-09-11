@@ -9,6 +9,7 @@ export default defineConfig({
       "@descuff/agent-workflow": fromRoot("./packages/agent-workflow/src/index.ts"),
       "@descuff/analyzer-graphify": fromRoot("./packages/analyzers/graphify/src/index.ts"),
       "@descuff/analyzer-nextjs": fromRoot("./packages/analyzers/nextjs/src/index.ts"),
+      "@descuff/analyzer-react-vite": fromRoot("./packages/analyzers/react-vite/src/index.ts"),
       "@descuff/analyzer-runtime": fromRoot("./packages/analyzers/runtime/src/index.ts"),
       "@descuff/config": fromRoot("./packages/config/src/index.ts"),
       "@descuff/core": fromRoot("./packages/core/src/index.ts"),

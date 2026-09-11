@@ -6,19 +6,19 @@
 
 Turn your existing website into an interface AI agents can understand and use.
 
-Descuff checks a local Next.js app, tells your coding agent what to add, then proves the before/after improvement.
+Descuff checks a local supported app, tells your coding agent what to add, then proves the before/after improvement.
 
 It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser/runtime WebMCP validation.
 
 Preview hosted recon can also inspect a deployed public URL and report what browser agents can observe without source access.
 
-Current release: `descuff@0.17.4` on npm. Descuff is an early public preview for local Next.js App Router and Pages Router codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
+Current release: `descuff@0.17.4` on npm. Descuff is an early public preview for local Next.js App Router, Next.js Pages Router, and React/Vite codebases, including common monorepo layouts where the app lives under folders such as `apps/web`.
 
-Works today: local Next.js App Router and Pages Router projects.
+Works today: local Next.js App Router and Pages Router projects, plus React/Vite preview support for source-backed frontend routes, forms, fetch references, and existing standards.
 
 ## Quick Start
 
-Run Descuff inside a local Next.js project:
+Run Descuff inside a local supported project:
 
 ```bash
 npx descuff doctor .
@@ -72,6 +72,7 @@ Descuff rescans, validates, and writes:
 ## What Descuff Does
 
 - Detects Next.js routes, API operations, forms, middleware/proxy/route-handler auth boundaries, Server Actions, route visibility, and existing standards.
+- Detects React/Vite preview apps with source-backed frontend routes, React Router route evidence, navigation links, forms, literal same-origin fetch references, and existing public standards.
 - Builds an evidence-backed semantic model of domain profile, compatibility application type, capabilities, risks, routes, APIs, standards, and readiness.
 - Records optional Graphify/native structural correlation when `graphify-out/graph.json` is present, and continues with native analysis when it is absent or invalid.
 - Recommends agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, RFC 9727 API Catalog, and experimental WebMCP implementation plans for browser-registered public read tools.
@@ -138,7 +139,7 @@ Lower-level commands:
 - `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`; ask Cursor Agent to Descuff the app from that project.
 - `install all` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
   Install output reminds users to run `finish` only after explicit Descuff plan implementation and `check` for ordinary later edits.
-  Installed agent instructions begin with a short intake: what Descuff does, the current local Next.js preview boundary, whether to use semantic enrichment, whether to generate browser-agent scenarios, whether to run optional hosted recon, and whether to use existing Graphify output when present. The agent should wait for confirmation before running Descuff commands unless the prompt explicitly says to proceed without confirmation.
+  Installed agent instructions begin with a short intake: what Descuff does, the current local Next.js and React/Vite preview boundary, whether to use semantic enrichment, whether to generate browser-agent scenarios, whether to run optional hosted recon, and whether to use existing Graphify output when present. The agent should wait for confirmation before running Descuff commands unless the prompt explicitly says to proceed without confirmation.
   If Graphify is used, installed agents keep Graphify stats as compact supporting evidence and end with Descuff-specific next steps such as deployment, hosted recon, readiness repair, or scenario review.
   When local validation and hosted recon both run, installed agents should report them separately so local source success is not confused with deployed-site visibility.
 - `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
@@ -179,6 +180,7 @@ Descuff does not directly call an LLM. It writes a plan and prompt for the codin
 - Next.js App Router
 - Next.js Pages Router
 - nested Next.js apps in common monorepo layouts, such as `apps/web/app`
+- React/Vite preview apps with source-backed frontend route, form, fetch-reference, and public standards evidence
 - API routes
 - basic form evidence
 - conservative Server Action capability modelling
@@ -206,7 +208,7 @@ npx descuff recon https://example.com
 Use local source-backed validation for implementation:
 
 ```bash
-cd my-nextjs-app
+cd my-supported-app
 npx descuff start .
 ```
 

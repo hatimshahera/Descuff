@@ -613,7 +613,9 @@ describe("@descuff/agent-workflow", () => {
       expect(instructions).toContain("npx descuff check .");
       expect(instructions).toContain("`finish` is for completing a Descuff implementation plan");
       expect(instructions).toContain("## Intake");
-      expect(instructions).toContain("current public preview supports local Next.js codebases");
+      expect(instructions).toContain(
+        "current public preview supports local Next.js codebases and React/Vite preview codebases"
+      );
       expect(instructions).toContain("Before running any Descuff command");
       expect(instructions).toContain("Do not run `start`, `scan`, `plan`, `enrich`");
       expect(instructions).toContain("## Final Report");

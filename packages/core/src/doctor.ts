@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { access, readFile, readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
+import type { FrameworkKind } from "@descuff/ir";
 
 export const doctorSchemaVersion = "0.1.0";
 
@@ -23,9 +24,10 @@ export interface DoctorResult {
   summary: string;
   detected: {
     packageJson: "present" | "missing" | "malformed";
-    framework: "nextjs" | "unknown";
+    framework: FrameworkKind;
     packageManager: "pnpm" | "npm" | "yarn" | "bun" | "unknown";
     nextIndicators: string[];
+    reactViteIndicators: string[];
     candidateAppRoots: string[];
     descuffArtifacts: "absent" | "present" | "malformed" | "stale";
     graphify: "absent" | "present" | "invalid";
@@ -52,6 +54,7 @@ export async function runDoctor(
 ): Promise<DoctorResult> {
   const issues: DiagnosticIssue[] = [];
   const nextIndicators = await detectNextIndicators(projectRoot);
+  const reactViteIndicators = await detectReactViteIndicators(projectRoot);
   const packageJson = await readPackageJson(projectRoot);
   const packageManager = await detectPackageManager(projectRoot);
   const candidateAppRoots = await detectCandidateAppRoots(projectRoot);
@@ -60,6 +63,7 @@ export async function runDoctor(
   const graphify = await detectGraphifyState(projectRoot);
   const git = (await pathExists(join(projectRoot, ".git"))) ? "available" : "unavailable";
   const hasNextDependency = hasDependency(packageJson.value, "next");
+  const hasReactViteDependency = hasReactViteDependencies(packageJson.value);
   const nodeVersion = options.nodeVersion ?? process.version;
   const runtimePrerequisites = {
     nodeSupported: isSupportedNodeVersion(nodeVersion),
@@ -70,8 +74,14 @@ export async function runDoctor(
         : ("playwright-missing" as const),
     browserLaunchChecked: false as const
   };
-  const framework = hasNextDependency || nextIndicators.length > 0 ? "nextjs" : "unknown";
-  const supported = packageJson.status === "present" && framework === "nextjs";
+  const framework = detectFramework({
+    hasNextDependency,
+    nextIndicators,
+    hasReactViteDependency,
+    reactViteIndicators
+  });
+  const supported =
+    packageJson.status === "present" && (framework === "nextjs" || framework === "react-vite");
 
   if (!runtimePrerequisites.nodeSupported) {
     issues.push({
@@ -91,7 +101,7 @@ export async function runDoctor(
       nextSteps:
         candidateAppRoots.length > 0
           ? candidateAppRoots.map((root) => `Run Descuff from ${root}.`)
-          : ["Run Descuff from the root of a local Next.js app."]
+          : ["Run Descuff from the root of a local Next.js or React/Vite app."]
     });
   } else if (packageJson.status === "malformed") {
     issues.push({
@@ -101,16 +111,19 @@ export async function runDoctor(
       evidence: ["package.json"],
       nextSteps: ["Fix package.json syntax before running Descuff."]
     });
-  } else if (!hasNextDependency && nextIndicators.length === 0) {
+  } else if (framework === "unknown") {
     issues.push({
       code: "SUPPORTED_PROJECT_NOT_FOUND",
       severity: "unsupported",
-      message: "package.json exists, but no Next.js dependency or Next.js app structure was found.",
+      message:
+        "package.json exists, but no supported Next.js or React/Vite app structure was found.",
       evidence: ["package.json"],
       nextSteps:
         candidateAppRoots.length > 0
           ? candidateAppRoots.map((root) => `Run Descuff from ${root}.`)
-          : ["Descuff currently supports local Next.js apps. Run it from a supported app root."]
+          : [
+              "Descuff currently supports local Next.js and React/Vite preview apps. Run it from a supported app root."
+            ]
     });
   }
 
@@ -118,7 +131,7 @@ export async function runDoctor(
     issues.push({
       code: "CANDIDATE_APP_ROOTS_FOUND",
       severity: "info",
-      message: "Possible nested Next.js app roots were found.",
+      message: "Possible nested supported app roots were found.",
       evidence: candidateAppRoots,
       nextSteps: candidateAppRoots.map((root) => `Try: npx descuff doctor ${root}`)
     });
@@ -192,10 +205,20 @@ export async function runDoctor(
 
   if (supported) {
     issues.unshift({
-      code: "NEXTJS_PROJECT_SUPPORTED",
+      code: framework === "nextjs" ? "NEXTJS_PROJECT_SUPPORTED" : "REACT_VITE_PROJECT_SUPPORTED",
       severity: "ok",
-      message: "A local Next.js project was detected.",
-      evidence: nextIndicators.length > 0 ? nextIndicators : ["package.json"],
+      message:
+        framework === "nextjs"
+          ? "A local Next.js project was detected."
+          : "A local React/Vite project was detected.",
+      evidence:
+        framework === "nextjs"
+          ? nextIndicators.length > 0
+            ? nextIndicators
+            : ["package.json"]
+          : reactViteIndicators.length > 0
+            ? reactViteIndicators
+            : ["package.json"],
       nextSteps: ["Run npx descuff start . to create a baseline and implementation plan."]
     });
   }
@@ -206,13 +229,14 @@ export async function runDoctor(
     projectRoot,
     supported,
     summary: supported
-      ? "Descuff can analyze this local Next.js project."
+      ? `Descuff can analyze this local ${framework === "nextjs" ? "Next.js" : "React/Vite preview"} project.`
       : "Descuff cannot confidently analyze this project from the current root.",
     detected: {
       packageJson: packageJson.status,
       framework,
       packageManager,
       nextIndicators,
+      reactViteIndicators,
       candidateAppRoots,
       descuffArtifacts,
       graphify,
@@ -308,7 +332,24 @@ function nextStepsForSummary(result: DoctorResult): string[] {
     return [`Try: npx descuff doctor ${candidate}`];
   }
 
-  return ["Run Descuff from the root of a local Next.js app."];
+  return ["Run Descuff from the root of a local Next.js or React/Vite preview app."];
+}
+
+function detectFramework(input: {
+  hasNextDependency: boolean;
+  nextIndicators: string[];
+  hasReactViteDependency: boolean;
+  reactViteIndicators: string[];
+}): FrameworkKind {
+  if (input.hasNextDependency || input.nextIndicators.length > 0) {
+    return "nextjs";
+  }
+
+  if (input.hasReactViteDependency && hasRunnableReactViteIndicators(input.reactViteIndicators)) {
+    return "react-vite";
+  }
+
+  return "unknown";
 }
 
 async function detectNextIndicators(projectRoot: string): Promise<string[]> {
@@ -320,6 +361,29 @@ async function detectNextIndicators(projectRoot: string): Promise<string[]> {
     "pages",
     "src/app",
     "src/pages"
+  ];
+  const found: string[] = [];
+
+  for (const candidate of candidates) {
+    if (await pathExists(join(projectRoot, candidate))) {
+      found.push(candidate);
+    }
+  }
+
+  return found;
+}
+
+async function detectReactViteIndicators(projectRoot: string): Promise<string[]> {
+  const candidates = [
+    "vite.config.ts",
+    "vite.config.js",
+    "vite.config.mts",
+    "vite.config.mjs",
+    "index.html",
+    "src/main.tsx",
+    "src/main.jsx",
+    "src/App.tsx",
+    "src/App.jsx"
   ];
   const found: string[] = [];
 
@@ -371,7 +435,13 @@ async function walk(
   if (current !== root && (await pathExists(packageJsonPath))) {
     const packageJson = await readPackageJson(current);
     const indicators = await detectNextIndicators(current);
-    if (hasDependency(packageJson.value, "next") || indicators.length > 0) {
+    const reactViteIndicators = await detectReactViteIndicators(current);
+    if (
+      hasDependency(packageJson.value, "next") ||
+      indicators.length > 0 ||
+      (hasReactViteDependencies(packageJson.value) &&
+        hasRunnableReactViteIndicators(reactViteIndicators))
+    ) {
       results.push(relative(root, current) || ".");
     }
   }
@@ -510,6 +580,31 @@ function hasDependency(packageJson: unknown, dependencyName: string): boolean {
     }
   }
   return false;
+}
+
+function hasReactViteDependencies(packageJson: unknown): boolean {
+  return (
+    hasDependency(packageJson, "vite") &&
+    (hasDependency(packageJson, "react") ||
+      hasDependency(packageJson, "react-dom") ||
+      hasDependency(packageJson, "@vitejs/plugin-react") ||
+      hasDependency(packageJson, "@vitejs/plugin-react-swc"))
+  );
+}
+
+function hasRunnableReactViteIndicators(indicators: string[]): boolean {
+  const set = new Set(indicators);
+  return (
+    (set.has("vite.config.ts") ||
+      set.has("vite.config.js") ||
+      set.has("vite.config.mts") ||
+      set.has("vite.config.mjs") ||
+      set.has("index.html")) &&
+    (set.has("src/main.tsx") ||
+      set.has("src/main.jsx") ||
+      set.has("src/App.tsx") ||
+      set.has("src/App.jsx"))
+  );
 }
 
 function isSupportedNodeVersion(version: string): boolean {

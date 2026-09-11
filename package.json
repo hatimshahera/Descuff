@@ -1,7 +1,7 @@
 {
   "name": "descuff-workspace",
   "version": "0.17.4",
-  "description": "Turn local Next.js websites into interfaces AI agents can understand and use.",
+  "description": "Turn local supported websites into interfaces AI agents can understand and use.",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
@@ -19,7 +19,9 @@
     "llms.txt",
     "nextjs",
     "openapi",
+    "react",
     "schema-org",
+    "vite",
     "webmcp"
   ],
   "packageManager": "pnpm@10.30.0",

@@ -1,0 +1,8 @@
+{
+  "name": "react-library-fixture",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "react": "latest"
+  }
+}
