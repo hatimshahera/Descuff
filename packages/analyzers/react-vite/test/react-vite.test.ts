@@ -31,7 +31,7 @@ describe("@descuff/analyzer-react-vite", () => {
       expect.objectContaining({
         action: "/api/waitlist",
         method: "post",
-        sourceFile: "src/App.tsx"
+        sourceFile: "src/WaitlistForm.tsx"
       })
     );
     expect(analysis.existingStandards.map((standard) => standard.kind).sort()).toEqual([

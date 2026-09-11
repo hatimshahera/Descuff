@@ -315,6 +315,18 @@ function classifyChangedFile(baseline: DriftBaseline, file: string): DriftImpact
     );
   }
 
+  const form = (baseline.forms ?? []).find((entry) => entry.sourceFile === file);
+  if (form !== undefined) {
+    return impact(
+      file,
+      "form",
+      form.action === undefined ? "Form source changed." : `Form ${form.action} changed.`,
+      form.evidenceIds,
+      capabilitiesForEvidenceLocation(baseline, file).map((capability) => capability.id),
+      standardsForImpact("form")
+    );
+  }
+
   const serverActionCapabilities = capabilitiesForEvidenceLocation(baseline, file).filter(
     (capability) =>
       capability.operationType === "write" ||
@@ -558,7 +570,9 @@ function chooseValidationDepth(impacts: DriftImpact[]): DriftValidationDepth {
     return "full";
   }
 
-  if (impacts.some((item) => ["api", "runtime", "route", "server-action"].includes(item.kind))) {
+  if (
+    impacts.some((item) => ["api", "runtime", "route", "form", "server-action"].includes(item.kind))
+  ) {
     return "targeted-runtime";
   }
 
@@ -594,7 +608,13 @@ function standardsForImpact(
   }
 
   const standards = new Set<string>();
-  if (kind === "route" || kind === "auth-boundary" || kind === "model" || kind === "unknown") {
+  if (
+    kind === "route" ||
+    kind === "form" ||
+    kind === "auth-boundary" ||
+    kind === "model" ||
+    kind === "unknown"
+  ) {
     standards.add("llms-txt");
     standards.add("schema-org");
   }

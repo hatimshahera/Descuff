@@ -657,6 +657,118 @@ describe("descuff CLI", () => {
     }
   });
 
+  it("checks React/Vite route drift with targeted validation", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-react-vite-route-"));
+    const projectRoot = join(tempRoot, "react-vite");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp("fixtures/react-vite", projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      process.env.DESCUFF_CHANGED_FILES = "src/ProductRoutes.tsx";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+      const diff = await readFile(join(projectRoot, ".descuff", "drift-diff.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff check pass");
+      expect(result.stdout).toContain("Validation depth: targeted-runtime");
+      expect(diff).toContain('"kind": "route"');
+      expect(diff).toContain('"src/ProductRoutes.tsx"');
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("checks React/Vite form drift with targeted validation", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-react-vite-form-"));
+    const projectRoot = join(tempRoot, "react-vite");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp("fixtures/react-vite", projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      process.env.DESCUFF_CHANGED_FILES = "src/WaitlistForm.tsx";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+      const diff = await readFile(join(projectRoot, ".descuff", "drift-diff.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff check pass");
+      expect(result.stdout).toContain("Validation depth: targeted-runtime");
+      expect(diff).toContain('"kind": "form"');
+      expect(diff).toContain('"Form /api/waitlist changed."');
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("checks React/Vite fetch-reference drift with targeted validation", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-react-vite-fetch-"));
+    const projectRoot = join(tempRoot, "react-vite");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp("fixtures/react-vite", projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      process.env.DESCUFF_CHANGED_FILES = "src/ProductButton.tsx";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+      const diff = await readFile(join(projectRoot, ".descuff", "drift-diff.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff check pass");
+      expect(result.stdout).toContain("Validation depth: targeted-runtime");
+      expect(diff).toContain('"kind": "api"');
+      expect(diff).toContain('"GET /api/products changed."');
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("checks React/Vite public standards drift with static validation", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-check-react-vite-standard-"));
+    const projectRoot = join(tempRoot, "react-vite");
+    const previousChangedFiles = process.env.DESCUFF_CHANGED_FILES;
+
+    try {
+      await cp("fixtures/react-vite", projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      process.env.DESCUFF_CHANGED_FILES = "public/llms.txt";
+
+      const result = await runCli(["node", "descuff", "check", projectRoot]);
+      const diff = await readFile(join(projectRoot, ".descuff", "drift-diff.json"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff check pass");
+      expect(result.stdout).toContain("Validation depth: targeted-static");
+      expect(diff).toContain('"kind": "metadata"');
+      expect(diff).toContain('"llms-txt"');
+    } finally {
+      if (previousChangedFiles === undefined) {
+        delete process.env.DESCUFF_CHANGED_FILES;
+      } else {
+        process.env.DESCUFF_CHANGED_FILES = previousChangedFiles;
+      }
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("does not generate API or WebMCP plans for static sites without APIs", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-static-"));
 
@@ -1082,6 +1194,52 @@ describe("descuff CLI", () => {
       expect(suggestionsJson).toContain('"risk": "read-only"');
       expect(suggestionsJson).toContain('"source": "descuff-deterministic"');
       expect(suggestionsMarkdown).toContain("Review generated scenarios before using them");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("generates read-only browser-agent scenario suggestions for React/Vite evidence", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-scenarios-react-vite-"));
+    const projectRoot = join(tempRoot, "react-vite");
+
+    try {
+      await cp("fixtures/react-vite", projectRoot, { recursive: true });
+
+      const result = await runCli(["node", "descuff", "scenarios", projectRoot]);
+      const suggestions = JSON.parse(
+        await readFile(join(projectRoot, ".descuff", "scenario-suggestions.json"), "utf8")
+      ) as {
+        suggestions: Array<{
+          id: string;
+          risk: string;
+          expectedEvidenceSurfaces: string[];
+          successCriteria: string[];
+        }>;
+      };
+      const markdown = await readFile(
+        join(projectRoot, ".descuff", "scenario-suggestions.md"),
+        "utf8"
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff scenarios completed");
+      expect(suggestions.suggestions.length).toBeGreaterThanOrEqual(4);
+      expect(suggestions.suggestions.every((scenario) => scenario.risk === "read-only")).toBe(true);
+      expect(suggestions.suggestions.map((scenario) => scenario.id)).toEqual(
+        expect.arrayContaining([
+          "reach-products",
+          "find-api-get-api-products",
+          "find-form-api-waitlist"
+        ])
+      );
+      expect(
+        suggestions.suggestions.some((scenario) =>
+          scenario.expectedEvidenceSurfaces.includes("openapi")
+        )
+      ).toBe(true);
+      expect(markdown).toContain("These are evidence-backed, read-only browser-agent scenarios");
+      expect(markdown).toContain("Find form /api/waitlist");
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }

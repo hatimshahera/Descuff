@@ -5,7 +5,8 @@ import type {
   Capability,
   EvidenceRef,
   ExistingStandardModel,
-  Route
+  Route,
+  StructuralForm
 } from "@descuff/ir";
 import type { StandardAssessment } from "@descuff/standard-core";
 import type { SourceFingerprintManifest, ValidationReadinessReport } from "@descuff/validator";
@@ -16,6 +17,7 @@ import {
   type DriftBaseline,
   type DriftCapabilityIndexEntry,
   type DriftContractFingerprintEntry,
+  type DriftFormIndexEntry,
   type DriftRouteIndexEntry,
   type DriftStandardIndexEntry
 } from "./types.js";
@@ -23,6 +25,7 @@ import { normalizePath, uniqueSorted } from "./shared.js";
 
 export interface DriftBaselineInput {
   model: ApplicationModel;
+  forms?: StructuralForm[];
   assessments: StandardAssessment[];
   sourceFingerprints: SourceFingerprintManifest;
   validationReport: ValidationReadinessReport;
@@ -42,6 +45,7 @@ export function createDriftBaseline(input: DriftBaselineInput): DriftBaseline {
     readiness: input.validationReport.readiness,
     validation: input.validationReport.validation,
     routes: input.model.routes.map(indexRoute).sort(byId),
+    forms: (input.forms ?? []).map(indexForm).sort(byId),
     apis: input.model.apis.map(indexApi).sort(byId),
     capabilities: input.model.capabilities.map(indexCapability).sort(byId),
     authBoundaries: input.model.authentication.boundaries.map(indexAuthBoundary).sort(byId),
@@ -54,6 +58,16 @@ export function createDriftBaseline(input: DriftBaselineInput): DriftBaseline {
       .filter((assessment) => ["required", "recommended"].includes(assessment.applicability))
       .map((assessment) => assessment.standardId)
       .sort()
+  };
+}
+
+function indexForm(form: StructuralForm): DriftFormIndexEntry {
+  return {
+    id: form.id,
+    sourceFile: form.sourceFile,
+    ...(form.action === undefined ? {} : { action: form.action }),
+    ...(form.method === undefined ? {} : { method: form.method }),
+    evidenceIds: evidenceIds(form.evidence)
   };
 }
 

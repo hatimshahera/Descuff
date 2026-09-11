@@ -27,6 +27,7 @@ describe("@descuff/drift-core", () => {
   it("creates a versioned drift baseline from a known-good model", () => {
     const baseline = createDriftBaseline({
       model: fixtureModel(),
+      forms: fixtureForms(),
       assessments: fixtureAssessments(),
       sourceFingerprints: fixtureFingerprints(),
       validationReport: fixtureValidationReport()
@@ -34,6 +35,7 @@ describe("@descuff/drift-core", () => {
 
     expect(baseline.schemaVersion).toBe("0.1.0");
     expect(baseline.apis.map((api) => `${api.method} ${api.path}`)).toEqual(["GET /api/search"]);
+    expect(baseline.forms?.map((form) => `${form.method} ${form.action}`)).toEqual(["get /search"]);
     expect(baseline.capabilities[0]?.evidenceLocations).toEqual(["app/api/search/route.ts"]);
     expect(baseline.contractFingerprints).toEqual([
       {
@@ -77,6 +79,28 @@ describe("@descuff/drift-core", () => {
       code: "AGENT_INTERFACE_DRIFT",
       file: "app/api/search/route.ts"
     });
+  });
+
+  it("maps form changes to route and structured metadata drift", () => {
+    const diff = analyzeDrift({
+      baseline: fixtureBaseline(),
+      changedFiles: ["app/search-form.tsx"]
+    });
+    const plan = createDriftValidationPlan(diff);
+
+    expect(diff.status).toBe("needs-validation");
+    expect(diff.validationDepth).toBe("targeted-runtime");
+    expect(diff.impacts[0]).toMatchObject({
+      kind: "form",
+      affectedStandards: ["llms-txt", "schema-org"]
+    });
+    expect(plan.suites).toEqual([
+      "runtime-observations",
+      "source-fingerprints",
+      "static-generated-changes",
+      "static-standards"
+    ]);
+    expect(plan.reasons).toContain("Route, form, model, or structured content evidence changed.");
   });
 
   it("maps auth boundary changes to security drift", () => {
@@ -283,10 +307,31 @@ describe("@descuff/drift-core", () => {
 function fixtureBaseline() {
   return createDriftBaseline({
     model: fixtureModel(),
+    forms: fixtureForms(),
     assessments: fixtureAssessments(),
     sourceFingerprints: fixtureFingerprints(),
     validationReport: fixtureValidationReport()
   });
+}
+
+function fixtureForms() {
+  return [
+    {
+      id: "form:search",
+      sourceFile: "app/search-form.tsx",
+      action: "/search",
+      method: "get",
+      evidence: [
+        {
+          id: "source:search-form",
+          kind: "source",
+          location: "app/search-form.tsx",
+          confidence: "high",
+          summary: "Search form"
+        }
+      ]
+    }
+  ];
 }
 
 function fixtureModel(): ApplicationModel {

@@ -40,11 +40,18 @@ export function createDriftValidationPlan(diff: DriftDiffResult): DriftValidatio
     reasons.push("Machine-facing metadata changed.");
   }
 
-  if (impactKinds.includes("route") || impactKinds.includes("model")) {
+  if (
+    impactKinds.includes("route") ||
+    impactKinds.includes("form") ||
+    impactKinds.includes("model")
+  ) {
     suites.add("static-generated-changes");
     suites.add("static-standards");
     suites.add("source-fingerprints");
-    reasons.push("Route, model, or structured content evidence changed.");
+    if (impactKinds.includes("form")) {
+      suites.add("runtime-observations");
+    }
+    reasons.push("Route, form, model, or structured content evidence changed.");
   }
 
   if (impactKinds.includes("api") || impactKinds.includes("runtime")) {

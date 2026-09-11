@@ -455,6 +455,7 @@ async function startCommand(projectRoot: string): Promise<string> {
   const baseline = createBaselineSnapshot(artifacts, validation.report);
   const driftBaseline = createDriftBaseline({
     model: artifacts.model,
+    forms: artifacts.analysis.forms,
     assessments: artifacts.assessments,
     sourceFingerprints: artifacts.sourceFingerprints,
     validationReport: validation.report
@@ -486,6 +487,7 @@ async function finishCommand(projectRoot: string): Promise<CommandResult> {
       "drift-baseline.json",
       createDriftBaseline({
         model: artifacts.model,
+        forms: artifacts.analysis.forms,
         assessments: artifacts.assessments,
         sourceFingerprints: artifacts.sourceFingerprints,
         validationReport: validation.report

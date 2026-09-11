@@ -11,6 +11,7 @@ export type DriftImpactKind =
   | "none"
   | "metadata"
   | "route"
+  | "form"
   | "api"
   | "server-action"
   | "auth-boundary"
@@ -43,6 +44,7 @@ export interface DriftBaseline {
   readiness: ValidationReadinessReport["readiness"];
   validation: ValidationReadinessReport["validation"];
   routes: DriftRouteIndexEntry[];
+  forms?: DriftFormIndexEntry[];
   apis: DriftApiIndexEntry[];
   capabilities: DriftCapabilityIndexEntry[];
   authBoundaries: DriftAuthBoundaryIndexEntry[];
@@ -56,6 +58,14 @@ export interface DriftRouteIndexEntry {
   path: string;
   sourceFile: string;
   visibility: string;
+  evidenceIds: string[];
+}
+
+export interface DriftFormIndexEntry {
+  id: string;
+  sourceFile: string;
+  action?: string;
+  method?: string;
   evidenceIds: string[];
 }
 
