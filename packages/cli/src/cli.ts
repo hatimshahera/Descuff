@@ -8,18 +8,24 @@ import {
   buildAgentPlan,
   buildGraphifyEnrichmentSummary,
   buildSkillEvidencePacket,
+  createLlmDiscoveryTemplate,
   createSemanticEnrichmentTemplate,
   getSkillHostAdapter,
   renderAgentPlanMarkdown,
   renderCodexSkillFile,
   renderFixCommandInstructions,
   renderGraphifyEnrichmentSummary,
+  renderLlmDiscoveryDiff,
+  renderLlmDiscoveryPlanSection,
+  renderLlmDiscoveryPrompt,
   renderSemanticEnrichmentDiff,
   renderSemanticEnrichmentPrompt,
   renderSkillEvidencePacket,
   renderSkillHostInstructions,
   supportedSkillHostAdapters,
+  validateLlmDiscovery,
   validateSemanticEnrichment,
+  type LlmDiscovery,
   type SemanticEnrichment,
   type SkillEvidencePacket,
   type SkillHostTarget
@@ -204,6 +210,15 @@ export async function runCli(argv: string[]): Promise<CommandResult> {
 
 async function enrichCommand(projectRoot: string): Promise<CommandResult> {
   const packet = await readJson<SkillEvidencePacket>(projectRoot, "skill-evidence-packet.json");
+  const llmDiscovery = await readJsonIfExists<LlmDiscovery>(projectRoot, "llm-discovery.json");
+  if (llmDiscovery !== undefined) {
+    const semanticEnrichment = await readJsonIfExists<SemanticEnrichment>(
+      projectRoot,
+      "semantic-enrichment.json"
+    );
+    return await enrichLlmDiscoveryCommand(projectRoot, packet, llmDiscovery, semanticEnrichment);
+  }
+
   const enrichment = await readJson<SemanticEnrichment>(projectRoot, "semantic-enrichment.json");
   const result = validateSemanticEnrichment(packet, enrichment);
   const diff = renderSemanticEnrichmentDiff(packet, result);
@@ -222,7 +237,75 @@ async function enrichCommand(projectRoot: string): Promise<CommandResult> {
       `Accepted candidate concepts: ${result.candidateConceptsAccepted.length}`,
       `Rejected: ${rejected.length}`,
       `Needs investigation: ${investigation.length}`,
+      "Source: semantic-enrichment.json",
       `Diff: ${join(artifactDir(projectRoot), "semantic-enrichment-diff.md")}`,
+      ""
+    ].join("\n"),
+    stderr:
+      rejected.length === 0
+        ? ""
+        : `${rejected.map((issue) => `${issue.code}: ${issue.message}`).join("\n")}\n`
+  };
+}
+
+async function enrichLlmDiscoveryCommand(
+  projectRoot: string,
+  packet: SkillEvidencePacket,
+  discovery: LlmDiscovery,
+  semanticEnrichment: SemanticEnrichment | undefined
+): Promise<CommandResult> {
+  const sourceFingerprints = await readJsonIfExists<SourceFingerprintManifest>(
+    projectRoot,
+    "source-fingerprints.json"
+  );
+  const expectedHashes = await currentLlmDiscoveryInputHashes(projectRoot);
+  const sourceFingerprintHash = await hashArtifactIfExists(projectRoot, "source-fingerprints.json");
+  const validationOptions: Parameters<typeof validateLlmDiscovery>[2] = {
+    expectedInputArtifactHashes: expectedHashes
+  };
+  if (sourceFingerprints !== undefined) {
+    validationOptions.knownSourceFiles = sourceFingerprints.files
+      .filter((file) => !file.missing)
+      .map((file) => file.path);
+  }
+  if (sourceFingerprintHash !== undefined) {
+    validationOptions.expectedSourceFingerprintHash = sourceFingerprintHash;
+  }
+  const result = validateLlmDiscovery(packet, discovery, validationOptions);
+  if (semanticEnrichment !== undefined && hasSemanticEnrichmentClaims(semanticEnrichment)) {
+    result.issues.push({
+      code: "LLM_DISCOVERY_SEMANTIC_ENRICHMENT_CONFLICT",
+      message:
+        "Both llm-discovery.json and non-empty semantic-enrichment.json are present. Remove one or make the legacy enrichment review-only before importing.",
+      path: "$",
+      disposition: "rejected",
+      evidenceIds: []
+    });
+    result.valid = false;
+  }
+  const diff = renderLlmDiscoveryDiff(packet, result);
+
+  await writeJson(projectRoot, "llm-discovery-accepted.json", result.accepted);
+  await writeJson(projectRoot, "llm-discovery-rejected.json", {
+    candidates: result.rejectedCandidates,
+    issues: result.issues.filter((issue) => issue.disposition === "rejected")
+  });
+  await writeJson(projectRoot, "llm-discovery-validation.json", result);
+  await writeArtifact(projectRoot, "llm-discovery-diff.md", diff);
+  await writeLlmDiscoveryPlanContext(projectRoot, result);
+
+  const rejected = result.issues.filter((issue) => issue.disposition === "rejected");
+  const investigation = result.issues.filter((issue) => issue.disposition === "investigation");
+
+  return {
+    exitCode: rejected.length === 0 ? 0 : 1,
+    stdout: [
+      `descuff enrich ${rejected.length === 0 ? "passed" : "failed"}`,
+      `Accepted LLM discovery candidates: ${result.acceptedCandidates.length}`,
+      `Rejected: ${rejected.length}`,
+      `Needs investigation: ${investigation.length}`,
+      "Source: llm-discovery.json",
+      `Diff: ${join(artifactDir(projectRoot), "llm-discovery-diff.md")}`,
       ""
     ].join("\n"),
     stderr:
@@ -1220,6 +1303,25 @@ async function writeScanArtifacts(projectRoot: string, artifacts: ScanArtifacts)
     "semantic-enrichment-prompt.md",
     renderSemanticEnrichmentPrompt(skillEvidencePacket)
   );
+  const llmDiscoveryInput = {
+    sourceFingerprintHash: hashJsonArtifact(artifacts.sourceFingerprints),
+    inputArtifactHashes: {
+      "skill-evidence-packet.json": hashJsonArtifact(skillEvidencePacket),
+      "model.json": hashJsonArtifact(artifacts.model),
+      "assessments.json": hashJsonArtifact(artifacts.assessments),
+      "generated-changes.json": hashJsonArtifact(artifacts.generatedChanges)
+    }
+  };
+  await writeJson(
+    projectRoot,
+    "llm-discovery-template.json",
+    createLlmDiscoveryTemplate(skillEvidencePacket, llmDiscoveryInput)
+  );
+  await writeArtifact(
+    projectRoot,
+    "llm-discovery-prompt.md",
+    renderLlmDiscoveryPrompt(skillEvidencePacket, llmDiscoveryInput)
+  );
 }
 
 async function writePlanArtifacts(projectRoot: string, artifacts: ScanArtifacts): Promise<void> {
@@ -1261,9 +1363,9 @@ function renderCodexPrompt(): string {
     "",
     "Use Descuff to implement agent-facing standards for this supported local app.",
     "",
-    "1. Read `.descuff/baseline.json`, `.descuff/plan.md`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/skill-evidence-packet.json`, and `.descuff/semantic-enrichment-prompt.md`.",
-    "2. Write evidence-backed semantic enrichment to `.descuff/semantic-enrichment.json` using only evidence IDs from the packet.",
-    "3. Run `npx descuff enrich .` and inspect `.descuff/semantic-enrichment-diff.md` before implementation.",
+    "1. Read `.descuff/baseline.json`, `.descuff/plan.md`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/skill-evidence-packet.json`, and `.descuff/llm-discovery-prompt.md`.",
+    "2. Write evidence-backed LLM discovery to `.descuff/llm-discovery.json` using only evidence IDs from the packet and relative source files from the current project.",
+    "3. Run `npx descuff enrich .` and inspect `.descuff/llm-discovery-diff.md` before implementation.",
     "4. Implement the plan conservatively.",
     "5. Preserve existing UI and behavior.",
     "6. Do not expose private, sensitive, mutating, or high-consequence actions without explicit approval.",
@@ -1565,6 +1667,17 @@ async function readJson<T>(projectRoot: string, name: string): Promise<T> {
   return JSON.parse(await readFile(join(artifactDir(projectRoot), name), "utf8")) as T;
 }
 
+async function readJsonIfExists<T>(projectRoot: string, name: string): Promise<T | undefined> {
+  try {
+    return await readJson<T>(projectRoot, name);
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
 async function writeJson(projectRoot: string, name: string, value: unknown): Promise<void> {
   await writeArtifact(projectRoot, name, `${JSON.stringify(value, null, 2)}\n`);
 }
@@ -1589,6 +1702,81 @@ function artifactDir(projectRoot: string): string {
 
 function ok(stdout: string): CommandResult {
   return { exitCode: 0, stdout, stderr: "" };
+}
+
+async function writeLlmDiscoveryPlanContext(
+  projectRoot: string,
+  result: ReturnType<typeof validateLlmDiscovery>
+): Promise<void> {
+  const section = renderLlmDiscoveryPlanSection(result);
+  const planPath = join(artifactDir(projectRoot), "plan.md");
+  try {
+    const current = await readFile(planPath, "utf8");
+    const marker = "\n## LLM Discovery Context\n";
+    const base = current.includes(marker) ? current.slice(0, current.indexOf(marker)) : current;
+    await writeFile(planPath, `${base.trimEnd()}\n\n${section}`, "utf8");
+  } catch (error) {
+    if (!isMissingFileError(error)) {
+      throw error;
+    }
+    await writeArtifact(projectRoot, "llm-discovery-plan-section.md", section);
+  }
+}
+
+async function currentLlmDiscoveryInputHashes(
+  projectRoot: string
+): Promise<Record<string, string>> {
+  const names = [
+    "skill-evidence-packet.json",
+    "model.json",
+    "assessments.json",
+    "generated-changes.json"
+  ];
+  const hashes: Record<string, string> = {};
+
+  for (const name of names) {
+    const hash = await hashArtifactIfExists(projectRoot, name);
+    if (hash !== undefined) {
+      hashes[name] = hash;
+    }
+  }
+
+  return hashes;
+}
+
+async function hashArtifactIfExists(
+  projectRoot: string,
+  name: string
+): Promise<string | undefined> {
+  try {
+    return hashTextArtifact(await readFile(join(artifactDir(projectRoot), name), "utf8"));
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+function hashJsonArtifact(value: unknown): string {
+  return hashTextArtifact(`${JSON.stringify(value, null, 2)}\n`);
+}
+
+function hashTextArtifact(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function hasSemanticEnrichmentClaims(enrichment: SemanticEnrichment): boolean {
+  return (
+    enrichment.domainProfile.summary.length > 0 ||
+    enrichment.domainProfile.primaryDomain.length > 0 ||
+    enrichment.domainProfile.domains.length > 0 ||
+    enrichment.entityMeanings.length > 0 ||
+    enrichment.capabilityMeanings.some((meaning) => meaning.meaning.length > 0) ||
+    enrichment.candidateConcepts.length > 0 ||
+    enrichment.standardSuitability.length > 0 ||
+    enrichment.uncertaintyNotes.length > 0
+  );
 }
 
 function errorMessage(error: unknown): string {

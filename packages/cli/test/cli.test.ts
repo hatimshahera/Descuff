@@ -265,6 +265,17 @@ describe("descuff CLI", () => {
       join(fixtureRoot, ".descuff", "semantic-enrichment-prompt.md"),
       "utf8"
     );
+    const llmDiscoveryTemplate = JSON.parse(
+      await readFile(join(fixtureRoot, ".descuff", "llm-discovery-template.json"), "utf8")
+    ) as {
+      schemaVersion: string;
+      sourceFingerprintHash: string;
+      inputArtifactHashes: Record<string, string>;
+    };
+    const llmDiscoveryPrompt = await readFile(
+      join(fixtureRoot, ".descuff", "llm-discovery-prompt.md"),
+      "utf8"
+    );
     const graphifyEnrichment = JSON.parse(
       await readFile(join(fixtureRoot, ".descuff", "graphify-enrichment.json"), "utf8")
     ) as { status: string };
@@ -289,6 +300,10 @@ describe("descuff CLI", () => {
     expect(graphifyEnrichmentMarkdown).toContain("Graphify Enrichment");
     expect(enrichmentTemplate.schemaVersion).toBe("0.1.0");
     expect(enrichmentPrompt).toContain("Descuff Semantic Enrichment Request");
+    expect(llmDiscoveryTemplate.schemaVersion).toBe("0.1.0");
+    expect(llmDiscoveryTemplate.sourceFingerprintHash.length).toBeGreaterThan(0);
+    expect(llmDiscoveryTemplate.inputArtifactHashes).toHaveProperty("skill-evidence-packet.json");
+    expect(llmDiscoveryPrompt).toContain("Descuff LLM Discovery Request");
   });
 
   it("runs scan on a React/Vite fixture and writes framework-neutral artifacts", async () => {
@@ -1017,9 +1032,13 @@ describe("descuff CLI", () => {
 
     try {
       await cp(fixtureRoot, projectRoot, { recursive: true });
-      await runCli(["node", "descuff", "scan", projectRoot]);
+      await runCli(["node", "descuff", "start", projectRoot]);
       const template = await readFile(
         join(projectRoot, ".descuff", "semantic-enrichment-template.json"),
+        "utf8"
+      );
+      const llmPrompt = await readFile(
+        join(projectRoot, ".descuff", "llm-discovery-prompt.md"),
         "utf8"
       );
       await writeFile(join(projectRoot, ".descuff", "semantic-enrichment.json"), template);
@@ -1032,8 +1051,105 @@ describe("descuff CLI", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("descuff enrich passed");
+      expect(result.stdout).toContain("Source: semantic-enrichment.json");
       expect(result.stdout).toContain("Diff:");
+      expect(llmPrompt).toContain("Descuff LLM Discovery Request");
       expect(diff).toContain("Semantic Enrichment");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reviews host-agent LLM discovery and writes accepted/rejected artifacts", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-llm-discovery-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      const template = await readFile(
+        join(projectRoot, ".descuff", "llm-discovery-template.json"),
+        "utf8"
+      );
+      await writeFile(join(projectRoot, ".descuff", "llm-discovery.json"), template);
+
+      const result = await runCli(["node", "descuff", "enrich", projectRoot]);
+      const diff = await readFile(join(projectRoot, ".descuff", "llm-discovery-diff.md"), "utf8");
+      const accepted = await readFile(
+        join(projectRoot, ".descuff", "llm-discovery-accepted.json"),
+        "utf8"
+      );
+      const plan = await readFile(join(projectRoot, ".descuff", "plan.md"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("descuff enrich passed");
+      expect(result.stdout).toContain("Source: llm-discovery.json");
+      expect(diff).toContain("LLM Discovery");
+      expect(accepted).toContain('"schemaVersion": "0.1.0"');
+      expect(plan).toContain("## LLM Discovery Context");
+      expect(plan).toContain("LLM-derived items are implementation context only");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects invalid host-agent LLM discovery with typed errors", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-llm-discovery-bad-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "scan", projectRoot]);
+      const template = JSON.parse(
+        await readFile(join(projectRoot, ".descuff", "llm-discovery-template.json"), "utf8")
+      ) as {
+        candidates: Array<{ evidenceIds: string[]; sourceFiles: string[] }>;
+      };
+      template.candidates[0].evidenceIds = ["missing:evidence"];
+      template.candidates[0].sourceFiles = ["../outside.ts"];
+      await writeFile(
+        join(projectRoot, ".descuff", "llm-discovery.json"),
+        `${JSON.stringify(template, null, 2)}\n`
+      );
+
+      const result = await runCli(["node", "descuff", "enrich", projectRoot]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("descuff enrich failed");
+      expect(result.stderr).toContain("LLM_DISCOVERY_EVIDENCE_UNKNOWN");
+      expect(result.stderr).toContain("LLM_DISCOVERY_SOURCE_PATH_INVALID");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed when legacy semantic enrichment conflicts with LLM discovery", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-llm-discovery-conflict-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "scan", projectRoot]);
+      const llmTemplate = await readFile(
+        join(projectRoot, ".descuff", "llm-discovery-template.json"),
+        "utf8"
+      );
+      const semanticTemplate = JSON.parse(
+        await readFile(join(projectRoot, ".descuff", "semantic-enrichment-template.json"), "utf8")
+      ) as {
+        domainProfile: { summary: string; evidenceIds: string[] };
+      };
+      semanticTemplate.domainProfile.summary = "Conflicting semantic enrichment.";
+      await writeFile(join(projectRoot, ".descuff", "llm-discovery.json"), llmTemplate);
+      await writeFile(
+        join(projectRoot, ".descuff", "semantic-enrichment.json"),
+        `${JSON.stringify(semanticTemplate, null, 2)}\n`
+      );
+
+      const result = await runCli(["node", "descuff", "enrich", projectRoot]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("LLM_DISCOVERY_SEMANTIC_ENRICHMENT_CONFLICT");
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }

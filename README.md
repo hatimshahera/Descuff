@@ -8,6 +8,8 @@ Turn your existing website into an interface AI agents can understand and use.
 
 Descuff checks a local supported app, tells your coding agent what to add, then proves the before/after improvement.
 
+Your coding agent does the flexible discovery and implementation work. Descuff keeps the process evidence-backed, safety-gated, and validated.
+
 It focuses on practical agent-facing standards: `llms.txt`, Schema.org JSON-LD, OpenAPI, API Catalog metadata, and safe browser/runtime WebMCP validation.
 
 Preview hosted recon can also inspect a deployed public URL and report what browser agents can observe without source access.
@@ -36,6 +38,8 @@ Descuff writes:
 .descuff/generated-changes.json
 .descuff/graphify-enrichment.json
 .descuff/skill-evidence-packet.json
+.descuff/llm-discovery-prompt.md
+.descuff/llm-discovery-template.json
 .descuff/semantic-enrichment-prompt.md
 .descuff/semantic-enrichment-template.json
 .descuff/plan.md
@@ -52,7 +56,7 @@ When `.descuff/runtime.json` includes browser-agent scenarios, scans can also wr
 .descuff/readiness-explanations.md
 ```
 
-Give `.descuff/codex-prompt.md`, `.descuff/plan.md`, and the semantic enrichment artifacts to Codex, Cursor, Claude Code, or another coding agent. The agent writes `.descuff/semantic-enrichment.json`, runs `npx descuff enrich .`, reviews `.descuff/semantic-enrichment-diff.md`, then implements the accepted standards while preserving the existing UI and behavior.
+Give `.descuff/codex-prompt.md`, `.descuff/plan.md`, and the LLM discovery artifacts to Codex, Cursor, Claude Code, or another coding agent. The agent writes `.descuff/llm-discovery.json`, runs `npx descuff enrich .`, reviews `.descuff/llm-discovery-diff.md`, then implements the accepted standards while preserving the existing UI and behavior. Older `semantic-enrichment.json` workflows still work as a compatibility fallback.
 
 `start` prints the detected domain profile, route/API/capability/form counts, implemented/recommended standards, validation status, readiness notes, generated artifact paths, and next steps.
 
@@ -90,7 +94,7 @@ Most websites were designed for humans and browsers. AI agents need clearer entr
 Descuff gives developers a repeatable workflow:
 
 ```text
-baseline -> semantic enrichment review -> plan -> implement with your coding agent -> validate -> compare
+baseline -> LLM discovery review -> plan -> implement with your coding agent -> validate -> compare
 ```
 
 ## Commands
@@ -125,7 +129,7 @@ start -> enrich -> coding agent implements accepted plan -> finish
 
 Lower-level commands:
 
-- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/graphify-enrichment.*`, `.descuff/skill-evidence-packet.*`, and semantic-enrichment prompt/template artifacts.
+- `scan` writes `.descuff/analysis.json`, `.descuff/model.json`, `.descuff/assessments.json`, `.descuff/generated-changes.json`, `.descuff/graphify-enrichment.*`, `.descuff/skill-evidence-packet.*`, LLM-discovery prompt/template artifacts, and legacy semantic-enrichment prompt/template artifacts.
 - `report` prints domain profile, compatibility application type, capability count, route/API counts, and standard status.
 - `plan` writes `.descuff/plan.json` and `.descuff/plan.md`.
 - `diff` compares changed files against `.descuff/drift-baseline.json` and writes `.descuff/drift-diff.json` plus `.descuff/drift-report.md`.
@@ -139,10 +143,10 @@ Lower-level commands:
 - `install --platform cursor` writes a project rule to `.cursor/rules/descuff.mdc`; ask Cursor Agent to Descuff the app from that project.
 - `install all` writes local preview skill instructions for Codex, Claude Code, and Cursor under `.descuff/skills/`.
   Install output reminds users to run `finish` only after explicit Descuff plan implementation and `check` for ordinary later edits.
-  Installed agent instructions begin with a short intake: what Descuff does, the current local Next.js and React/Vite preview boundary, whether to use semantic enrichment, whether to generate browser-agent scenarios, whether to run optional hosted recon, and whether to use existing Graphify output when present. The agent should wait for confirmation before running Descuff commands unless the prompt explicitly says to proceed without confirmation.
+  Installed agent instructions begin with a short intake: what Descuff does, the current local Next.js and React/Vite preview boundary, whether to use LLM discovery, whether to generate browser-agent scenarios, whether to run optional hosted recon, and whether to use existing Graphify output when present. The agent should wait for confirmation before running Descuff commands unless the prompt explicitly says to proceed without confirmation.
   If Graphify is used, installed agents keep Graphify stats as compact supporting evidence and end with Descuff-specific next steps such as deployment, hosted recon, readiness repair, or scenario review.
   When local validation and hosted recon both run, installed agents should report them separately so local source success is not confused with deployed-site visibility.
-- `enrich` validates `.descuff/semantic-enrichment.json` against the skill evidence packet and writes `.descuff/semantic-enrichment-diff.md`.
+- `enrich` validates `.descuff/llm-discovery.json` against the skill evidence packet, source fingerprints, and input artifact hashes, then writes `.descuff/llm-discovery-diff.md`. If no LLM discovery file exists, it still validates legacy `.descuff/semantic-enrichment.json` and writes `.descuff/semantic-enrichment-diff.md`.
 - `validate` rescans before scoring, writes `.descuff/validation.json`, and exits non-zero on validation failure.
   The validation report includes `readinessExplanations` so tools can distinguish blockers, recommendations, acceptable gaps, and complete categories.
 - Optional `.descuff/runtime.json` lets `scan` and `validate` use a running local app for browser/runtime evidence. It can include read-only `browserAgentScenarios` for standard-neutral task checks and explicit `webMcpToolScenarios` for safe tool execution. Without it, Descuff keeps using conservative synthetic runtime evidence.

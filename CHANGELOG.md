@@ -6,10 +6,14 @@ All notable changes to Descuff will be documented in this file.
 
 ### Added
 
+- Added Phase 19 LLM discovery prompt/template artifacts so host agents can propose richer evidence-backed route, form, API, entity, scenario, and standards-placement context without ordinary Descuff commands calling an LLM.
+- Added deterministic `llm-discovery.json` validation for evidence IDs, source fingerprints, input artifact hashes, relative source paths, unsupported claims, and mutating/sensitive/high-consequence self-approval.
+- Added `descuff enrich` support for accepted/rejected LLM discovery artifacts while preserving the existing semantic-enrichment compatibility path.
 - Added initial React/Vite preview support with a dedicated analyzer package, doctor detection, CLI scan workflow integration, route/form/fetch-reference evidence, existing standards discovery, fixtures, and release graph wiring.
 
 ### Changed
 
+- Updated installed Codex, Claude Code, and Cursor Descuff instructions to prefer LLM discovery as the guided workflow while keeping semantic enrichment as a fallback.
 - Clarified React/Vite readiness explanations so client-side fetch references are treated as frontend-observed API evidence until runtime or backend source evidence proves the server handler.
 
 ### Fixed

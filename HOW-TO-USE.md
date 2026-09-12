@@ -41,6 +41,7 @@ This creates `.descuff/` with:
 - `generated-changes.json`: proposed standards work
 - `graphify-enrichment.json` and `graphify-enrichment.md`: optional Graphify/native correlation summary
 - `skill-evidence-packet.json` and `skill-evidence-packet.md`: compact evidence for host-agent skill workflows
+- `llm-discovery-prompt.md` and `llm-discovery-template.json`: strict host-agent discovery handoff artifacts
 - `semantic-enrichment-prompt.md` and `semantic-enrichment-template.json`: strict host-agent semantic enrichment handoff artifacts
 - `plan.md`: implementation plan
 - `codex-prompt.md`: prompt for your coding agent
@@ -128,7 +129,7 @@ Then invoke it in Codex with:
 $descuff .
 ```
 
-The installed skill starts with a short intake instead of silently changing files. It explains that Descuff currently supports local Next.js apps and React/Vite preview apps, asks for the project root if needed, shows defaults for semantic enrichment and browser-agent scenario suggestions, asks for an optional hosted URL when you want hosted before/after effort numbers, and asks whether to use existing Graphify output when present. It should wait for your confirmation before running Descuff commands unless your prompt explicitly says to proceed without confirmation.
+The installed skill starts with a short intake instead of silently changing files. It explains that Descuff currently supports local Next.js apps and React/Vite preview apps, asks for the project root if needed, shows defaults for LLM discovery and browser-agent scenario suggestions, asks for an optional hosted URL when you want hosted before/after effort numbers, and asks whether to use existing Graphify output when present. It should wait for your confirmation before running Descuff commands unless your prompt explicitly says to proceed without confirmation.
 
 If you approve Graphify usage, the agent should keep Graphify output as compact supporting evidence. The final call to action should stay Descuff-specific: deploy local standards changes, rerun hosted recon after deployment, fix a remaining readiness gap, or review generated browser-agent scenarios.
 
@@ -167,18 +168,18 @@ Read:
 - .descuff/assessments.json
 - .descuff/generated-changes.json
 - .descuff/skill-evidence-packet.json
-- .descuff/semantic-enrichment-prompt.md
-- .descuff/semantic-enrichment-template.json
+- .descuff/llm-discovery-prompt.md
+- .descuff/llm-discovery-template.json
 - .descuff/plan.md
 - .descuff/codex-prompt.md
 
-Write evidence-backed semantic enrichment to .descuff/semantic-enrichment.json using only evidence IDs from the packet.
+Write evidence-backed LLM discovery to .descuff/llm-discovery.json using only evidence IDs from the packet and relative source files from the current project.
 
 Run:
 
   npx descuff enrich .
 
-Inspect .descuff/semantic-enrichment-diff.md before implementation.
+Inspect .descuff/llm-discovery-diff.md before implementation.
 
 Implement the accepted plan items conservatively. Preserve existing UI, routes, behavior, styling, and visible copy unless the plan requires a metadata-only standards change.
 
@@ -419,7 +420,7 @@ Legacy alias for the Codex platform install.
 npx descuff enrich .
 ```
 
-Validate `.descuff/semantic-enrichment.json` after a host agent fills it, then write `.descuff/semantic-enrichment-diff.md`.
+Validate `.descuff/llm-discovery.json` after a host agent fills it, then write `.descuff/llm-discovery-diff.md`. If no LLM discovery file exists, `enrich` still validates legacy `.descuff/semantic-enrichment.json` and writes `.descuff/semantic-enrichment-diff.md`.
 
 ```bash
 npx descuff validate .
