@@ -784,8 +784,24 @@ function renderDriftCommandOutput(
     `Affected standards: ${diff.affectedStandards.join(", ") || "none"}`,
     `Validation depth: ${diff.validationDepth}`,
     `Report: ${join(artifactDir(projectRoot), "drift-report.md")}`,
+    ...renderDriftRepairGuidance(command, status),
     ""
   ].join("\n");
+}
+
+function renderDriftRepairGuidance(command: "diff" | "check", status: string): string[] {
+  if (command !== "check") {
+    return [];
+  }
+
+  if (status === "pass") {
+    return ["No Descuff repair needed."];
+  }
+
+  return [
+    "Descuff found route/API/form/standards/scenario drift.",
+    "Repair workflow: ask your coding agent to run Descuff, then run `npx descuff start .`, `npx descuff finish .`, and `npx descuff check .`."
+  ];
 }
 
 function renderStartSummary(

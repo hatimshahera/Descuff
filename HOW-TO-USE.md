@@ -253,11 +253,20 @@ Use `check` in CI:
 npx descuff check .
 ```
 
-`check` fast-passes changes such as docs, tests, styles, images, and GitHub metadata. If a change touches routes, APIs, capabilities, auth boundaries, or published agent-facing standards, Descuff runs validation and writes `.descuff/drift-check.json` plus `.descuff/drift-report.md`.
+`check` is deterministic, non-LLM, and non-mutating. It fast-passes changes such as docs, tests, styles, images, and GitHub metadata. If a change touches routes, APIs, capabilities, auth boundaries, or published agent-facing standards, Descuff runs validation and writes `.descuff/drift-check.json` plus `.descuff/drift-report.md`.
 
 The drift report includes a validation plan with affected suites such as static standards, source fingerprints, runtime observations, WebMCP behavior, security model, and capability confidence. Descuff runs targeted suites for supported drift classes, and falls back to full validation when a narrower targeted validator cannot prove safety on its own.
 
 When validation fails, the report maps low-level validation failures into drift-oriented repair codes such as `WEBMCP_TOOL_DISCONNECTED`, `OPENAPI_BEHAVIOR_MISMATCH`, `MACHINE_CONTRACT_STALE`, and `STRUCTURED_METADATA_STALE`.
+
+Passing checks print `No Descuff repair needed.` Failing checks point the coding agent back to the repair loop:
+
+```bash
+npx descuff start .
+# coding agent performs evidence-backed discovery and implementation
+npx descuff finish .
+npx descuff check .
+```
 
 CI systems can pass changed files directly:
 
@@ -335,6 +344,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: DESCUFF_BASE_REF=origin/main npx descuff check .
 ```
+
+CI should run `descuff check` only. It should not run host-agent discovery, call an LLM, or edit source files.
 
 ## Command Reference
 

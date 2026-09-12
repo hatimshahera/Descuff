@@ -23,7 +23,7 @@ npx descuff enrich .
 
 Optional `.descuff/runtime.json` lets `scan` and `validate` inspect a running local app in the browser. It can include read-only `browserAgentScenarios` for standard-neutral before/after task measurements and explicit `webMcpToolScenarios` for safe WebMCP execution. Descuff writes browser-agent scenario/result artifacts when those checks are configured, and it does not guess tool inputs or execute mutating actions by default.
 
-`diff` compares changed files against `.descuff/drift-baseline.json` and writes a drift impact report. `check` fast-passes irrelevant changes, writes a validation plan, and runs validation when routes, APIs, capabilities, auth boundaries, or published standards may have changed.
+`diff` compares changed files against `.descuff/drift-baseline.json` and writes a drift impact report. `check` is deterministic, non-LLM, and non-mutating: it fast-passes irrelevant changes, writes a validation plan, and runs validation when routes, APIs, capabilities, auth boundaries, or published standards may have changed. Passing checks print that no Descuff repair is needed; failing checks point the coding agent back to the `start -> finish -> check` repair workflow.
 
 `scenarios` writes `.descuff/scenario-suggestions.json` and `.descuff/scenario-suggestions.md` with deterministic, evidence-backed, read-only browser-agent task suggestions.
 

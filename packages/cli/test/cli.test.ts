@@ -567,6 +567,7 @@ describe("descuff CLI", () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("descuff check pass");
       expect(result.stdout).toContain("Validation depth: targeted-runtime");
+      expect(result.stdout).toContain("No Descuff repair needed.");
       expect(check).toContain('"status": "pass"');
       expect(check).toContain('"validationPlan"');
       expect(check).toContain('"webmcp-behavior"');
@@ -628,6 +629,8 @@ describe("descuff CLI", () => {
 
       expect(result.exitCode).toBe(1);
       expect(result.stdout).toContain("descuff check fail");
+      expect(result.stdout).toContain("Descuff found route/API/form/standards/scenario drift.");
+      expect(result.stdout).toContain("Repair workflow:");
       expect(check).toContain('"code": "CAPABILITY_REMOVED"');
       expect(report).toContain("## Suggested Repairs");
     } finally {
@@ -1088,6 +1091,83 @@ describe("descuff CLI", () => {
       expect(accepted).toContain('"schemaVersion": "0.1.0"');
       expect(plan).toContain("## LLM Discovery Context");
       expect(plan).toContain("LLM-derived items are implementation context only");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs LLM discovery on React/Vite preview artifacts", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-llm-discovery-react-vite-"));
+    const projectRoot = join(tempRoot, "react-vite");
+
+    try {
+      await cp("fixtures/react-vite", projectRoot, { recursive: true });
+      await runCli(["node", "descuff", "start", projectRoot]);
+      const template = await readFile(
+        join(projectRoot, ".descuff", "llm-discovery-template.json"),
+        "utf8"
+      );
+      await writeFile(join(projectRoot, ".descuff", "llm-discovery.json"), template);
+
+      const result = await runCli(["node", "descuff", "enrich", projectRoot]);
+      const diff = await readFile(join(projectRoot, ".descuff", "llm-discovery-diff.md"), "utf8");
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Source: llm-discovery.json");
+      expect(diff).toContain("LLM Discovery");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps Graphify as optional supporting evidence during LLM discovery", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "descuff-cli-llm-discovery-graphify-"));
+    const projectRoot = join(tempRoot, "ecommerce");
+
+    try {
+      await cp(fixtureRoot, projectRoot, { recursive: true });
+      await mkdir(join(projectRoot, "graphify-out"), { recursive: true });
+      await writeFile(
+        join(projectRoot, "graphify-out", "graph.json"),
+        `${JSON.stringify(
+          {
+            nodes: [
+              {
+                id: "function:searchProducts",
+                label: "searchProducts",
+                type: "function",
+                source_file: "app/api/search/route.ts"
+              }
+            ],
+            edges: [
+              {
+                source: "function:searchProducts",
+                target: "route:/api/search",
+                type: "CALLS"
+              }
+            ]
+          },
+          null,
+          2
+        )}\n`
+      );
+
+      await runCli(["node", "descuff", "start", projectRoot]);
+      const template = await readFile(
+        join(projectRoot, ".descuff", "llm-discovery-template.json"),
+        "utf8"
+      );
+      const graphifyEnrichment = await readFile(
+        join(projectRoot, ".descuff", "graphify-enrichment.json"),
+        "utf8"
+      );
+      await writeFile(join(projectRoot, ".descuff", "llm-discovery.json"), template);
+
+      const result = await runCli(["node", "descuff", "enrich", projectRoot]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Source: llm-discovery.json");
+      expect(graphifyEnrichment).toContain('"status": "available"');
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }
